@@ -109,8 +109,15 @@ class PreviewPanelView(QWidget):
         self.__copy_prompt_button.setMinimumHeight(28)
         self.__copy_prompt_button.setStyleSheet(BUTTON_STYLE)
 
+        self.__edit_prompt_button = QPushButton("EDIT PROMPT")
+        self.__edit_prompt_button.setEnabled(False)
+        self.__edit_prompt_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.__edit_prompt_button.setMinimumHeight(28)
+        self.__edit_prompt_button.setStyleSheet(BUTTON_STYLE)
+
         add_buttons_layout.addWidget(self.__add_tag_button)
         add_buttons_layout.addWidget(self.__add_field_button)
+        add_buttons_layout.addWidget(self.__edit_prompt_button)
         add_buttons_layout.addWidget(self.__copy_prompt_button)
 
         preview_layout.addWidget(self.__thumb)
@@ -131,6 +138,7 @@ class PreviewPanelView(QWidget):
     def __connect_callbacks(self):
         self.__add_field_button.clicked.connect(self._add_field_button_callback)
         self.__add_tag_button.clicked.connect(self._add_tag_button_callback)
+        self.__edit_prompt_button.clicked.connect(self._edit_prompt_button_callback)
         self.__copy_prompt_button.clicked.connect(self._copy_prompt_button_callback)
 
     def _add_field_button_callback(self):
@@ -140,6 +148,9 @@ class PreviewPanelView(QWidget):
         raise NotImplementedError()
 
     def _set_selection_callback(self):
+        raise NotImplementedError()
+
+    def _edit_prompt_button_callback(self):
         raise NotImplementedError()
 
     def _get_selected_prompt(self) -> str:
@@ -166,6 +177,7 @@ class PreviewPanelView(QWidget):
 
     def _set_copy_prompt_button_enabled(self):
         self.__copy_prompt_button.setEnabled(bool(self._get_selected_prompt().strip()))
+        self.__edit_prompt_button.setEnabled(len(self._selected) == 1)
 
     def set_selection(self, selected: list[int], update_preview: bool = True):
         """Render the panel widgets with the newest data from the Library.
@@ -251,3 +263,7 @@ class PreviewPanelView(QWidget):
     @property
     def copy_prompt_enabled(self) -> bool:  # needed for tests
         return self.__copy_prompt_button.isEnabled()
+
+    @property
+    def edit_prompt_enabled(self) -> bool:  # needed for tests
+        return self.__edit_prompt_button.isEnabled()

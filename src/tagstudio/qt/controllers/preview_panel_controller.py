@@ -6,6 +6,7 @@ from warnings import catch_warnings
 
 from PySide6.QtWidgets import QListWidgetItem
 
+from tagstudio.core.library.alchemy.fields import FieldID
 from tagstudio.core.library.alchemy.library import Library
 from tagstudio.qt.mixed.add_field import AddFieldModal
 from tagstudio.qt.mixed.tag_search import TagSearchModal
@@ -35,6 +36,9 @@ class PreviewPanel(PreviewPanelView):
 
         self.__add_field_modal.done.connect(self._add_field_to_selected)
         self.__add_tag_modal.tsp.tag_chosen.connect(self._add_tag_to_selected)
+
+    def _edit_prompt_button_callback(self):
+        self._fields.edit_or_add_field_to_selected(FieldID.DESCRIPTION)
 
     def _add_field_to_selected(self, field_list: list[QListWidgetItem]):
         self._fields.add_field_to_selected(field_list)

@@ -23,6 +23,7 @@ def test_update_selection_empty(qt_driver: QtDriver, library: Library):
     # Panel should disable UI that allows for entry modification
     assert not panel.add_buttons_enabled
     assert not panel.copy_prompt_enabled
+    assert not panel.edit_prompt_enabled
 
 
 def test_update_selection_single(qt_driver: QtDriver, library: Library, entry_full: Entry):
@@ -35,6 +36,7 @@ def test_update_selection_single(qt_driver: QtDriver, library: Library, entry_fu
     # Panel should enable UI that allows for entry modification
     assert panel.add_buttons_enabled
     assert not panel.copy_prompt_enabled
+    assert panel.edit_prompt_enabled
 
 
 def test_update_selection_multiple(qt_driver: QtDriver, library: Library):
@@ -48,6 +50,7 @@ def test_update_selection_multiple(qt_driver: QtDriver, library: Library):
     # Panel should enable UI that allows for entry modification
     assert panel.add_buttons_enabled
     assert not panel.copy_prompt_enabled
+    assert not panel.edit_prompt_enabled
 
 
 def test_copy_prompt_enabled_and_copies_content(
@@ -65,3 +68,23 @@ def test_copy_prompt_enabled_and_copies_content(
 
     panel._copy_prompt_button_callback()
     assert QGuiApplication.clipboard().text() == "Prompt body"
+
+
+def test_edit_prompt_button_adds_missing_prompt_field(
+    qt_driver: QtDriver, library: Library, entry_full: Entry
+):
+    panel = PreviewPanel(library, qt_driver)
+
+    description_field = next(
+        (f for f in entry_full.fields if f.type.key == FieldID.DESCRIPTION.name), None
+    )
+    if description_field:
+        library.remove_entry_field(description_field, [entry_full.id])
+
+    qt_driver.toggle_item_selection(entry_full.id, append=False, bridge=False)
+    panel.set_selection(qt_driver.selected)
+    panel._edit_prompt_button_callback()
+
+    updated_entry = library.get_entry_full(entry_full.id)
+    assert updated_entry is not None
+    assert any(f.type.key == FieldID.DESCRIPTION.name for f in updated_entry.fields)
