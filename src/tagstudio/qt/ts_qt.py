@@ -14,6 +14,7 @@ import math
 import os
 import platform
 import re
+import shutil
 import sys
 import time
 from argparse import Namespace
@@ -79,6 +80,7 @@ from tagstudio.qt.global_settings import (
     Theme,
 )
 from tagstudio.qt.mixed.about_modal import AboutModal
+from tagstudio.qt.mixed.add_entry_modal import AddEntryModal, FilenameConflictDialog
 from tagstudio.qt.mixed.build_tag import BuildTagPanel
 from tagstudio.qt.mixed.drop_import_modal import DropImportModal
 from tagstudio.qt.mixed.fix_dupe_files import FixDupeFilesModal
@@ -323,6 +325,8 @@ class QtDriver(DriverMixin, QObject):
             chip.bg_button.clicked.connect(lambda checked=False, tag_id=tag.id: self.apply_tag_filter(tag_id))
             pinned_layout.addWidget(chip)
 
+        self.main_window.pinned_tags_container.updateGeometry()
+
     def init_workers(self):
         """Init workers for rendering thumbnails."""
         if not self.thumb_threads:
@@ -456,6 +460,7 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.favorite_tags_button.clicked.connect(self.favorite_tags_filter_modal.show)
         self.main_window.tags_button.setEnabled(False)
         self.main_window.favorite_tags_button.setEnabled(False)
+        self.main_window.add_entry_button.setEnabled(False)
         self.main_window.pinned_tags_title.setVisible(False)
         self.main_window.pinned_tags_container.setVisible(False)
 
@@ -642,6 +647,9 @@ class QtDriver(DriverMixin, QObject):
         # endregion
 
         self.main_window.search_field.textChanged.connect(self.update_completions_list)
+        self.main_window.add_entry_button.clicked.connect(
+            lambda: self.call_if_library_open(self.open_add_entry_modal)
+        )
 
         def on_visible_changed(entry_id: int | None):
             current = self.browsing_history.current
@@ -866,6 +874,7 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.favorite_tags_button.setText(Translations["home.favorite_tags"])
         self.main_window.tags_button.setEnabled(False)
         self.main_window.favorite_tags_button.setEnabled(False)
+        self.main_window.add_entry_button.setEnabled(False)
         self.main_window.pinned_tags_title.setVisible(False)
         self.main_window.pinned_tags_container.setVisible(False)
         try:
@@ -1107,7 +1116,7 @@ class QtDriver(DriverMixin, QObject):
 
         return msg.exec()
 
-    def add_new_files_callback(self):
+    def add_new_files_callback(self, on_complete=None):
         """Run when user initiates adding new files to the Library."""
         tracker = RefreshTracker(self.lib)
 
@@ -1142,12 +1151,12 @@ class QtDriver(DriverMixin, QObject):
             lambda: (
                 pw.hide(),
                 pw.deleteLater(),
-                self.add_new_files_runnable(tracker),
+                self.add_new_files_runnable(tracker, on_complete),
             )
         )
         QThreadPool.globalInstance().start(r)
 
-    def add_new_files_runnable(self, tracker: RefreshTracker):
+    def add_new_files_runnable(self, tracker: RefreshTracker, on_complete=None):
         """Adds any known new files to the library and run default macros on them.
 
         Threaded method.
@@ -1182,9 +1191,103 @@ class QtDriver(DriverMixin, QObject):
                 pw.deleteLater(),
                 # refresh the library only when new items are added
                 files_count and self.update_browsing_state(),  # type: ignore
+                on_complete and on_complete(),
             )
         )
         QThreadPool.globalInstance().start(r)
+
+    def open_add_entry_modal(self) -> None:
+        if not hasattr(self, "add_entry_modal"):
+            self.add_entry_modal = AddEntryModal(self.add_entry_from_path, self.main_window)
+        self.add_entry_modal.reset()
+        self.add_entry_modal.show()
+
+    def add_entry_from_path(self, source_path: Path, prompt: str) -> bool:
+        if self.lib.library_dir is None:
+            return False
+
+        target_name = self.resolve_add_entry_filename(source_path.name)
+        if target_name is None:
+            return False
+
+        def finalize_add() -> None:
+            entry = self.lib.get_entry_full_by_path(Path(target_name))
+            if entry is None:
+                self.show_error_message(
+                    "Entry Not Added",
+                    f'The file "{target_name}" was copied, but no library entry was created.',
+                )
+                return
+
+            prompt_text = prompt.strip()
+            if prompt_text:
+                full_entry = unwrap(self.lib.get_entry_full(entry.id))
+                description_field = next(
+                    (
+                        field
+                        for field in full_entry.fields
+                        if field.type.key == FieldID.DESCRIPTION.name
+                    ),
+                    None,
+                )
+                if description_field is None:
+                    self.lib.add_field_to_entry(
+                        entry.id,
+                        field_id=FieldID.DESCRIPTION,
+                        value=prompt_text,
+                    )
+                else:
+                    self.lib.update_entry_field(entry.id, description_field, prompt_text)
+
+            self.clear_selected()
+            self.select_entry(entry.id)
+            self.set_clipboard_menu_viability()
+            self.set_select_actions_visibility()
+            self.main_window.preview_panel.set_selection(self.selected)
+            self.main_window.status_bar.showMessage(f'Added entry "{target_name}"')
+
+        destination = self.lib.library_dir / target_name
+        copy_errors: list[str] = []
+
+        def copy_file():
+            try:
+                shutil.copy2(source_path, destination)
+            except Exception as e:
+                copy_errors.append(str(e))
+            yield 0
+
+        def finish_copy() -> None:
+            if copy_errors:
+                self.show_error_message("Could Not Copy File", copy_errors[0])
+                return
+            self.add_new_files_callback(on_complete=finalize_add)
+
+        pw = ProgressWidget(
+            cancel_button_text=None,
+            minimum=0,
+            maximum=1,
+        )
+        pw.setWindowTitle("Adding Entry")
+        pw.update_label(f'Copying "{target_name}"...')
+        pw.from_iterable_function(copy_file, None, finish_copy)
+        return True
+
+    def resolve_add_entry_filename(self, initial_name: str) -> str | None:
+        if self.lib.library_dir is None:
+            return None
+
+        filename = initial_name
+        while (self.lib.library_dir / filename).exists():
+            dialog = FilenameConflictDialog(
+                self.lib.library_dir / filename,
+                filename,
+                self.main_window,
+            )
+            if dialog.exec() != dialog.DialogCode.Accepted:
+                return None
+            filename = dialog.filename
+
+        return filename
 
     def new_file_macros_runnable(self, new_ids):
         """Threaded method that runs macros on a set of Entry IDs."""
@@ -1770,6 +1873,7 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.menu_bar.library_info_action.setEnabled(True)
         self.main_window.tags_button.setEnabled(True)
         self.main_window.favorite_tags_button.setEnabled(True)
+        self.main_window.add_entry_button.setEnabled(True)
 
         self.main_window.preview_panel.set_selection(self.selected)
 

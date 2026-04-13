@@ -56,6 +56,32 @@ BUTTON_STYLE = f"""
     }}
 """
 
+GREEN_BUTTON_STYLE = f"""
+    QPushButton{{
+        background-color: {get_ui_color(ColorType.PRIMARY, UiColor.GREEN)};
+        color: {get_ui_color(ColorType.LIGHT_ACCENT, UiColor.GREEN)};
+        border-color: {get_ui_color(ColorType.BORDER, UiColor.GREEN)};
+        border-radius: 6px;
+        border-style: solid;
+        border-width: 2px;
+        font-weight: 600;
+        text-align: center;
+    }}
+    QPushButton::hover{{
+        background-color: {get_ui_color(ColorType.BORDER, UiColor.GREEN)};
+        border-color: {get_ui_color(ColorType.LIGHT_ACCENT, UiColor.GREEN)};
+    }}
+    QPushButton::pressed{{
+        background-color: {get_ui_color(ColorType.DARK_ACCENT, UiColor.GREEN)};
+        border-color: {get_ui_color(ColorType.LIGHT_ACCENT, UiColor.GREEN)};
+    }}
+    QPushButton::disabled{{
+        background-color: {Theme.COLOR_DISABLED_BG.value};
+        border-color: {Theme.COLOR_DISABLED_BG.value};
+        color: {Theme.COLOR_PRESSED.value};
+    }}
+"""
+
 
 class PreviewPanelView(QWidget):
     lib: Library
@@ -97,17 +123,11 @@ class PreviewPanelView(QWidget):
         self.__add_tag_button.setMinimumHeight(28)
         self.__add_tag_button.setStyleSheet(BUTTON_STYLE)
 
-        self.__add_field_button = QPushButton(Translations["library.field.add"])
-        self.__add_field_button.setEnabled(False)
-        self.__add_field_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.__add_field_button.setMinimumHeight(28)
-        self.__add_field_button.setStyleSheet(BUTTON_STYLE)
-
         self.__copy_prompt_button = QPushButton("COPY PROMPT")
         self.__copy_prompt_button.setEnabled(False)
         self.__copy_prompt_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.__copy_prompt_button.setMinimumHeight(28)
-        self.__copy_prompt_button.setStyleSheet(BUTTON_STYLE)
+        self.__copy_prompt_button.setStyleSheet(GREEN_BUTTON_STYLE)
 
         self.__edit_prompt_button = QPushButton("EDIT PROMPT")
         self.__edit_prompt_button.setEnabled(False)
@@ -116,11 +136,10 @@ class PreviewPanelView(QWidget):
         self.__edit_prompt_button.setStyleSheet(BUTTON_STYLE)
 
         add_buttons_layout.addWidget(self.__add_tag_button)
-        add_buttons_layout.addWidget(self.__add_field_button)
         add_buttons_layout.addWidget(self.__edit_prompt_button)
-        add_buttons_layout.addWidget(self.__copy_prompt_button)
 
         preview_layout.addWidget(self.__thumb)
+        preview_layout.addWidget(self.__copy_prompt_button)
         info_layout.addWidget(self.__file_attrs)
         info_layout.addWidget(self._fields)
 
@@ -136,7 +155,6 @@ class PreviewPanelView(QWidget):
         self.__connect_callbacks()
 
     def __connect_callbacks(self):
-        self.__add_field_button.clicked.connect(self._add_field_button_callback)
         self.__add_tag_button.clicked.connect(self._add_tag_button_callback)
         self.__edit_prompt_button.clicked.connect(self._edit_prompt_button_callback)
         self.__copy_prompt_button.clicked.connect(self._copy_prompt_button_callback)
@@ -236,14 +254,10 @@ class PreviewPanelView(QWidget):
 
     @property
     def add_buttons_enabled(self) -> bool:  # needed for the tests
-        field = self.__add_field_button.isEnabled()
-        tag = self.__add_tag_button.isEnabled()
-        assert field == tag
-        return field
+        return self.__add_tag_button.isEnabled()
 
     @add_buttons_enabled.setter
     def add_buttons_enabled(self, enabled: bool):
-        self.__add_field_button.setEnabled(enabled)
         self.__add_tag_button.setEnabled(enabled)
 
     @property

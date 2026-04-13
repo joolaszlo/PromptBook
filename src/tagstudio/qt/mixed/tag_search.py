@@ -295,6 +295,15 @@ class TagSearchPanel(PanelWidget):
         # Assign the tag to the widget at the given index.
         tag_widget: TagWidget = self.scroll_layout.itemAt(index).widget()  # pyright: ignore[reportAssignmentType]
         assert isinstance(tag_widget, TagWidget)
+
+        with contextlib.suppress(RuntimeError, TypeError):
+            tag_widget.on_edit.disconnect()
+            tag_widget.on_remove.disconnect()
+            tag_widget.bg_button.clicked.disconnect()
+            tag_widget.search_for_tag_action.triggered.disconnect()
+            tag_widget.pinned_action.toggled.disconnect()
+            tag_widget.favorite_action.toggled.disconnect()
+
         tag_widget.set_tag(tag)
 
         # Set tag widget viability and potentially return early
@@ -307,14 +316,6 @@ class TagSearchPanel(PanelWidget):
         if not self.is_tag_chooser:
             has_remove_button = tag.id not in range(RESERVED_TAG_START, RESERVED_TAG_END)
         tag_widget.has_remove = has_remove_button
-
-        with catch_warnings(record=True):
-            tag_widget.on_edit.disconnect()
-            tag_widget.on_remove.disconnect()
-            tag_widget.bg_button.clicked.disconnect()
-            tag_widget.search_for_tag_action.triggered.disconnect()
-            tag_widget.pinned_action.toggled.disconnect()
-            tag_widget.favorite_action.toggled.disconnect()
 
         tag_id = tag.id
         tag_widget.on_edit.connect(lambda t=tag: self.edit_tag(t))
@@ -353,6 +354,8 @@ class TagSearchPanel(PanelWidget):
             set(tag.alias_ids),
         )
         self.update_tags(self.search_field.text())
+        if self.driver is not None:
+            self.driver.refresh_tag_filter_controls()
 
     def update_limit(self, index: int):
         logger.info("[TagSearchPanel] Updating tag limit")

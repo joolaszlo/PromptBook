@@ -7,7 +7,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, override
 
 import structlog
-from PySide6.QtCore import QEvent, Qt, Signal
+from PySide6.QtCore import QEvent, QSignalBlocker, Qt, Signal
 from PySide6.QtGui import QAction, QColor, QEnterEvent, QFontMetrics
 from PySide6.QtWidgets import QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
@@ -280,6 +280,8 @@ class TagWidget(QWidget):
         else:
             self.bg_button.setText(escape_text(tag.name))
 
+        pinned_blocker = QSignalBlocker(self.pinned_action)
+        favorite_blocker = QSignalBlocker(self.favorite_action)
         self.pinned_action.setChecked(tag.pinned)
         self.favorite_action.setChecked(tag.favorite)
 

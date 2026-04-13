@@ -2,7 +2,7 @@
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
-from tagstudio.core.library.alchemy.enums import FieldID
+from tagstudio.core.library.alchemy.fields import FieldID
 
 
 def get_field_display_name(name: str, key: str | None = None) -> str:

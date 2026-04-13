@@ -1,14 +1,11 @@
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
+import contextlib
 import typing
-from warnings import catch_warnings
-
-from PySide6.QtWidgets import QListWidgetItem
 
 from tagstudio.core.library.alchemy.fields import FieldID
 from tagstudio.core.library.alchemy.library import Library
-from tagstudio.qt.mixed.add_field import AddFieldModal
 from tagstudio.qt.mixed.tag_search import TagSearchModal
 from tagstudio.qt.views.preview_panel_view import PreviewPanelView
 
@@ -20,30 +17,19 @@ class PreviewPanel(PreviewPanelView):
     def __init__(self, library: Library, driver: "QtDriver"):
         super().__init__(library, driver)
 
-        self.__add_field_modal = AddFieldModal(self.lib)
         self.__add_tag_modal = TagSearchModal(self.lib, is_tag_chooser=True)
-
-    def _add_field_button_callback(self):
-        self.__add_field_modal.show()
 
     def _add_tag_button_callback(self):
         self.__add_tag_modal.show()
 
     def _set_selection_callback(self):
-        with catch_warnings(record=True):
-            self.__add_field_modal.done.disconnect()
+        with contextlib.suppress(RuntimeError, TypeError):
             self.__add_tag_modal.tsp.tag_chosen.disconnect()
 
-        self.__add_field_modal.done.connect(self._add_field_to_selected)
         self.__add_tag_modal.tsp.tag_chosen.connect(self._add_tag_to_selected)
 
     def _edit_prompt_button_callback(self):
         self._fields.edit_or_add_field_to_selected(FieldID.DESCRIPTION)
-
-    def _add_field_to_selected(self, field_list: list[QListWidgetItem]):
-        self._fields.add_field_to_selected(field_list)
-        if len(self._selected) == 1:
-            self._fields.update_from_entry(self._selected[0])
 
     def _add_tag_to_selected(self, tag_id: int):
         self._fields.add_tags_to_selected(tag_id)

@@ -18,6 +18,32 @@ class FlowWidget(QWidget):
         super().__init__(parent)
         self.setProperty(IGNORE_SIZE, False)  # noqa: FBT003
 
+    @override
+    def hasHeightForWidth(self) -> bool:
+        layout = self.layout()
+        return bool(layout and layout.hasHeightForWidth())
+
+    @override
+    def heightForWidth(self, width: int) -> int:
+        layout = self.layout()
+        if layout and layout.hasHeightForWidth():
+            return layout.heightForWidth(width)
+        return super().heightForWidth(width)
+
+    @override
+    def sizeHint(self) -> QSize:
+        layout = self.layout()
+        if layout:
+            return layout.sizeHint()
+        return super().sizeHint()
+
+    @override
+    def minimumSizeHint(self) -> QSize:
+        layout = self.layout()
+        if layout:
+            return layout.minimumSize()
+        return super().minimumSizeHint()
+
 
 class FlowLayout(QLayout):
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -86,17 +112,23 @@ class FlowLayout(QLayout):
     def minimumSize(self) -> QSize:
         if self.grid_efficiency:
             if self._item_list:
-                return self._item_list[0].minimumSize()
+                size = self._item_list[0].minimumSize()
             else:
-                return QSize()
+                size = QSize()
         else:
             size = QSize()
 
             for item in self._item_list:
                 size = size.expandedTo(item.minimumSize())
 
-            size += QSize(2 * self.contentsMargins().top(), 2 * self.contentsMargins().top())
-            return size
+        margins = self.contentsMargins()
+        size += QSize(margins.left() + margins.right(), margins.top() + margins.bottom())
+
+        parent = self.parentWidget()
+        if parent is not None and parent.width() > 0:
+            size.setHeight(max(size.height(), self.heightForWidth(parent.contentsRect().width())))
+
+        return size
 
     def _do_layout(self, rect: QRect, test_only: bool) -> float:
         x = rect.x()
@@ -158,4 +190,4 @@ class FlowLayout(QLayout):
         if len(self._item_list) == 0:
             return 0
 
-        return y + line_height - rect.y() * ((len(self._item_list)) / len(self._item_list))
+        return max(y + line_height - rect.y(), 0)

@@ -43,12 +43,12 @@ from tagstudio.qt.mixed.landing import LandingWidget
 from tagstudio.qt.mixed.pagination import Pagination
 from tagstudio.qt.mixed.tag_widget import get_border_color, get_highlight_color, get_text_color
 from tagstudio.qt.mnemonics import assign_mnemonics
-from tagstudio.qt.models.palette import ColorType, get_tag_color
+from tagstudio.qt.models.palette import ColorType, UiColor, get_tag_color, get_ui_color
 from tagstudio.qt.platform_strings import trash_term
 from tagstudio.qt.resource_manager import ResourceManager
 from tagstudio.qt.thumb_grid_layout import ThumbGridLayout
 from tagstudio.qt.translations import Translations
-from tagstudio.qt.views.layouts.flow_layout import FlowLayout
+from tagstudio.qt.views.layouts.flow_layout import FlowLayout, FlowWidget
 
 # Only import for type checking/autocompletion, will not be imported at runtime.
 if typing.TYPE_CHECKING:
@@ -465,6 +465,7 @@ class MainWindow(QMainWindow):
         self.search_field_completion_list: QStringListModel
         self.search_field_completer: QCompleter
         self.search_button: QPushButton
+        self.add_entry_button: QPushButton
 
         # initialized in setup_tag_filter_bar
         self.tag_filter_layout: QVBoxLayout
@@ -586,6 +587,39 @@ class MainWindow(QMainWindow):
         self.search_button.setMinimumSize(QSize(0, 32))
         self.search_bar_layout.addWidget(self.search_button)
 
+        self.add_entry_button = QPushButton("Add New Entry", self.central_widget)
+        self.add_entry_button.setObjectName("add_entry_button")
+        self.add_entry_button.setMinimumSize(QSize(0, 32))
+        self.add_entry_button.setEnabled(False)
+        self.add_entry_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.add_entry_button.setStyleSheet(
+            f"QPushButton{{"
+            f"background-color: {get_ui_color(ColorType.PRIMARY, UiColor.BLUE)};"
+            f"color: {get_ui_color(ColorType.LIGHT_ACCENT, UiColor.BLUE)};"
+            f"border-color: {get_ui_color(ColorType.BORDER, UiColor.BLUE)};"
+            f"border-style: solid;"
+            f"border-width: 2px;"
+            f"border-radius: 6px;"
+            f"font-weight: 600;"
+            f"padding-left: 10px;"
+            f"padding-right: 10px;"
+            f"}}"
+            f"QPushButton::hover{{"
+            f"background-color: {get_ui_color(ColorType.BORDER, UiColor.BLUE)};"
+            f"border-color: {get_ui_color(ColorType.LIGHT_ACCENT, UiColor.BLUE)};"
+            f"}}"
+            f"QPushButton::pressed{{"
+            f"background-color: {get_ui_color(ColorType.DARK_ACCENT, UiColor.BLUE)};"
+            f"border-color: {get_ui_color(ColorType.LIGHT_ACCENT, UiColor.BLUE)};"
+            f"}}"
+            f"QPushButton::disabled{{"
+            f"background-color: #3a3a3a;"
+            f"border-color: #3a3a3a;"
+            f"color: #7a7a7a;"
+            f"}}"
+        )
+        self.search_bar_layout.addWidget(self.add_entry_button)
+
         self.central_layout.addLayout(self.search_bar_layout, 3, 0, 1, 1)
 
     def setup_tag_filter_bar(self):
@@ -613,9 +647,14 @@ class MainWindow(QMainWindow):
         self.pinned_tags_title = QLabel(Translations["home.pinned_tags"])
         self.tag_filter_layout.addWidget(self.pinned_tags_title)
 
-        self.pinned_tags_container = QWidget()
+        self.pinned_tags_container = FlowWidget()
         self.pinned_tags_layout = FlowLayout(self.pinned_tags_container)
+        self.pinned_tags_layout.setContentsMargins(0, 0, 0, 0)
         self.pinned_tags_layout.setSpacing(6)
+        self.pinned_tags_container.setMinimumHeight(0)
+        self.pinned_tags_container.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum
+        )
         self.pinned_tags_container.setLayout(self.pinned_tags_layout)
         self.tag_filter_layout.addWidget(self.pinned_tags_container)
 
