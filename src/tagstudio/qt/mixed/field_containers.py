@@ -3,7 +3,6 @@
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
 
-import sys
 import typing
 from collections.abc import Callable
 from datetime import datetime as dt
@@ -27,6 +26,7 @@ from tagstudio.core.library.alchemy.enums import FieldTypeEnum
 from tagstudio.core.library.alchemy.fields import (
     BaseField,
     DatetimeField,
+    FieldID,
     TextField,
 )
 from tagstudio.core.library.alchemy.library import Library
@@ -62,6 +62,7 @@ class FieldContainers(QWidget):
         self.mixed_fields: list = []
         self.cached_entries: list[Entry] = []
         self.containers: list[FieldContainer] = []
+        self._active_modal: PanelModal | None = None
 
         self.panel_bg_color = (
             Theme.COLOR_BG_DARK.value
@@ -245,6 +246,65 @@ class FieldContainers(QWidget):
         )
         self.driver.emit_badge_signals(tags, emit_on_absent=False)
 
+    def edit_or_add_field_to_selected(self, field_id: FieldID) -> None:
+        if len(self.cached_entries) != 1:
+            return
+
+        entry = self.cached_entries[0]
+        field = next((f for f in entry.fields if f.type.key == field_id.name), None)
+        if field is None:
+            self.lib.add_field_to_entry(entry.id, field_id=field_id)
+            self.update_from_entry(entry.id)
+            entry = self.cached_entries[0]
+            field = next((f for f in entry.fields if f.type.key == field_id.name), None)
+
+        if field is not None:
+            self.open_field_editor(field)
+
+    def open_field_editor(self, field: BaseField) -> None:
+        if field.type.type == FieldTypeEnum.TEXT_LINE:
+            modal = PanelModal(
+                EditTextLine(field.value),
+                title=f"{self.field_display_name(field)} ({field.type.type.value})",
+                window_title=f"Edit {field.type.type.value}",
+                save_callback=(
+                    lambda content: (
+                        self.update_field(field, content),  # type: ignore
+                        self.update_from_entry(self.cached_entries[0].id),
+                    )
+                ),
+            )
+            self._active_modal = modal
+            modal.show()
+        elif field.type.type == FieldTypeEnum.TEXT_BOX:
+            display_name = self.field_display_name(field)
+            modal = PanelModal(
+                EditTextBox(field.value),
+                title=f"{display_name} (Text Box)",
+                window_title=f"Edit {display_name}",
+                save_callback=(
+                    lambda content: (
+                        self.update_field(field, content),  # type: ignore
+                        self.update_from_entry(self.cached_entries[0].id),
+                    )
+                ),
+            )
+            self._active_modal = modal
+            modal.show()
+        elif field.type.type == FieldTypeEnum.DATETIME:
+            modal = PanelModal(
+                DatetimePicker(self.driver, field.value or dt.now()),
+                title=f"Edit {self.field_display_name(field)}",
+                save_callback=(
+                    lambda content: (
+                        self.update_field(field, content),  # type: ignore
+                        self.update_from_entry(self.cached_entries[0].id),
+                    )
+                ),
+            )
+            self._active_modal = modal
+            modal.show()
+
     def write_container(self, index: int, field: BaseField, is_mixed: bool = False):
         """Update/Create data for a FieldContainer.
 
@@ -279,22 +339,7 @@ class FieldContainers(QWidget):
             inner_widget = TextWidget(title, text)
             container.set_inner_widget(inner_widget)
             if not is_mixed:
-                modal = PanelModal(
-                    EditTextLine(field.value),
-                    title=title,
-                    window_title=f"Edit {field.type.type.value}",
-                    save_callback=(
-                        lambda content: (
-                            self.update_field(field, content),  # type: ignore
-                            self.update_from_entry(self.cached_entries[0].id),
-                        )
-                    ),
-                )
-                if "pytest" in sys.modules:
-                    # for better testability
-                    container.modal = modal  # pyright: ignore[reportAttributeAccessIssue]
-
-                container.set_edit_callback(modal.show)
+                container.set_edit_callback(lambda: self.open_field_editor(field))
                 container.set_remove_callback(
                     lambda: self.remove_message_box(
                         prompt=self.remove_field_prompt(field.type.type.value),
@@ -319,18 +364,7 @@ class FieldContainers(QWidget):
             inner_widget = TextWidget(title, text)
             container.set_inner_widget(inner_widget)
             if not is_mixed:
-                modal = PanelModal(
-                    EditTextBox(field.value),
-                    title=title,
-                    window_title=f"Edit {display_name}",
-                    save_callback=(
-                        lambda content: (
-                            self.update_field(field, content),  # type: ignore
-                            self.update_from_entry(self.cached_entries[0].id),
-                        )
-                    ),
-                )
-                container.set_edit_callback(modal.show)
+                container.set_edit_callback(lambda: self.open_field_editor(field))
                 container.set_remove_callback(
                     lambda: self.remove_message_box(
                         prompt=self.remove_field_prompt(display_name),
@@ -360,19 +394,7 @@ class FieldContainers(QWidget):
 
                 inner_widget = TextWidget(title, text)
                 container.set_inner_widget(inner_widget)
-
-                modal = PanelModal(
-                    DatetimePicker(self.driver, field.value or dt.now()),
-                    title=f"Edit {display_name}",
-                    save_callback=(
-                        lambda content: (
-                            self.update_field(field, content),  # type: ignore
-                            self.update_from_entry(self.cached_entries[0].id),
-                        )
-                    ),
-                )
-
-                container.set_edit_callback(modal.show)
+                container.set_edit_callback(lambda: self.open_field_editor(field))
                 container.set_remove_callback(
                     lambda: self.remove_message_box(
                         prompt=self.remove_field_prompt(display_name),
