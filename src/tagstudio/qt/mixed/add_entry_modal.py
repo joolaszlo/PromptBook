@@ -4,6 +4,7 @@
 
 from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import override
 
 from PySide6 import QtCore, QtGui
@@ -19,6 +20,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from tagstudio.core.library.alchemy.models import Tag
+from tagstudio.qt.mixed.tag_widget import TagWidget
+from tagstudio.qt.views.layouts.flow_layout import FlowLayout, FlowWidget
+
+if TYPE_CHECKING:
+    from tagstudio.core.library.alchemy.library import Library
 
 
 class FilenameConflictDialog(QDialog):
@@ -102,16 +110,23 @@ class FilenameConflictDialog(QDialog):
         super().keyPressEvent(event)
 
 
-class AddEntryModal(QWidget):
+class AddEntryModal(QDialog):
     def __init__(
         self,
-        submit_callback: Callable[[Path, str], bool],
+        submit_callback: Callable[[Path, str, list[int]], bool],
+        library: "Library",
         parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self._submit_callback = submit_callback
+        self.lib = library
         self._selected_file: Path | None = None
+        self._pinned_tags: list[Tag] = []
+        self._selected_tag_ids: set[int] = set()
+        self._tag_widgets: dict[int, TagWidget] = {}
 
+        self.setWindowFlag(Qt.WindowType.Dialog, True)
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         self.setWindowTitle("Add New Entry")
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setMinimumSize(520, 360)
@@ -146,6 +161,17 @@ class AddEntryModal(QWidget):
         self.prompt_field = QPlainTextEdit()
         self.prompt_field.setPlaceholderText("Enter prompt text")
         self.root_layout.addWidget(self.prompt_field)
+
+        self.pinned_tags_title = QLabel("Pinned Tags")
+        self.pinned_tags_title.setStyleSheet("font-weight:bold;font-size:14px;")
+        self.root_layout.addWidget(self.pinned_tags_title)
+
+        self.pinned_tags_container = FlowWidget()
+        self.pinned_tags_layout = FlowLayout(self.pinned_tags_container)
+        self.pinned_tags_layout.setContentsMargins(0, 0, 0, 0)
+        self.pinned_tags_layout.setSpacing(6)
+        self.pinned_tags_container.setLayout(self.pinned_tags_layout)
+        self.root_layout.addWidget(self.pinned_tags_container)
 
         self.error_label = QLabel()
         self.error_label.setWordWrap(True)
@@ -188,7 +214,11 @@ class AddEntryModal(QWidget):
             return
 
         self._set_error("")
-        if self._submit_callback(self._selected_file, self.prompt_field.toPlainText()):
+        if self._submit_callback(
+            self._selected_file,
+            self.prompt_field.toPlainText(),
+            sorted(self._selected_tag_ids),
+        ):
             self.hide()
             self.reset()
 
@@ -200,11 +230,60 @@ class AddEntryModal(QWidget):
         self._selected_file = None
         self.file_field.clear()
         self.prompt_field.clear()
+        self._selected_tag_ids.clear()
+        self._render_pinned_tags()
         self._set_error("")
+
+    def set_pinned_tags(self, tags: list[Tag]) -> None:
+        self._pinned_tags = tags
+        self._render_pinned_tags()
 
     def _set_error(self, text: str) -> None:
         self.error_label.setText(text)
         self.error_label.setVisible(bool(text))
+
+    def _render_pinned_tags(self) -> None:
+        self._tag_widgets.clear()
+
+        while self.pinned_tags_layout.count():
+            item = self.pinned_tags_layout.takeAt(0)
+            if item and item.widget():
+                item.widget().deleteLater()
+
+        has_tags = bool(self._pinned_tags)
+        self.pinned_tags_title.setVisible(has_tags)
+        self.pinned_tags_container.setVisible(has_tags)
+        if not has_tags:
+            return
+
+        for tag in self._pinned_tags:
+            tag_widget = TagWidget(tag, has_edit=False, has_remove=False, library=self.lib)
+            tag_widget.search_for_tag_action.setVisible(False)
+            tag_widget.pinned_action.setVisible(False)
+            tag_widget.favorite_action.setVisible(False)
+            tag_widget.on_click.connect(lambda t=tag: self._add_tag(t))
+            self._tag_widgets[tag.id] = tag_widget
+            self.pinned_tags_layout.addWidget(tag_widget)
+            self._update_tag_widget_state(tag)
+
+        self.pinned_tags_container.updateGeometry()
+
+    def _add_tag(self, tag: Tag) -> None:
+        self._selected_tag_ids.add(tag.id)
+        self._update_tag_widget_state(tag)
+
+    def _update_tag_widget_state(self, tag: Tag) -> None:
+        tag_widget = self._tag_widgets.get(tag.id)
+        if tag_widget is None:
+            return
+
+        tag_widget.set_tag(tag)
+        if tag.id in self._selected_tag_ids:
+            display_name = self.lib.tag_display_name(tag)
+            tag_widget.bg_button.setText(f"Added: {display_name}")
+            tag_widget.bg_button.setToolTip("Will be added to this entry")
+        else:
+            tag_widget.bg_button.setToolTip("")
 
     @override
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:  # noqa N802

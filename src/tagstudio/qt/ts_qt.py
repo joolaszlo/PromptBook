@@ -286,6 +286,9 @@ class QtDriver(DriverMixin, QObject):
         self.update_browsing_state(next_state)
         self.refresh_tag_filter_controls()
 
+    def get_pinned_tags(self) -> list[Tag]:
+        return sorted((tag for tag in self.lib.tags if tag.pinned), key=lambda tag: tag.name.lower())
+
     def refresh_tag_filter_controls(self):
         """Refresh tag filter button labels and pinned tag chips."""
         if not hasattr(self, "main_window"):
@@ -311,7 +314,7 @@ class QtDriver(DriverMixin, QObject):
             if widget and widget.widget():
                 widget.widget().deleteLater()
 
-        tags = sorted((tag for tag in self.lib.tags if tag.pinned), key=lambda tag: tag.name.lower())
+        tags = self.get_pinned_tags()
         self.main_window.pinned_tags_container.setVisible(bool(tags))
         self.main_window.pinned_tags_title.setVisible(bool(tags))
 
@@ -1198,11 +1201,12 @@ class QtDriver(DriverMixin, QObject):
 
     def open_add_entry_modal(self) -> None:
         if not hasattr(self, "add_entry_modal"):
-            self.add_entry_modal = AddEntryModal(self.add_entry_from_path, self.main_window)
+            self.add_entry_modal = AddEntryModal(self.add_entry_from_path, self.lib, self.main_window)
         self.add_entry_modal.reset()
+        self.add_entry_modal.set_pinned_tags(self.get_pinned_tags())
         self.add_entry_modal.show()
 
-    def add_entry_from_path(self, source_path: Path, prompt: str) -> bool:
+    def add_entry_from_path(self, source_path: Path, prompt: str, tag_ids: list[int]) -> bool:
         if self.lib.library_dir is None:
             return False
 
@@ -1238,6 +1242,11 @@ class QtDriver(DriverMixin, QObject):
                     )
                 else:
                     self.lib.update_entry_field(entry.id, description_field, prompt_text)
+
+            if tag_ids:
+                self.lib.add_tags_to_entries(entry.id, tag_ids)
+                self.main_window.thumb_layout.add_tags([entry.id], tag_ids)
+                self.emit_badge_signals(tag_ids, emit_on_absent=False)
 
             self.clear_selected()
             self.select_entry(entry.id)
