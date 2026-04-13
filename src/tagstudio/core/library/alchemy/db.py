@@ -57,8 +57,8 @@ def make_tables(engine: Engine) -> None:
                 conn.execute(
                     text(
                         "INSERT INTO tags "
-                        "(id, name, color_namespace, color_slug, is_category, is_hidden) VALUES "
-                        f"({RESERVED_TAG_END}, 'temp', NULL, NULL, false, false)"
+                        "(id, name, color_namespace, color_slug, is_category, is_hidden, pinned, favorite) VALUES "
+                        f"({RESERVED_TAG_END}, 'temp', NULL, NULL, false, false, false, false)"
                     )
                 )
                 conn.execute(text(f"DELETE FROM tags WHERE id = {RESERVED_TAG_END}"))

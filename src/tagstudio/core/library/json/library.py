@@ -174,6 +174,8 @@ class Tag:
         aliases: list[str],
         subtags_ids: list[int],
         color: str,
+        pinned: bool = False,
+        favorite: bool = False,
     ) -> None:
         self.id = int(id)
         self.name = name
@@ -186,6 +188,8 @@ class Tag:
                 self.subtag_ids.append(int(s))
         # [int(s) for s in subtags_ids]
         self.color = color
+        self.pinned = pinned
+        self.favorite = favorite
 
     def __str__(self) -> str:
         return (
@@ -228,6 +232,10 @@ class Tag:
             obj["subtag_ids"] = self.subtag_ids
         if self.color:
             obj["color"] = self.color
+        if self.pinned:
+            obj["pinned"] = self.pinned
+        if self.favorite:
+            obj["favorite"] = self.favorite
 
         return obj
 
@@ -509,6 +517,8 @@ class Library:
                                 aliases = tag.get("aliases", [])
                                 subtag_ids = tag.get("subtag_ids", [])
                                 color = tag.get("color", "")
+                                pinned = tag.get("pinned", False)
+                                favorite = tag.get("favorite", False)
 
                                 t = Tag(
                                     id=id,
@@ -517,6 +527,8 @@ class Library:
                                     aliases=aliases,
                                     subtags_ids=subtag_ids,
                                     color=color,
+                                    pinned=pinned,
+                                    favorite=favorite,
                                 )
 
                                 # NOTE: This does NOT use the add_tag_to_library() method!
