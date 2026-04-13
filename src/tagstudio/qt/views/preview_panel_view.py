@@ -7,6 +7,7 @@ from pathlib import Path
 
 import structlog
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QPushButton,
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from tagstudio.core.enums import Theme
+from tagstudio.core.library.alchemy.fields import FieldID
 from tagstudio.core.library.alchemy.library import Library
 from tagstudio.core.library.alchemy.models import Entry
 from tagstudio.core.utils.types import unwrap
@@ -101,8 +103,15 @@ class PreviewPanelView(QWidget):
         self.__add_field_button.setMinimumHeight(28)
         self.__add_field_button.setStyleSheet(BUTTON_STYLE)
 
+        self.__copy_prompt_button = QPushButton("COPY PROMPT")
+        self.__copy_prompt_button.setEnabled(False)
+        self.__copy_prompt_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.__copy_prompt_button.setMinimumHeight(28)
+        self.__copy_prompt_button.setStyleSheet(BUTTON_STYLE)
+
         add_buttons_layout.addWidget(self.__add_tag_button)
         add_buttons_layout.addWidget(self.__add_field_button)
+        add_buttons_layout.addWidget(self.__copy_prompt_button)
 
         preview_layout.addWidget(self.__thumb)
         info_layout.addWidget(self.__file_attrs)
@@ -122,6 +131,7 @@ class PreviewPanelView(QWidget):
     def __connect_callbacks(self):
         self.__add_field_button.clicked.connect(self._add_field_button_callback)
         self.__add_tag_button.clicked.connect(self._add_tag_button_callback)
+        self.__copy_prompt_button.clicked.connect(self._copy_prompt_button_callback)
 
     def _add_field_button_callback(self):
         raise NotImplementedError()
@@ -131,6 +141,31 @@ class PreviewPanelView(QWidget):
 
     def _set_selection_callback(self):
         raise NotImplementedError()
+
+    def _get_selected_prompt(self) -> str:
+        if len(self._selected) != 1:
+            return ""
+
+        entry = self.lib.get_entry_full(self._selected[0])
+        if not entry:
+            return ""
+
+        for field in entry.fields:
+            if field.type.key == FieldID.DESCRIPTION.name:
+                value = field.value
+                if isinstance(value, str):
+                    return value
+                return ""
+
+        return ""
+
+    def _copy_prompt_button_callback(self):
+        prompt = self._get_selected_prompt()
+        if prompt:
+            QGuiApplication.clipboard().setText(prompt)
+
+    def _set_copy_prompt_button_enabled(self):
+        self.__copy_prompt_button.setEnabled(bool(self._get_selected_prompt().strip()))
 
     def set_selection(self, selected: list[int], update_preview: bool = True):
         """Render the panel widgets with the newest data from the Library.
@@ -150,6 +185,7 @@ class PreviewPanelView(QWidget):
                 self._fields.hide_containers()
 
                 self.add_buttons_enabled = False
+                self._set_copy_prompt_button_enabled()
 
             # One Item Selected
             elif len(selected) == 1:
@@ -167,6 +203,7 @@ class PreviewPanelView(QWidget):
                 self._set_selection_callback()
 
                 self.add_buttons_enabled = True
+                self._set_copy_prompt_button_enabled()
 
             # Multiple Selected Items
             elif len(selected) > 1:
@@ -179,6 +216,7 @@ class PreviewPanelView(QWidget):
                 self._set_selection_callback()
 
                 self.add_buttons_enabled = True
+                self._set_copy_prompt_button_enabled()
 
         except Exception as e:
             logger.error("[Preview Panel] Error updating selection", error=e)
@@ -209,3 +247,7 @@ class PreviewPanelView(QWidget):
     @property
     def preview_thumb(self) -> PreviewThumb:
         return self.__thumb
+
+    @property
+    def copy_prompt_enabled(self) -> bool:  # needed for tests
+        return self.__copy_prompt_button.isEnabled()
