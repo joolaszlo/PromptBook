@@ -149,6 +149,16 @@ class TagWidget(QWidget):
         self.search_for_tag_action = QAction(self)
         self.search_for_tag_action.setText(Translations["tag.search_for_tag"])
         self.bg_button.addAction(self.search_for_tag_action)
+
+        self.pinned_action = QAction(self)
+        self.pinned_action.setText("Pinned")
+        self.pinned_action.setCheckable(True)
+        self.bg_button.addAction(self.pinned_action)
+
+        self.favorite_action = QAction(self)
+        self.favorite_action.setText("Favorite")
+        self.favorite_action.setCheckable(True)
+        self.bg_button.addAction(self.favorite_action)
         # add_to_search_action = QAction(self)
         # add_to_search_action.setText(Translations.translate_formatted("tag.add_to_search"))
         # self.bg_button.addAction(add_to_search_action)
@@ -269,6 +279,9 @@ class TagWidget(QWidget):
             self.bg_button.setText(escape_text(self.lib.tag_display_name(tag)))
         else:
             self.bg_button.setText(escape_text(tag.name))
+
+        self.pinned_action.setChecked(tag.pinned)
+        self.favorite_action.setChecked(tag.favorite)
 
     def set_has_remove(self, has_remove: bool):
         self.has_remove = has_remove

@@ -305,11 +305,19 @@ class TagSearchPanel(PanelWidget):
             tag_widget.on_remove.disconnect()
             tag_widget.bg_button.clicked.disconnect()
             tag_widget.search_for_tag_action.triggered.disconnect()
+            tag_widget.pinned_action.toggled.disconnect()
+            tag_widget.favorite_action.toggled.disconnect()
 
         tag_id = tag.id
         tag_widget.on_edit.connect(lambda t=tag: self.edit_tag(t))
         tag_widget.on_remove.connect(lambda t=tag: self.delete_tag(t))
         tag_widget.bg_button.clicked.connect(lambda: self.tag_chosen.emit(tag_id))
+        tag_widget.pinned_action.toggled.connect(
+            lambda checked, tag_id=tag_id: self.set_tag_flag(tag_id, "pinned", checked)
+        )
+        tag_widget.favorite_action.toggled.connect(
+            lambda checked, tag_id=tag_id: self.set_tag_flag(tag_id, "favorite", checked)
+        )
 
         if self.driver is not None:
             tag_widget.search_for_tag_action.triggered.connect(
@@ -323,6 +331,20 @@ class TagSearchPanel(PanelWidget):
             tag_widget.search_for_tag_action.setEnabled(True)
         else:
             tag_widget.search_for_tag_action.setEnabled(False)
+
+    def set_tag_flag(self, tag_id: int, flag_name: str, checked: bool):
+        tag = self.lib.get_tag(tag_id)
+        if tag is None:
+            return
+
+        setattr(tag, flag_name, checked)
+        self.lib.update_tag(
+            tag,
+            set(tag.parent_ids),
+            {alias.name for alias in tag.aliases},
+            set(tag.alias_ids),
+        )
+        self.update_tags(self.search_field.text())
 
     def update_limit(self, index: int):
         logger.info("[TagSearchPanel] Updating tag limit")
