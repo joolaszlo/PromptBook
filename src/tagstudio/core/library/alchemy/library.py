@@ -261,6 +261,8 @@ class Library:
                     color_namespace=color_namespace,
                     color_slug=color_slug,
                     disambiguation_id=disambiguation_id,
+                    pinned=tag.pinned,
+                    favorite=tag.favorite,
                 )
             )
             # Apply user edits to built-in JSON tags.
@@ -272,6 +274,8 @@ class Library:
                 updated_tag.shorthand = tag.shorthand
                 updated_tag.color_namespace = color_namespace
                 updated_tag.color_slug = color_slug
+                updated_tag.pinned = tag.pinned
+                updated_tag.favorite = tag.favorite
                 self.update_tag(updated_tag)  # NOTE: This just calls add_tag?
 
         # Tag Aliases
@@ -543,6 +547,8 @@ class Library:
                     self.__apply_db9_schema_changes(session)
                 if loaded_db_version < 103:
                     self.__apply_db103_schema_changes(session)
+                if loaded_db_version < 104:
+                    self.__apply_db104_schema_changes(session)
                 if loaded_db_version == 6:
                     self.__apply_repairs_for_db6(session)
 
@@ -729,6 +735,24 @@ class Library:
         except Exception as e:
             logger.error(
                 "[Library][Migration] Could not update archived tag to be hidden!",
+                error=e,
+            )
+            session.rollback()
+
+    def __apply_db104_schema_changes(self, session: Session):
+        """Apply database schema changes introduced in DB_VERSION 104."""
+        add_pinned_column = text("ALTER TABLE tags ADD COLUMN pinned BOOLEAN NOT NULL DEFAULT 0")
+        add_favorite_column = text(
+            "ALTER TABLE tags ADD COLUMN favorite BOOLEAN NOT NULL DEFAULT 0"
+        )
+        try:
+            session.execute(add_pinned_column)
+            session.execute(add_favorite_column)
+            session.commit()
+            logger.info("[Library][Migration] Added pinned/favorite columns to tags table")
+        except Exception as e:
+            logger.error(
+                "[Library][Migration] Could not create pinned/favorite columns in tags table!",
                 error=e,
             )
             session.rollback()

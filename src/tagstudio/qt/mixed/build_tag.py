@@ -286,6 +286,34 @@ class BuildTagPanel(PanelWidget):
         self.hidden_layout.addWidget(self.hidden_checkbox)
         self.hidden_layout.addWidget(self.hidden_title)
 
+        # Pinned ---------------------------------------------------------------
+        self.pinned_widget = QWidget()
+        self.pinned_layout = QHBoxLayout(self.pinned_widget)
+        self.pinned_layout.setStretch(1, 1)
+        self.pinned_layout.setContentsMargins(0, 0, 0, 0)
+        self.pinned_layout.setSpacing(6)
+        self.pinned_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.pinned_title = QLabel("Pinned")
+        self.pinned_checkbox = QCheckBox()
+        self.pinned_checkbox.setFixedSize(22, 22)
+        self.pinned_checkbox.setStyleSheet(self.hidden_checkbox.styleSheet())
+        self.pinned_layout.addWidget(self.pinned_checkbox)
+        self.pinned_layout.addWidget(self.pinned_title)
+
+        # Favorite -------------------------------------------------------------
+        self.favorite_widget = QWidget()
+        self.favorite_layout = QHBoxLayout(self.favorite_widget)
+        self.favorite_layout.setStretch(1, 1)
+        self.favorite_layout.setContentsMargins(0, 0, 0, 0)
+        self.favorite_layout.setSpacing(6)
+        self.favorite_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.favorite_title = QLabel("Favorite")
+        self.favorite_checkbox = QCheckBox()
+        self.favorite_checkbox.setFixedSize(22, 22)
+        self.favorite_checkbox.setStyleSheet(self.hidden_checkbox.styleSheet())
+        self.favorite_layout.addWidget(self.favorite_checkbox)
+        self.favorite_layout.addWidget(self.favorite_title)
+
         # Add Widgets to Layout ================================================
         self.root_layout.addWidget(self.name_widget)
         self.root_layout.addWidget(self.shorthand_widget)
@@ -297,6 +325,8 @@ class BuildTagPanel(PanelWidget):
         self.root_layout.addWidget(QLabel("<h3>Properties</h3>"))
         self.root_layout.addWidget(self.cat_widget)
         self.root_layout.addWidget(self.hidden_widget)
+        self.root_layout.addWidget(self.pinned_widget)
+        self.root_layout.addWidget(self.favorite_widget)
 
         self.parent_ids: set[int] = set()
         self.alias_ids: list[int] = []
@@ -587,6 +617,8 @@ class BuildTagPanel(PanelWidget):
 
         self.cat_checkbox.setChecked(tag.is_category)
         self.hidden_checkbox.setChecked(tag.is_hidden)
+        self.pinned_checkbox.setChecked(tag.pinned)
+        self.favorite_checkbox.setChecked(tag.favorite)
 
     def on_name_changed(self):
         is_empty = not self.name_field.text().strip()
@@ -611,6 +643,8 @@ class BuildTagPanel(PanelWidget):
         tag.color_slug = self.tag_color_slug
         tag.is_category = self.cat_checkbox.isChecked()
         tag.is_hidden = self.hidden_checkbox.isChecked()
+        tag.pinned = self.pinned_checkbox.isChecked()
+        tag.favorite = self.favorite_checkbox.isChecked()
 
         logger.info("built tag", tag=tag)
         return tag
