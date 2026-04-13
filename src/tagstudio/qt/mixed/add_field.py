@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from tagstudio.core.library.alchemy.library import Library
+from tagstudio.qt.helpers.field_display import get_field_display_name
 from tagstudio.qt.translations import Translations
 
 logger = structlog.get_logger(__name__)
@@ -76,7 +77,8 @@ class AddFieldModal(QWidget):
     def show(self):
         self.list_widget.clear()
         for df in self.lib.field_types.values():
-            item = QListWidgetItem(f"{df.name} ({df.type.value})")
+            display_name = get_field_display_name(df.name, df.key)
+            item = QListWidgetItem(f"{display_name} ({df.type.value})")
             item.setData(Qt.ItemDataRole.UserRole, df.key)
             self.list_widget.addItem(item)
         self.list_widget.setFocus()

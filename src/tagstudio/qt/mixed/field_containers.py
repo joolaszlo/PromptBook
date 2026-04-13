@@ -33,6 +33,7 @@ from tagstudio.core.library.alchemy.library import Library
 from tagstudio.core.library.alchemy.models import Entry, Tag
 from tagstudio.core.utils.types import unwrap
 from tagstudio.qt.controllers.tag_box_controller import TagBoxWidget
+from tagstudio.qt.helpers.field_display import get_field_display_name
 from tagstudio.qt.mixed.datetime_picker import DatetimePicker
 from tagstudio.qt.mixed.field_widget import FieldContainer
 from tagstudio.qt.mixed.text_field import TextWidget
@@ -202,6 +203,10 @@ class FieldContainers(QWidget):
 
         return dict((c, d) for c, d in categories.items() if len(d) > 0)
 
+
+    def field_display_name(self, field: BaseField) -> str:
+        return get_field_display_name(field.type.name, field.type.key)
+
     def remove_field_prompt(self, name: str) -> str:
         return Translations.format("library.field.confirm_remove", name=name)
 
@@ -259,7 +264,8 @@ class FieldContainers(QWidget):
             container = self.containers[index]
 
         if field.type.type == FieldTypeEnum.TEXT_LINE:
-            container.set_title(field.type.name)
+            display_name = self.field_display_name(field)
+            container.set_title(display_name)
             container.set_inline(False)
 
             # Normalize line endings in any text content.
@@ -269,7 +275,7 @@ class FieldContainers(QWidget):
             else:
                 text = "<i>Mixed Data</i>"
 
-            title = f"{field.type.name} ({field.type.type.value})"
+            title = f"{display_name} ({field.type.type.value})"
             inner_widget = TextWidget(title, text)
             container.set_inner_widget(inner_widget)
             if not is_mixed:
@@ -300,7 +306,8 @@ class FieldContainers(QWidget):
                 )
 
         elif field.type.type == FieldTypeEnum.TEXT_BOX:
-            container.set_title(field.type.name)
+            display_name = self.field_display_name(field)
+            container.set_title(display_name)
             container.set_inline(False)
             # Normalize line endings in any text content.
             if not is_mixed:
@@ -308,14 +315,14 @@ class FieldContainers(QWidget):
                 text = (field.value or "").replace("\r", "\n")
             else:
                 text = "<i>Mixed Data</i>"
-            title = f"{field.type.name} (Text Box)"
+            title = f"{display_name} (Text Box)"
             inner_widget = TextWidget(title, text)
             container.set_inner_widget(inner_widget)
             if not is_mixed:
                 modal = PanelModal(
                     EditTextBox(field.value),
                     title=title,
-                    window_title=f"Edit {field.type.name}",
+                    window_title=f"Edit {display_name}",
                     save_callback=(
                         lambda content: (
                             self.update_field(field, content),  # type: ignore
@@ -326,7 +333,7 @@ class FieldContainers(QWidget):
                 container.set_edit_callback(modal.show)
                 container.set_remove_callback(
                     lambda: self.remove_message_box(
-                        prompt=self.remove_field_prompt(field.type.name),
+                        prompt=self.remove_field_prompt(display_name),
                         callback=lambda: (
                             self.remove_field(field),
                             self.update_from_entry(self.cached_entries[0].id),
@@ -336,11 +343,12 @@ class FieldContainers(QWidget):
 
         elif field.type.type == FieldTypeEnum.DATETIME:
             logger.info("[FieldContainers][write_container] Datetime Field", field=field)
+            display_name = self.field_display_name(field)
             if not is_mixed:
-                container.set_title(field.type.name)
+                container.set_title(display_name)
                 container.set_inline(False)
 
-                title = f"{field.type.name} (Date)"
+                title = f"{display_name} (Date)"
                 try:
                     assert field.value is not None
                     text = self.driver.settings.format_datetime(
@@ -355,7 +363,7 @@ class FieldContainers(QWidget):
 
                 modal = PanelModal(
                     DatetimePicker(self.driver, field.value or dt.now()),
-                    title=f"Edit {field.type.name}",
+                    title=f"Edit {display_name}",
                     save_callback=(
                         lambda content: (
                             self.update_field(field, content),  # type: ignore
@@ -367,7 +375,7 @@ class FieldContainers(QWidget):
                 container.set_edit_callback(modal.show)
                 container.set_remove_callback(
                     lambda: self.remove_message_box(
-                        prompt=self.remove_field_prompt(field.type.name),
+                        prompt=self.remove_field_prompt(display_name),
                         callback=lambda: (
                             self.remove_field(field),
                             self.update_from_entry(self.cached_entries[0].id),
@@ -376,19 +384,20 @@ class FieldContainers(QWidget):
                 )
             else:
                 text = "<i>Mixed Data</i>"
-                title = f"{field.type.name} (Wacky Date)"
+                title = f"{display_name} (Wacky Date)"
                 inner_widget = TextWidget(title, text)
                 container.set_inner_widget(inner_widget)
         else:
             logger.warning("[FieldContainers][write_container] Unknown Field", field=field)
-            container.set_title(field.type.name)
+            display_name = self.field_display_name(field)
+            container.set_title(display_name)
             container.set_inline(False)
-            title = f"{field.type.name} (Unknown Field Type)"
-            inner_widget = TextWidget(title, field.type.name)
+            title = f"{display_name} (Unknown Field Type)"
+            inner_widget = TextWidget(title, display_name)
             container.set_inner_widget(inner_widget)
             container.set_remove_callback(
                 lambda: self.remove_message_box(
-                    prompt=self.remove_field_prompt(field.type.name),
+                    prompt=self.remove_field_prompt(display_name),
                     callback=lambda: (
                         self.remove_field(field),
                         self.update_from_entry(self.cached_entries[0].id),
