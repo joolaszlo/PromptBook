@@ -4,6 +4,7 @@
 
 
 import contextlib
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Union
 from warnings import catch_warnings
 
@@ -47,14 +48,16 @@ class TagSearchModal(PanelModal):
         library: Library,
         exclude: list[int] | None = None,
         is_tag_chooser: bool = True,
+        title: str | None = None,
+        tag_filter: Callable[[Tag], bool] | None = None,
         done_callback=None,
         save_callback=None,
         has_save=False,
     ):
-        self.tsp = TagSearchPanel(library, exclude, is_tag_chooser)
+        self.tsp = TagSearchPanel(library, exclude, is_tag_chooser, tag_filter=tag_filter)
         super().__init__(
             self.tsp,
-            Translations["tag.add.plural"],
+            title or Translations["tag.add.plural"],
             done_callback=done_callback,
             save_callback=save_callback,
             has_save=has_save,
@@ -80,11 +83,13 @@ class TagSearchPanel(PanelWidget):
         library: Library,
         exclude: list[int] | None = None,
         is_tag_chooser: bool = True,
+        tag_filter: Callable[[Tag], bool] | None = None,
     ):
         super().__init__()
         self.lib = library
         self.driver = None
         self.exclude = exclude or []
+        self.tag_filter = tag_filter
 
         self.is_tag_chooser = is_tag_chooser
         self.create_button_in_layout: bool = False
@@ -226,6 +231,9 @@ class TagSearchPanel(PanelWidget):
         if self.exclude:
             tag_results[0] = {t for t in tag_results[0] if t.id not in self.exclude}
             tag_results[1] = {t for t in tag_results[1] if t.id not in self.exclude}
+        if self.tag_filter:
+            tag_results[0] = {t for t in tag_results[0] if self.tag_filter(t)}
+            tag_results[1] = {t for t in tag_results[1] if self.tag_filter(t)}
 
         # Sort and prioritize the results
         results_0 = list(tag_results[0])
