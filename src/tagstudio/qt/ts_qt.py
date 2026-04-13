@@ -57,7 +57,7 @@ from tagstudio.core.library.alchemy.enums import (
 )
 from tagstudio.core.library.alchemy.fields import FieldID
 from tagstudio.core.library.alchemy.library import Library, LibraryStatus
-from tagstudio.core.library.alchemy.models import Entry
+from tagstudio.core.library.alchemy.models import Entry, Tag
 from tagstudio.core.library.ignore import Ignore
 from tagstudio.core.library.refresh import RefreshTracker
 from tagstudio.core.media_types import MediaCategories
@@ -91,6 +91,7 @@ from tagstudio.qt.mixed.settings_panel import SettingsPanel
 from tagstudio.qt.mixed.tag_color_manager import TagColorManager
 from tagstudio.qt.mixed.tag_database import TagDatabasePanel
 from tagstudio.qt.mixed.tag_search import TagSearchModal
+from tagstudio.qt.mixed.tag_widget import TagWidget
 from tagstudio.qt.models.palette import ColorType, UiColor, get_ui_color
 from tagstudio.qt.platform_strings import trash_term
 from tagstudio.qt.previews.vendored.ffmpeg import FFMPEG_CMD, FFPROBE_CMD
@@ -210,6 +211,7 @@ class QtDriver(DriverMixin, QObject):
         self.frame_content: list[int] = []  # List of Entry IDs for the current query
         self._selected: OrderedDict[int, None] = OrderedDict()
         self.pages_count = 0
+        self.active_tag_filter_id: int | None = None
 
         self.scrollbar_pos = 0
         self.spacing = None
@@ -270,6 +272,56 @@ class QtDriver(DriverMixin, QObject):
 
     def __reset_navigation(self) -> None:
         self.browsing_history = History(BrowsingState.show_all())
+
+    def apply_tag_filter(self, tag_id: int):
+        """Toggle a single active tag filter and refresh search results."""
+        if self.active_tag_filter_id == tag_id:
+            self.active_tag_filter_id = None
+            next_state = self.browsing_history.current.with_search_query("")
+        else:
+            self.active_tag_filter_id = tag_id
+            next_state = BrowsingState.from_tag_id(tag_id, self.browsing_history.current)
+        self.update_browsing_state(next_state)
+        self.refresh_tag_filter_controls()
+
+    def refresh_tag_filter_controls(self):
+        """Refresh tag filter button labels and pinned tag chips."""
+        if not hasattr(self, "main_window"):
+            return
+
+        active_tag = self.lib.get_tag(self.active_tag_filter_id) if self.active_tag_filter_id else None
+        tags_label = (
+            Translations.format("home.tags_active", tag_name=active_tag.name)
+            if active_tag
+            else Translations["home.tags"]
+        )
+        favorite_label = (
+            Translations.format("home.favorite_tags_active", tag_name=active_tag.name)
+            if active_tag and active_tag.favorite
+            else Translations["home.favorite_tags"]
+        )
+        self.main_window.tags_button.setText(tags_label)
+        self.main_window.favorite_tags_button.setText(favorite_label)
+
+        pinned_layout = self.main_window.pinned_tags_layout
+        while pinned_layout.count():
+            widget = pinned_layout.takeAt(0)
+            if widget and widget.widget():
+                widget.widget().deleteLater()
+
+        tags = sorted((tag for tag in self.lib.tags if tag.pinned), key=lambda tag: tag.name.lower())
+        self.main_window.pinned_tags_container.setVisible(bool(tags))
+        self.main_window.pinned_tags_title.setVisible(bool(tags))
+
+        for tag in tags:
+            chip = TagWidget(tag=tag, has_edit=False, has_remove=False, library=self.lib)
+            chip.search_for_tag_action.setVisible(False)
+            chip.pinned_action.setVisible(False)
+            chip.favorite_action.setVisible(False)
+            if self.active_tag_filter_id == tag.id:
+                chip.bg_button.setText(f"✓ {tag.name}")
+            chip.bg_button.clicked.connect(lambda checked=False, tag_id=tag.id: self.apply_tag_filter(tag_id))
+            pinned_layout.addWidget(chip)
 
     def init_workers(self):
         """Init workers for rendering thumbnails."""
@@ -370,7 +422,8 @@ class QtDriver(DriverMixin, QObject):
             widget=TagDatabasePanel(self, self.lib),
             title=Translations["tag_manager.title"],
             done_callback=lambda checked=False: (
-                self.main_window.preview_panel.set_selection(self.selected, update_preview=False)
+                self.main_window.preview_panel.set_selection(self.selected, update_preview=False),
+                self.refresh_tag_filter_controls(),
             ),
             has_save=False,
         )
@@ -387,6 +440,24 @@ class QtDriver(DriverMixin, QObject):
                 self.main_window.preview_panel.set_selection(self.selected),
             )
         )
+        self.tags_filter_modal = TagSearchModal(
+            self.lib, is_tag_chooser=True, title=Translations["home.tags"]
+        )
+        self.tags_filter_modal.tsp.tag_chosen.connect(self.apply_tag_filter)
+        self.favorite_tags_filter_modal = TagSearchModal(
+            self.lib,
+            is_tag_chooser=True,
+            title=Translations["home.favorite_tags"],
+            tag_filter=lambda tag: tag.favorite,
+        )
+        self.favorite_tags_filter_modal.tsp.tag_chosen.connect(self.apply_tag_filter)
+
+        self.main_window.tags_button.clicked.connect(self.tags_filter_modal.show)
+        self.main_window.favorite_tags_button.clicked.connect(self.favorite_tags_filter_modal.show)
+        self.main_window.tags_button.setEnabled(False)
+        self.main_window.favorite_tags_button.setEnabled(False)
+        self.main_window.pinned_tags_title.setVisible(False)
+        self.main_window.pinned_tags_container.setVisible(False)
 
         # region Menu Bar
 
@@ -759,6 +830,7 @@ class QtDriver(DriverMixin, QObject):
         self.cached_values.sync()
 
         # Reset library state
+        self.active_tag_filter_id = None
         self.main_window.preview_panel.set_selection(self.selected)
         self.main_window.search_field.setText("")
         scrollbar: QScrollArea = self.main_window.entry_scroll_area
@@ -790,6 +862,12 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.preview_panel.set_selection(self.selected)
         self.main_window.toggle_landing_page(enabled=True)
         self.main_window.pagination.setHidden(True)
+        self.main_window.tags_button.setText(Translations["home.tags"])
+        self.main_window.favorite_tags_button.setText(Translations["home.favorite_tags"])
+        self.main_window.tags_button.setEnabled(False)
+        self.main_window.favorite_tags_button.setEnabled(False)
+        self.main_window.pinned_tags_title.setVisible(False)
+        self.main_window.pinned_tags_container.setVisible(False)
         try:
             self.main_window.menu_bar.save_library_backup_action.setEnabled(False)
             self.main_window.menu_bar.close_library_action.setEnabled(False)
@@ -864,6 +942,7 @@ class QtDriver(DriverMixin, QObject):
                     set(panel.alias_names),
                     set(panel.alias_ids),
                 ),
+                self.refresh_tag_filter_controls(),
                 self.modal.hide(),
             )
         )
@@ -1471,6 +1550,10 @@ class QtDriver(DriverMixin, QObject):
         if state:
             self.browsing_history.push(state)
 
+        current_query = (self.browsing_history.current.query or "").strip()
+        tag_match = re.fullmatch(r"tag_id:(\d+)", current_query)
+        self.active_tag_filter_id = int(tag_match.group(1)) if tag_match else None
+
         self.main_window.search_field.setText(self.browsing_history.current.query or "")
 
         # inform user about running search
@@ -1513,6 +1596,7 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.pagination.update_buttons(
             self.pages_count, self.browsing_history.current.page_index, emit=False
         )
+        self.refresh_tag_filter_controls()
 
     def remove_recent_library(self, item_key: str):
         self.cached_values.beginGroup(SettingItems.LIBS_LIST)
@@ -1684,6 +1768,8 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.menu_bar.clear_thumb_cache_action.setEnabled(True)
         self.main_window.menu_bar.folders_to_tags_action.setEnabled(True)
         self.main_window.menu_bar.library_info_action.setEnabled(True)
+        self.main_window.tags_button.setEnabled(True)
+        self.main_window.favorite_tags_button.setEnabled(True)
 
         self.main_window.preview_panel.set_selection(self.selected)
 
@@ -1694,6 +1780,7 @@ class QtDriver(DriverMixin, QObject):
             ascending=self.main_window.sorting_direction,
         )
         self.update_browsing_state(initial_state)
+        self.refresh_tag_filter_controls()
 
         self.main_window.toggle_landing_page(enabled=False)
         return open_status

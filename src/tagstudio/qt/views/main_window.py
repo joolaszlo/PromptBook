@@ -48,6 +48,7 @@ from tagstudio.qt.platform_strings import trash_term
 from tagstudio.qt.resource_manager import ResourceManager
 from tagstudio.qt.thumb_grid_layout import ThumbGridLayout
 from tagstudio.qt.translations import Translations
+from tagstudio.qt.views.layouts.flow_layout import FlowLayout
 
 # Only import for type checking/autocompletion, will not be imported at runtime.
 if typing.TYPE_CHECKING:
@@ -465,6 +466,15 @@ class MainWindow(QMainWindow):
         self.search_field_completer: QCompleter
         self.search_button: QPushButton
 
+        # initialized in setup_tag_filter_bar
+        self.tag_filter_layout: QVBoxLayout
+        self.tag_filter_selector_layout: QHBoxLayout
+        self.tags_button: QPushButton
+        self.favorite_tags_button: QPushButton
+        self.pinned_tags_title: QLabel
+        self.pinned_tags_container: QWidget
+        self.pinned_tags_layout: FlowLayout
+
         # initialized in setup_extra_input_bar
         self.extra_input_layout: QHBoxLayout
         self.sorting_mode_combobox: QComboBox
@@ -529,6 +539,7 @@ class MainWindow(QMainWindow):
         self.central_layout.setObjectName("central_layout")
 
         self.setup_search_bar()
+        self.setup_tag_filter_bar()
         self.setup_extra_input_bar()
         self.setup_content(driver)
         self.setCentralWidget(self.central_widget)
@@ -576,6 +587,39 @@ class MainWindow(QMainWindow):
         self.search_bar_layout.addWidget(self.search_button)
 
         self.central_layout.addLayout(self.search_bar_layout, 3, 0, 1, 1)
+
+    def setup_tag_filter_bar(self):
+        self.tag_filter_layout = QVBoxLayout()
+        self.tag_filter_layout.setObjectName("tag_filter_layout")
+        self.tag_filter_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.tag_filter_selector_layout = QHBoxLayout()
+        self.tag_filter_selector_layout.setObjectName("tag_filter_selector_layout")
+        self.tag_filter_selector_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.tags_button = QPushButton(Translations["home.tags"], self.central_widget)
+        self.tags_button.setObjectName("tags_button")
+        self.tags_button.setMinimumSize(QSize(0, 32))
+        self.tag_filter_selector_layout.addWidget(self.tags_button)
+
+        self.favorite_tags_button = QPushButton(Translations["home.favorite_tags"], self.central_widget)
+        self.favorite_tags_button.setObjectName("favorite_tags_button")
+        self.favorite_tags_button.setMinimumSize(QSize(0, 32))
+        self.tag_filter_selector_layout.addWidget(self.favorite_tags_button)
+        self.tag_filter_selector_layout.addStretch(1)
+
+        self.tag_filter_layout.addLayout(self.tag_filter_selector_layout)
+
+        self.pinned_tags_title = QLabel(Translations["home.pinned_tags"])
+        self.tag_filter_layout.addWidget(self.pinned_tags_title)
+
+        self.pinned_tags_container = QWidget()
+        self.pinned_tags_layout = FlowLayout(self.pinned_tags_container)
+        self.pinned_tags_layout.setSpacing(6)
+        self.pinned_tags_container.setLayout(self.pinned_tags_layout)
+        self.tag_filter_layout.addWidget(self.pinned_tags_container)
+
+        self.central_layout.addLayout(self.tag_filter_layout, 4, 0, 1, 1)
 
     def setup_extra_input_bar(self):
         """Sets up inputs for sorting settings and thumbnail size."""
