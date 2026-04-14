@@ -8,6 +8,7 @@
 from typing import Literal, override
 
 from PySide6.QtCore import QMargins, QPoint, QRect, QSize, Qt
+from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QLayout, QLayoutItem, QSizePolicy, QWidget
 
 IGNORE_SIZE = "ignore_size"
@@ -43,6 +44,24 @@ class FlowWidget(QWidget):
         if layout:
             return layout.minimumSize()
         return super().minimumSizeHint()
+
+    @override
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        width_changed = event.oldSize().width() != event.size().width()
+        super().resizeEvent(event)
+
+        layout = self.layout()
+        if layout is None or not width_changed:
+            return
+
+        layout.invalidate()
+        layout.setGeometry(self.contentsRect())
+
+        parent = self.parentWidget()
+        if parent is not None and parent.layout() is not None:
+            parent.layout().invalidate()
+
+        self.updateGeometry()
 
 
 class FlowLayout(QLayout):

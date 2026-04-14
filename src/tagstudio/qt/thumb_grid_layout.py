@@ -44,8 +44,10 @@ class ThumbGridLayout(QLayout):
         self._renderer.updated.connect(self._on_rendered)
         self._render_cutoff: float = 0.0
 
-        # _entry_ids[StartIndex:EndIndex]
-        self._last_page_update: tuple[int, int] | None = None
+        # Cache the last visible slice together with the local layout geometry that
+        # determines the column count. A width change must trigger a full reflow
+        # even when the same entry ids stay visible.
+        self._last_page_update: tuple[int, int, int, int, int] | None = None
 
         self._scroll_to: int | None = None
 
@@ -171,7 +173,7 @@ class ThumbGridLayout(QLayout):
 
         if width_offset == 0:
             return 0, 0, height_offset
-        per_row = int(width / width_offset)
+        per_row = max(1, int(width / width_offset))
 
         return per_row, width_offset, height_offset
 
@@ -192,7 +194,7 @@ class ThumbGridLayout(QLayout):
                 item.setGeometry(32_000, 32_000, 0, 0)
             return
 
-        per_row, width_offset, height_offset = self._size(rect.right())
+        per_row, width_offset, height_offset = self._size(rect.width())
         view_height = self.parentWidget().parentWidget().height()
         offset = self.scroll_area.verticalScrollBar().value()
         if self._scroll_to is not None:
@@ -219,9 +221,10 @@ class ThumbGridLayout(QLayout):
 
         start = max(0, start)
         end = min(len(self._entry_ids), end)
-        if (start, end) == self._last_page_update:
+        page_state = (start, end, rect.width(), per_row, height_offset)
+        if page_state == self._last_page_update:
             return
-        self._last_page_update = (start, end)
+        self._last_page_update = page_state
 
         # Clear render queue if len > 2 pages
         if len(self.driver.thumb_job_queue.queue) > (per_row * visible_rows * 2):

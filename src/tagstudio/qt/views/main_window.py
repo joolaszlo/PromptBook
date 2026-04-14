@@ -543,6 +543,9 @@ class MainWindow(QMainWindow):
         self.setup_tag_filter_bar()
         self.setup_extra_input_bar()
         self.setup_content(driver)
+        # Keep the filter rows compact and let the main content absorb extra height.
+        self.central_layout.setRowStretch(4, 0)
+        self.central_layout.setRowStretch(10, 1)
         self.setCentralWidget(self.central_widget)
 
     def setup_search_bar(self):
@@ -626,6 +629,7 @@ class MainWindow(QMainWindow):
         self.tag_filter_layout = QVBoxLayout()
         self.tag_filter_layout.setObjectName("tag_filter_layout")
         self.tag_filter_layout.setContentsMargins(0, 0, 0, 0)
+        self.tag_filter_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         self.tag_filter_selector_layout = QHBoxLayout()
         self.tag_filter_selector_layout.setObjectName("tag_filter_selector_layout")
@@ -645,6 +649,9 @@ class MainWindow(QMainWindow):
         self.tag_filter_layout.addLayout(self.tag_filter_selector_layout)
 
         self.pinned_tags_title = QLabel(Translations["home.pinned_tags"])
+        self.pinned_tags_title.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         self.tag_filter_layout.addWidget(self.pinned_tags_title)
 
         self.pinned_tags_container = FlowWidget()
