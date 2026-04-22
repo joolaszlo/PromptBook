@@ -4,11 +4,15 @@
 
 
 from PySide6.QtGui import QGuiApplication
+from pytestqt.qtbot import QtBot
 
 from tagstudio.core.library.alchemy.fields import FieldID
 from tagstudio.core.library.alchemy.library import Library
 from tagstudio.core.library.alchemy.models import Entry
+from tagstudio.core.utils.types import unwrap
 from tagstudio.qt.controllers.preview_panel_controller import PreviewPanel
+from tagstudio.qt.mixed.file_attributes import FileAttributeData
+from tagstudio.qt.mixed.settings_panel import SettingsPanel
 from tagstudio.qt.ts_qt import QtDriver
 
 
@@ -88,3 +92,76 @@ def test_edit_prompt_button_adds_missing_prompt_field(
     updated_entry = library.get_entry_full(entry_full.id)
     assert updated_entry is not None
     assert any(f.type.key == FieldID.DESCRIPTION.name for f in updated_entry.fields)
+
+
+def test_preview_metadata_hidden_by_default(qt_driver: QtDriver, library: Library):
+    panel = PreviewPanel(library, qt_driver)
+
+    qt_driver.toggle_item_selection(2, append=False, bridge=False)
+    panel.set_selection(qt_driver.selected)
+    file_attributes = panel._file_attributes_widget  # pyright: ignore[reportPrivateUsage]
+
+    assert file_attributes.date_created_label.isHidden()
+    assert file_attributes.date_modified_label.isHidden()
+    assert file_attributes.file_label.isHidden()
+    assert file_attributes.dimensions_label.isHidden()
+
+
+def test_preview_metadata_settings_show_sections(qt_driver: QtDriver, library: Library):
+    panel = PreviewPanel(library, qt_driver)
+    qt_driver.settings.show_preview_created_date = True
+    qt_driver.settings.show_preview_modified_date = True
+    qt_driver.settings.show_preview_filename = True
+    qt_driver.settings.show_preview_media_info = True
+
+    qt_driver.toggle_item_selection(2, append=False, bridge=False)
+    panel.set_selection(qt_driver.selected)
+    file_attributes = panel._file_attributes_widget  # pyright: ignore[reportPrivateUsage]
+
+    assert not file_attributes.date_created_label.isHidden()
+    assert not file_attributes.date_modified_label.isHidden()
+    assert not file_attributes.file_label.isHidden()
+    assert not file_attributes.dimensions_label.isHidden()
+
+
+def test_settings_panel_preview_metadata_controls(qtbot: QtBot, qt_driver: QtDriver):
+    settings_panel = SettingsPanel(qt_driver)
+    qtbot.addWidget(settings_panel)
+
+    assert not settings_panel.show_preview_created_date_checkbox.isChecked()
+    assert not settings_panel.show_preview_modified_date_checkbox.isChecked()
+    assert not settings_panel.show_preview_filename_checkbox.isChecked()
+    assert not settings_panel.show_preview_media_info_checkbox.isChecked()
+
+    settings_panel.show_preview_created_date_checkbox.setChecked(True)
+    settings_panel.show_preview_modified_date_checkbox.setChecked(True)
+    settings_panel.show_preview_filename_checkbox.setChecked(True)
+    settings_panel.show_preview_media_info_checkbox.setChecked(True)
+
+    settings = settings_panel.get_settings()
+    assert settings["show_preview_created_date"]
+    assert settings["show_preview_modified_date"]
+    assert settings["show_preview_filename"]
+    assert settings["show_preview_media_info"]
+
+
+def test_preview_metadata_settings_hide_sections_independently(
+    qt_driver: QtDriver, library: Library
+):
+    panel = PreviewPanel(library, qt_driver)
+    file_attributes = panel._file_attributes_widget  # pyright: ignore[reportPrivateUsage]
+    filepath = unwrap(library.library_dir) / "metadata.jpg"
+    stats = FileAttributeData(width=100, height=50)
+
+    qt_driver.settings.show_preview_created_date = True
+    qt_driver.settings.show_preview_modified_date = False
+    qt_driver.settings.show_preview_filename = True
+    qt_driver.settings.show_preview_media_info = False
+
+    file_attributes.update_date_label(filepath)
+    file_attributes.update_stats(filepath, stats)
+
+    assert not file_attributes.date_created_label.isHidden()
+    assert file_attributes.date_modified_label.isHidden()
+    assert not file_attributes.file_label.isHidden()
+    assert file_attributes.dimensions_label.isHidden()

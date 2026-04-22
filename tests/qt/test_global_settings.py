@@ -8,8 +8,8 @@ from pathlib import Path
 from tagstudio.qt.global_settings import GlobalSettings, Theme
 
 
-def test_read_settings(library_dir: Path):
-    settings_path = library_dir / "settings.toml"
+def test_read_settings(tmp_path: Path):
+    settings_path = tmp_path / "settings.toml"
     with open(settings_path, "w") as settings_file:
         settings_file.write("""
             language = "de"
@@ -35,3 +35,24 @@ def test_read_settings(library_dir: Path):
     assert settings.date_format == "%x"
     assert settings.hour_format
     assert settings.zero_padding
+    assert not settings.show_preview_created_date
+    assert not settings.show_preview_modified_date
+    assert not settings.show_preview_filename
+    assert not settings.show_preview_media_info
+
+
+def test_preview_metadata_settings_persist(tmp_path: Path):
+    settings_path = tmp_path / "settings.toml"
+    settings = GlobalSettings(loaded_from=settings_path)
+    settings.show_preview_created_date = True
+    settings.show_preview_modified_date = True
+    settings.show_preview_filename = True
+    settings.show_preview_media_info = True
+
+    settings.save()
+
+    saved_settings = GlobalSettings.read_settings(settings_path)
+    assert saved_settings.show_preview_created_date
+    assert saved_settings.show_preview_modified_date
+    assert saved_settings.show_preview_filename
+    assert saved_settings.show_preview_media_info

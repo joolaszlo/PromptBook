@@ -183,6 +183,41 @@ class SettingsPanel(PanelWidget):
             Translations["settings.show_filenames_in_grid"], self.show_filenames_checkbox
         )
 
+        # Preview Panel Metadata
+        self.show_preview_created_date_checkbox = QCheckBox()
+        self.show_preview_created_date_checkbox.setChecked(
+            self.driver.settings.show_preview_created_date
+        )
+        form_layout.addRow(
+            Translations["settings.show_preview_created_date"],
+            self.show_preview_created_date_checkbox,
+        )
+
+        self.show_preview_modified_date_checkbox = QCheckBox()
+        self.show_preview_modified_date_checkbox.setChecked(
+            self.driver.settings.show_preview_modified_date
+        )
+        form_layout.addRow(
+            Translations["settings.show_preview_modified_date"],
+            self.show_preview_modified_date_checkbox,
+        )
+
+        self.show_preview_filename_checkbox = QCheckBox()
+        self.show_preview_filename_checkbox.setChecked(self.driver.settings.show_preview_filename)
+        form_layout.addRow(
+            Translations["settings.show_preview_filename"],
+            self.show_preview_filename_checkbox,
+        )
+
+        self.show_preview_media_info_checkbox = QCheckBox()
+        self.show_preview_media_info_checkbox.setChecked(
+            self.driver.settings.show_preview_media_info
+        )
+        form_layout.addRow(
+            Translations["settings.show_preview_media_info"],
+            self.show_preview_media_info_checkbox,
+        )
+
         # Infinite Scrolling
         self.infinite_scroll = QCheckBox()
         self.infinite_scroll.setChecked(self.driver.settings.infinite_scroll)
@@ -296,6 +331,10 @@ class SettingsPanel(PanelWidget):
             ),
             "autoplay": self.autoplay_checkbox.isChecked(),
             "show_filenames_in_grid": self.show_filenames_checkbox.isChecked(),
+            "show_preview_created_date": self.show_preview_created_date_checkbox.isChecked(),
+            "show_preview_modified_date": self.show_preview_modified_date_checkbox.isChecked(),
+            "show_preview_filename": self.show_preview_filename_checkbox.isChecked(),
+            "show_preview_media_info": self.show_preview_media_info_checkbox.isChecked(),
             "page_size": int(self.page_size_line_edit.text()),
             "infinite_scroll": self.infinite_scroll.isChecked(),
             "show_filepath": self.filepath_combobox.currentData(),
@@ -316,6 +355,10 @@ class SettingsPanel(PanelWidget):
         driver.settings.generate_thumbs = settings["generate_thumbs"]
         driver.settings.thumb_cache_size = settings["thumb_cache_size"]
         driver.settings.show_filenames_in_grid = settings["show_filenames_in_grid"]
+        driver.settings.show_preview_created_date = settings["show_preview_created_date"]
+        driver.settings.show_preview_modified_date = settings["show_preview_modified_date"]
+        driver.settings.show_preview_filename = settings["show_preview_filename"]
+        driver.settings.show_preview_media_info = settings["show_preview_media_info"]
         driver.settings.page_size = settings["page_size"]
         driver.settings.infinite_scroll = settings["infinite_scroll"]
         driver.settings.show_filepath = settings["show_filepath"]

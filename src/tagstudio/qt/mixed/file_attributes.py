@@ -103,6 +103,7 @@ class FileAttributes(QWidget):
         date_layout.setSpacing(0)
         date_layout.addWidget(self.date_created_label)
         date_layout.addWidget(self.date_modified_label)
+        self.date_container.setHidden(True)
 
         root_layout.addWidget(self.file_label)
         root_layout.addWidget(self.date_container)
@@ -110,8 +111,16 @@ class FileAttributes(QWidget):
         self.library = library
         self.driver = driver
 
+    def _update_date_container_visibility(self) -> None:
+        self.date_container.setHidden(
+            self.date_created_label.isHidden() and self.date_modified_label.isHidden()
+        )
+
     def update_date_label(self, filepath: Path | None = None) -> None:
         """Update the "Date Created" and "Date Modified" file property labels."""
+        show_created_date = self.driver.settings.show_preview_created_date
+        show_modified_date = self.driver.settings.show_preview_modified_date
+
         if filepath and filepath.is_file():
             created: dt
             if platform.system() == "Windows" or platform.system() == "Darwin":
@@ -127,8 +136,8 @@ class FileAttributes(QWidget):
                 f"<b>{Translations['file.date_modified']}:</b> "
                 f"{self.driver.settings.format_datetime(modified)}"
             )
-            self.date_created_label.setHidden(False)
-            self.date_modified_label.setHidden(False)
+            self.date_created_label.setHidden(not show_created_date)
+            self.date_modified_label.setHidden(not show_modified_date)
         elif filepath:
             self.date_created_label.setText(
                 f"<b>{Translations['file.date_created']}:</b> <i>N/A</i>"
@@ -136,11 +145,12 @@ class FileAttributes(QWidget):
             self.date_modified_label.setText(
                 f"<b>{Translations['file.date_modified']}:</b> <i>N/A</i>"
             )
-            self.date_created_label.setHidden(False)
-            self.date_modified_label.setHidden(False)
+            self.date_created_label.setHidden(not show_created_date)
+            self.date_modified_label.setHidden(not show_modified_date)
         else:
             self.date_created_label.setHidden(True)
             self.date_modified_label.setHidden(True)
+        self._update_date_container_visibility()
 
     def update_stats(self, filepath: Path | None = None, stats: FileAttributeData | None = None):
         """Render the panel widgets with the newest data from the Library."""
@@ -151,11 +161,15 @@ class FileAttributes(QWidget):
             self.layout().setSpacing(0)
             self.file_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.file_label.setText(f"<i>{Translations['preview.no_selection']}</i>")
+            self.file_label.setHidden(False)
             self.file_label.set_file_path(Path())
             self.file_label.setCursor(Qt.CursorShape.ArrowCursor)
             self.dimensions_label.setText("")
             self.dimensions_label.setHidden(True)
         else:
+            show_filename = self.driver.settings.show_preview_filename
+            show_media_info = self.driver.settings.show_preview_media_info
+
             ext = filepath.suffix.lower()
             display_path = filepath
             if self.driver.settings.show_filepath == ShowFilepathOption.SHOW_FULL_PATHS:
@@ -168,7 +182,8 @@ class FileAttributes(QWidget):
             self.layout().setSpacing(6)
             self.file_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
             self.file_label.set_file_path(filepath)
-            self.dimensions_label.setHidden(False)
+            self.file_label.setHidden(not show_filename)
+            self.dimensions_label.setHidden(not show_media_info)
 
             file_str: str = ""
             separator: str = f"<a style='color: #777777'><b>{os.path.sep}</a>"  # Gray
@@ -263,6 +278,7 @@ class FileAttributes(QWidget):
         self.layout().setSpacing(0)
         self.file_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.file_label.setText(Translations.format("preview.multiple_selection", count=count))
+        self.file_label.setHidden(False)
         self.file_label.setCursor(Qt.CursorShape.ArrowCursor)
         self.file_label.set_file_path(Path())
         self.dimensions_label.setText("")
