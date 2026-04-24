@@ -11,7 +11,7 @@ import structlog
 from PIL import Image, ImageQt
 from PySide6 import QtCore
 from PySide6.QtCore import QMetaObject, QSize, QStringListModel, Qt
-from PySide6.QtGui import QAction, QColor, QPixmap
+from PySide6.QtGui import QAction, QColor, QPixmap, QResizeEvent
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -444,6 +444,10 @@ class MainMenuBar(QMenuBar):
 
 # View Component
 class MainWindow(QMainWindow):
+    SEARCH_FIELD_MAX_WIDTH_RATIO = 0.52
+    SEARCH_FIELD_MAX_WIDTH_CAP = 760
+    SEARCH_FIELD_MIN_MAX_WIDTH = 140
+
     THUMB_SIZES: list[tuple[str, int]] = [
         (Translations["home.thumbnail_size.extra_large"], 256),
         (Translations["home.thumbnail_size.large"], 192),
@@ -522,6 +526,22 @@ class MainWindow(QMainWindow):
         # self.windowFX = WindowEffect()
         # self.windowFX.setAcrylicEffect(self.winId(), isEnableShadow=False)
 
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        super().resizeEvent(event)
+        self._update_top_toolbar_widths()
+
+    def _update_top_toolbar_widths(self) -> None:
+        if not hasattr(self, "search_field"):
+            return
+
+        responsive_width = int(self.central_widget.width() * self.SEARCH_FIELD_MAX_WIDTH_RATIO)
+        self.search_field.setMaximumWidth(
+            max(
+                self.SEARCH_FIELD_MIN_MAX_WIDTH,
+                min(self.SEARCH_FIELD_MAX_WIDTH_CAP, responsive_width),
+            )
+        )
+
     # region UI Setup Methods
 
     # region Menu Bar
@@ -578,24 +598,31 @@ class MainWindow(QMainWindow):
         self.search_field.setPlaceholderText(Translations["home.search_entries"])
         self.search_field.setObjectName("search_field")
         self.search_field.setMinimumSize(QSize(0, 32))
+        self.search_field.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         self.search_field_completion_list = QStringListModel()
         self.search_field_completer = QCompleter(
             self.search_field_completion_list, self.search_field
         )
         self.search_field_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.search_field.setCompleter(self.search_field_completer)
-        self.search_bar_layout.addWidget(self.search_field)
+        self.search_bar_layout.addWidget(self.search_field, 3)
 
         self.search_button = QPushButton(Translations["home.search"], self.central_widget)
         self.search_button.setObjectName("search_button")
         self.search_button.setMinimumSize(QSize(0, 32))
+        self.search_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.search_bar_layout.addWidget(self.search_button)
 
-        self.add_entry_button = QPushButton("Add New Entry", self.central_widget)
+        self.search_bar_layout.addStretch(1)
+
+        self.add_entry_button = QPushButton("Add Prompt", self.central_widget)
         self.add_entry_button.setObjectName("add_entry_button")
         self.add_entry_button.setMinimumSize(QSize(0, 32))
         self.add_entry_button.setEnabled(False)
         self.add_entry_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.add_entry_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.add_entry_button.setStyleSheet(
             f"QPushButton{{"
             f"background-color: {get_ui_color(ColorType.PRIMARY, UiColor.BLUE)};"
@@ -622,7 +649,9 @@ class MainWindow(QMainWindow):
             f"color: #7a7a7a;"
             f"}}"
         )
+        self.add_entry_button.setMaximumWidth(self.add_entry_button.sizeHint().width())
         self.search_bar_layout.addWidget(self.add_entry_button)
+        self._update_top_toolbar_widths()
 
         self.central_layout.addLayout(self.search_bar_layout, 3, 0, 1, 1)
 
@@ -641,7 +670,9 @@ class MainWindow(QMainWindow):
         self.tags_button.setMinimumSize(QSize(0, 32))
         self.tag_filter_selector_layout.addWidget(self.tags_button)
 
-        self.favorite_tags_button = QPushButton(Translations["home.favorite_tags"], self.central_widget)
+        self.favorite_tags_button = QPushButton(
+            Translations["home.favorite_tags"], self.central_widget
+        )
         self.favorite_tags_button.setObjectName("favorite_tags_button")
         self.favorite_tags_button.setMinimumSize(QSize(0, 32))
         self.tag_filter_selector_layout.addWidget(self.favorite_tags_button)

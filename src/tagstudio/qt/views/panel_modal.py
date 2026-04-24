@@ -6,6 +6,7 @@
 from collections.abc import Callable
 from typing import override
 
+from sqlalchemy import event
 import structlog
 from PySide6 import QtCore, QtGui
 from PySide6.QtCore import Qt, Signal
@@ -101,10 +102,14 @@ class PanelModal(QWidget):
 
     @override
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        if self.cancel_button:
-            self.cancel_button.click()
-        elif self.done_button:
-            self.done_button.click()
+        cancel_button = getattr(self, "cancel_button", None)
+        done_button = getattr(self, "done_button", None)
+
+        if cancel_button:
+            cancel_button.click()
+        elif done_button:
+            done_button.click()
+
         event.accept()
 
 
