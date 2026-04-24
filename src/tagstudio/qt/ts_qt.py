@@ -93,7 +93,11 @@ from tagstudio.qt.mixed.settings_panel import SettingsPanel
 from tagstudio.qt.mixed.tag_color_manager import TagColorManager
 from tagstudio.qt.mixed.tag_database import TagDatabasePanel
 from tagstudio.qt.mixed.tag_search import TagSearchModal
-from tagstudio.qt.mixed.tag_widget import TagWidget, resolve_selected_tag_highlight_color
+from tagstudio.qt.mixed.tag_widget import (
+    TagWidget,
+    apply_selection_dot_indicator,
+    resolve_selected_tag_highlight_color,
+)
 from tagstudio.qt.models.palette import ColorType, UiColor, get_ui_color
 from tagstudio.qt.platform_strings import trash_term
 from tagstudio.qt.previews.vendored.ffmpeg import FFMPEG_CMD, FFPROBE_CMD
@@ -311,26 +315,9 @@ class QtDriver(DriverMixin, QObject):
         return tag_ids
 
     def _set_tag_filter_button_highlight(self, button: QPushButton, highlighted: bool) -> None:
-        if not highlighted:
-            button.setStyleSheet("")
-            return
-
         border_color = self.get_tag_filter_highlight_color()
-        fill_color = QColor(border_color)
-        fill_color.setAlpha(28)
-        hover_fill_color = QColor(border_color)
-        hover_fill_color.setAlpha(42)
-        button.setStyleSheet(
-            f"QPushButton{{"
-            f"border: 2px solid rgba{border_color.toTuple()};"
-            f"border-radius: 6px;"
-            f"background: rgba{fill_color.toTuple()};"
-            f"}}"
-            f"QPushButton:hover{{"
-            f"border-color: rgba{border_color.toTuple()};"
-            f"background: rgba{hover_fill_color.toTuple()};"
-            f"}}"
-        )
+        apply_selection_dot_indicator(button, border_color, highlighted)
+        button.setStyleSheet("")
 
     def apply_tag_filter(self, tag_id: int):
         """Toggle a tag inside the shared active tag filter state."""

@@ -157,10 +157,23 @@ def test_refresh_tag_filter_controls_stable_labels_and_highlights(qtbot, qt_driv
     assert qt_driver.main_window.favorite_tags_button.text() == "Favorite Tags"
     assert qt_driver.main_window.reset_tag_selection_button.text() == "Reset Selection"
     assert qt_driver.main_window.reset_tag_selection_button.isEnabled()
-    assert qt_driver.main_window.tags_button.styleSheet()
-    assert qt_driver.main_window.favorite_tags_button.styleSheet()
+    assert qt_driver.main_window.tags_button.styleSheet() == ""
+    assert qt_driver.main_window.favorite_tags_button.styleSheet() == ""
+    assert qt_driver.main_window.reset_tag_selection_button.styleSheet() == ""
+    assert qt_driver.main_window.tags_button.graphicsEffect() is None
+    assert qt_driver.main_window.favorite_tags_button.graphicsEffect() is None
+    assert not qt_driver.main_window.tags_button._selection_dot_indicator.isHidden()
+    assert not qt_driver.main_window.favorite_tags_button._selection_dot_indicator.isHidden()
+    assert not hasattr(
+        qt_driver.main_window.reset_tag_selection_button, "_selection_dot_indicator"
+    )
+    assert qt_driver.main_window.tags_button.minimumWidth() >= tags_button.sizeHint().width()
+    assert qt_driver.main_window.favorite_tags_button.minimumWidth() >= (
+        favorite_tags_button.sizeHint().width()
+    )
     assert qt_driver.main_window.pinned_tags_layout.count() == 1
 
     chip = qt_driver.main_window.pinned_tags_layout.itemAt(0).widget()
     assert isinstance(chip, TagWidget)
-    assert "border-width: 3px;" in chip.bg_button.styleSheet()
+    assert "border-width: 2px;" in chip.bg_button.styleSheet()
+    assert chip.bg_button.graphicsEffect() is not None

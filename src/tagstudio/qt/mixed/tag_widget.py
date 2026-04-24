@@ -7,14 +7,21 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, override
 
 import structlog
-from PySide6.QtCore import QEvent, QSignalBlocker, Qt, Signal
-from PySide6.QtGui import QAction, QColor, QEnterEvent, QFontMetrics
-from PySide6.QtWidgets import QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtCore import QEvent, QObject, QRectF, QSignalBlocker, Qt, Signal
+from PySide6.QtGui import QAction, QColor, QEnterEvent, QFontMetrics, QPainter, QPaintEvent
+from PySide6.QtWidgets import (
+    QGraphicsDropShadowEffect,
+    QHBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from tagstudio.core.library.alchemy.enums import TagColorEnum
 from tagstudio.core.library.alchemy.models import Tag
-from tagstudio.qt.helpers.escape_text import escape_text
 from tagstudio.qt.global_settings import DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR
+from tagstudio.qt.helpers.escape_text import escape_text
 from tagstudio.qt.models.palette import ColorType, get_tag_color
 from tagstudio.qt.translations import Translations
 
@@ -94,6 +101,55 @@ class TagAliasWidget(QWidget):
     def leaveEvent(self, event: QEvent) -> None:
         self.update()
         return super().leaveEvent(event)
+
+
+class SelectionDotIndicator(QWidget):
+    DOT_SIZE = 6
+    SPACING = 6
+
+    def __init__(self, parent: QWidget, color: QColor) -> None:
+        super().__init__(parent)
+        self._color = QColor(color)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground)
+        parent.installEventFilter(self)
+        self.hide()
+
+    def set_color(self, color: QColor) -> None:
+        self._color = QColor(color)
+        self.update()
+
+    @override
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if watched == self.parentWidget() and event.type() in {
+            QEvent.Type.FontChange,
+            QEvent.Type.Resize,
+            QEvent.Type.Show,
+        }:
+            parent = self.parentWidget()
+            if parent:
+                self.setGeometry(parent.rect())
+        return super().eventFilter(watched, event)
+
+    @override
+    def paintEvent(self, event: QPaintEvent) -> None:
+        parent = self.parentWidget()
+        if not parent:
+            return
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        font_metrics = QFontMetrics(parent.font())
+        text_width = font_metrics.horizontalAdvance(parent.text())
+        size = self.DOT_SIZE
+        x = (self.width() + text_width) / 2 + self.SPACING
+        y = (self.height() - size) / 2
+        x = min(x, self.width() - size - self.SPACING)
+
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(get_selection_glow_color(self._color, 255))
+        painter.drawEllipse(QRectF(x, y, size, size))
 
 
 class TagWidget(QWidget):
@@ -244,15 +300,19 @@ class TagWidget(QWidget):
 
         effective_border_color = border_color
         hover_border_color = highlight_color
+        selected_glow_color = get_selection_glow_color(self._selected_border_color)
+        selected_fill_color = get_selection_fill_color(self._selected_border_color)
+        selected_hover_fill_color = get_selection_fill_color(self._selected_border_color, 68)
         border_width = 2
         if self._selected:
             effective_border_color = QColor(self._selected_border_color)
             hover_border_color = get_selection_hover_color(effective_border_color)
-            border_width = 3
+        apply_selection_glow(self.bg_button, selected_glow_color, self._selected)
 
+        selected_bg_color = selected_fill_color if self._selected else primary_color
         self.bg_button.setStyleSheet(
             f"QPushButton{{"
-            f"background: rgba{primary_color.toTuple()};"
+            f"background: rgba{selected_bg_color.toTuple()};"
             f"color: rgba{text_color.toTuple()};"
             f"font-weight: 600;"
             f"border-color: rgba{effective_border_color.toTuple()};"
@@ -265,6 +325,8 @@ class TagWidget(QWidget):
             f"}}"
             f"QPushButton::hover{{"
             f"border-color: rgba{hover_border_color.toTuple()};"
+            f"background: rgba"
+            f"{(selected_hover_fill_color if self._selected else primary_color).toTuple()};"
             f"}}"
             f"QPushButton::pressed{{"
             f"background: rgba{highlight_color.toTuple()};"
@@ -360,11 +422,68 @@ def get_selection_hover_color(selection_color: QColor) -> QColor:
     hover_color = hover_color.toHsl()
     hover_color.setHsl(
         hover_color.hue(),
-        hover_color.saturation(),
-        min(hover_color.lightness() + 20, 255),
+        max(hover_color.saturation(), 220),
+        min(max(hover_color.lightness(), 190) + 24, 255),
         255,
     )
     return hover_color.toRgb()
+
+
+def get_selection_glow_color(selection_color: QColor, alpha: int = 210) -> QColor:
+    glow_color = QColor(selection_color)
+    glow_color = glow_color.toHsl()
+    glow_color.setHsl(
+        glow_color.hue(),
+        max(glow_color.saturation(), 235),
+        min(max(glow_color.lightness(), 205), 245),
+        max(0, min(alpha, 255)),
+    )
+    return glow_color.toRgb()
+
+
+def get_selection_fill_color(selection_color: QColor, alpha: int = 48) -> QColor:
+    fill_color = get_selection_glow_color(selection_color, alpha)
+    fill_color.setAlpha(max(0, min(alpha, 255)))
+    return fill_color
+
+
+def apply_selection_glow(widget: QWidget, color: QColor, enabled: bool) -> None:
+    if not enabled:
+        widget.setGraphicsEffect(None)
+        return
+
+    glow_color = QColor(color)
+    glow_color.setAlpha(190)
+    glow = QGraphicsDropShadowEffect(widget)
+    glow.setBlurRadius(18)
+    glow.setOffset(0, 0)
+    glow.setColor(glow_color)
+    widget.setGraphicsEffect(glow)
+
+
+def reserve_selection_dot_space(widget: QPushButton) -> None:
+    reserved_width = (
+        widget.sizeHint().width()
+        + SelectionDotIndicator.DOT_SIZE
+        + (SelectionDotIndicator.SPACING * 2)
+    )
+    widget.setMinimumWidth(max(widget.minimumWidth(), reserved_width))
+
+
+def apply_selection_dot_indicator(widget: QPushButton, color: QColor, enabled: bool) -> None:
+    indicator = getattr(widget, "_selection_dot_indicator", None)
+    reserve_selection_dot_space(widget)
+    if indicator is None and not enabled:
+        return
+    if indicator is None:
+        indicator = SelectionDotIndicator(widget, color)
+        widget._selection_dot_indicator = indicator
+
+    indicator.set_color(color)
+    indicator.setGeometry(widget.rect())
+    indicator.setVisible(enabled)
+    if enabled:
+        indicator.raise_()
 
 
 def get_text_color(primary_color: QColor, highlight_color: QColor) -> QColor:
