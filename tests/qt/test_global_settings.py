@@ -5,7 +5,11 @@
 
 from pathlib import Path
 
-from tagstudio.qt.global_settings import GlobalSettings, Theme
+from tagstudio.qt.global_settings import (
+    DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR,
+    GlobalSettings,
+    Theme,
+)
 
 
 def test_read_settings(tmp_path: Path):
@@ -39,6 +43,7 @@ def test_read_settings(tmp_path: Path):
     assert not settings.show_preview_modified_date
     assert not settings.show_preview_filename
     assert not settings.show_preview_media_info
+    assert settings.selected_tag_highlight_color == DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR
 
 
 def test_preview_metadata_settings_persist(tmp_path: Path):
@@ -56,3 +61,14 @@ def test_preview_metadata_settings_persist(tmp_path: Path):
     assert saved_settings.show_preview_modified_date
     assert saved_settings.show_preview_filename
     assert saved_settings.show_preview_media_info
+
+
+def test_selected_tag_highlight_color_persists(tmp_path: Path):
+    settings_path = tmp_path / "settings.toml"
+    settings = GlobalSettings(loaded_from=settings_path)
+    settings.selected_tag_highlight_color = "#12ab34"
+
+    settings.save()
+
+    saved_settings = GlobalSettings.read_settings(settings_path)
+    assert saved_settings.selected_tag_highlight_color == "#12ab34"

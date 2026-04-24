@@ -50,11 +50,18 @@ class TagSearchModal(PanelModal):
         is_tag_chooser: bool = True,
         title: str | None = None,
         tag_filter: Callable[[Tag], bool] | None = None,
+        show_filter_selection: bool = False,
         done_callback=None,
         save_callback=None,
         has_save=False,
     ):
-        self.tsp = TagSearchPanel(library, exclude, is_tag_chooser, tag_filter=tag_filter)
+        self.tsp = TagSearchPanel(
+            library,
+            exclude,
+            is_tag_chooser,
+            tag_filter=tag_filter,
+            show_filter_selection=show_filter_selection,
+        )
         super().__init__(
             self.tsp,
             title or Translations["tag.add.plural"],
@@ -84,12 +91,14 @@ class TagSearchPanel(PanelWidget):
         exclude: list[int] | None = None,
         is_tag_chooser: bool = True,
         tag_filter: Callable[[Tag], bool] | None = None,
+        show_filter_selection: bool = False,
     ):
         super().__init__()
         self.lib = library
         self.driver = None
         self.exclude = exclude or []
         self.tag_filter = tag_filter
+        self.show_filter_selection = show_filter_selection
 
         self.is_tag_chooser = is_tag_chooser
         self.create_button_in_layout: bool = False
@@ -320,13 +329,28 @@ class TagSearchPanel(PanelWidget):
         tag_id = tag.id
         tag_widget.on_edit.connect(lambda t=tag: self.edit_tag(t))
         tag_widget.on_remove.connect(lambda t=tag: self.delete_tag(t))
-        tag_widget.bg_button.clicked.connect(lambda: self.tag_chosen.emit(tag_id))
+        if self.show_filter_selection:
+            tag_widget.bg_button.clicked.connect(
+                lambda checked=False, tag_id=tag_id: (
+                    self.tag_chosen.emit(tag_id),
+                    self.update_tags(self.search_field.text()),
+                )
+            )
+        else:
+            tag_widget.bg_button.clicked.connect(lambda: self.tag_chosen.emit(tag_id))
         tag_widget.pinned_action.toggled.connect(
             lambda checked, tag_id=tag_id: self.set_tag_flag(tag_id, "pinned", checked)
         )
         tag_widget.favorite_action.toggled.connect(
             lambda checked, tag_id=tag_id: self.set_tag_flag(tag_id, "favorite", checked)
         )
+        if self.show_filter_selection and self.driver is not None:
+            tag_widget.set_selected(
+                self.driver.is_tag_filter_selected(tag_id),
+                self.driver.get_tag_filter_highlight_color(),
+            )
+        else:
+            tag_widget.set_selected(False)
 
         if self.driver is not None:
             tag_widget.search_for_tag_action.triggered.connect(

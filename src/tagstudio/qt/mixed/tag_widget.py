@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout, 
 from tagstudio.core.library.alchemy.enums import TagColorEnum
 from tagstudio.core.library.alchemy.models import Tag
 from tagstudio.qt.helpers.escape_text import escape_text
+from tagstudio.qt.global_settings import DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR
 from tagstudio.qt.models.palette import ColorType, get_tag_color
 from tagstudio.qt.translations import Translations
 
@@ -117,6 +118,8 @@ class TagWidget(QWidget):
         self.lib: Library | None = library
         self.has_edit = has_edit
         self.has_remove = has_remove
+        self._selected = False
+        self._selected_border_color = resolve_selected_tag_highlight_color()
 
         # if on_click_callback:
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -199,6 +202,29 @@ class TagWidget(QWidget):
         if not tag:
             return
 
+        self._apply_style()
+
+        if self.lib:
+            self.bg_button.setText(escape_text(self.lib.tag_display_name(tag)))
+        else:
+            self.bg_button.setText(escape_text(tag.name))
+
+        pinned_blocker = QSignalBlocker(self.pinned_action)
+        favorite_blocker = QSignalBlocker(self.favorite_action)
+        self.pinned_action.setChecked(tag.pinned)
+        self.favorite_action.setChecked(tag.favorite)
+
+    def set_selected(self, selected: bool, border_color: QColor | None = None) -> None:
+        self._selected = selected
+        self._selected_border_color = resolve_selected_tag_highlight_color(border_color)
+        if self.tag:
+            self._apply_style()
+
+    def _apply_style(self) -> None:
+        tag = self.tag
+        if not tag:
+            return
+
         primary_color = get_primary_color(tag)
         border_color = (
             get_border_color(primary_color)
@@ -216,26 +242,34 @@ class TagWidget(QWidget):
         else:
             text_color = get_text_color(primary_color, highlight_color)
 
+        effective_border_color = border_color
+        hover_border_color = highlight_color
+        border_width = 2
+        if self._selected:
+            effective_border_color = QColor(self._selected_border_color)
+            hover_border_color = get_selection_hover_color(effective_border_color)
+            border_width = 3
+
         self.bg_button.setStyleSheet(
             f"QPushButton{{"
             f"background: rgba{primary_color.toTuple()};"
             f"color: rgba{text_color.toTuple()};"
             f"font-weight: 600;"
-            f"border-color: rgba{border_color.toTuple()};"
+            f"border-color: rgba{effective_border_color.toTuple()};"
             f"border-radius: 6px;"
             f"border-style:solid;"
-            f"border-width: 2px;"
+            f"border-width: {border_width}px;"
             f"padding-right: 4px;"
             f"padding-left: 4px;"
             f"font-size: 13px"
             f"}}"
             f"QPushButton::hover{{"
-            f"border-color: rgba{highlight_color.toTuple()};"
+            f"border-color: rgba{hover_border_color.toTuple()};"
             f"}}"
             f"QPushButton::pressed{{"
             f"background: rgba{highlight_color.toTuple()};"
             f"color: rgba{primary_color.toTuple()};"
-            f"border-color: rgba{primary_color.toTuple()};"
+            f"border-color: rgba{effective_border_color.toTuple()};"
             f"}}"
             f"QPushButton::focus{{"
             f"padding-right: 0px;"
@@ -274,16 +308,6 @@ class TagWidget(QWidget):
             f"outline:none;"
             f"}}"
         )
-
-        if self.lib:
-            self.bg_button.setText(escape_text(self.lib.tag_display_name(tag)))
-        else:
-            self.bg_button.setText(escape_text(tag.name))
-
-        pinned_blocker = QSignalBlocker(self.pinned_action)
-        favorite_blocker = QSignalBlocker(self.favorite_action)
-        self.pinned_action.setChecked(tag.pinned)
-        self.favorite_action.setChecked(tag.favorite)
 
     def set_has_remove(self, has_remove: bool):
         self.has_remove = has_remove
@@ -331,6 +355,18 @@ def get_highlight_color(primary_color: QColor) -> QColor:
     return highlight_color
 
 
+def get_selection_hover_color(selection_color: QColor) -> QColor:
+    hover_color = QColor(selection_color)
+    hover_color = hover_color.toHsl()
+    hover_color.setHsl(
+        hover_color.hue(),
+        hover_color.saturation(),
+        min(hover_color.lightness() + 20, 255),
+        255,
+    )
+    return hover_color.toRgb()
+
+
 def get_text_color(primary_color: QColor, highlight_color: QColor) -> QColor:
     # logger.info("[TagWidget] Evaluating tag text color", lightness=primary_color.lightness())
     if primary_color.lightness() > 120:
@@ -340,3 +376,11 @@ def get_text_color(primary_color: QColor, highlight_color: QColor) -> QColor:
         return text_color.toRgb()
     else:
         return highlight_color
+
+
+def resolve_selected_tag_highlight_color(color_value: str | QColor | None = None) -> QColor:
+    color = QColor(color_value or DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR)
+    if not color.isValid():
+        color = QColor(DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR)
+    color.setAlpha(255)
+    return color

@@ -7,14 +7,16 @@ from typing import TYPE_CHECKING, Any
 
 import structlog
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QDoubleValidator
+from PySide6.QtGui import QColor, QDoubleValidator
 from PySide6.QtWidgets import (
     QCheckBox,
+    QColorDialog,
     QComboBox,
     QFormLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QPushButton,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -22,11 +24,13 @@ from PySide6.QtWidgets import (
 
 from tagstudio.core.enums import ShowFilepathOption, TagClickActionOption
 from tagstudio.qt.global_settings import (
+    DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR,
     DEFAULT_THUMB_CACHE_SIZE,
     MIN_THUMB_CACHE_SIZE,
     Splash,
     Theme,
 )
+from tagstudio.qt.mixed.tag_widget import resolve_selected_tag_highlight_color
 from tagstudio.qt.translations import DEFAULT_TRANSLATION, LANGUAGES, Translations
 from tagstudio.qt.views.panel_modal import PanelModal, PanelWidget
 
@@ -265,6 +269,37 @@ class SettingsPanel(PanelWidget):
             Translations["settings.tag_click_action.label"], self.tag_click_action_combobox
         )
 
+        # Selected Tag Highlight Color
+        self.selected_tag_highlight_color_widget = QWidget()
+        self.selected_tag_highlight_color_layout = QHBoxLayout(
+            self.selected_tag_highlight_color_widget
+        )
+        self.selected_tag_highlight_color_layout.setContentsMargins(0, 0, 0, 0)
+        self.selected_tag_highlight_color_layout.setSpacing(6)
+        self.selected_tag_highlight_color_dialog = QColorDialog(self)
+
+        self.selected_tag_highlight_color_button = QPushButton()
+        self.selected_tag_highlight_color_button.clicked.connect(
+            self._select_selected_tag_highlight_color
+        )
+        self.selected_tag_highlight_color_layout.addWidget(
+            self.selected_tag_highlight_color_button
+        )
+
+        self.selected_tag_highlight_color_reset_button = QPushButton(Translations["generic.reset"])
+        self.selected_tag_highlight_color_reset_button.clicked.connect(
+            lambda: self._set_selected_tag_highlight_color(DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR)
+        )
+        self.selected_tag_highlight_color_layout.addWidget(
+            self.selected_tag_highlight_color_reset_button
+        )
+        self.selected_tag_highlight_color_layout.addStretch(1)
+        self._set_selected_tag_highlight_color(self.driver.settings.selected_tag_highlight_color)
+        form_layout.addRow(
+            Translations["settings.selected_tag_highlight_color"],
+            self.selected_tag_highlight_color_widget,
+        )
+
         # Dark Mode
         self.theme_combobox = QComboBox()
         for k in SettingsPanel.theme_map:
@@ -309,6 +344,29 @@ class SettingsPanel(PanelWidget):
         self.zeropadding_checkbox.setChecked(self.driver.settings.zero_padding)
         form_layout.addRow(Translations["settings.zeropadding.label"], self.zeropadding_checkbox)
 
+    def _set_selected_tag_highlight_color(self, color_value: str | QColor) -> None:
+        color = resolve_selected_tag_highlight_color(color_value)
+        text_color = QColor("#101010") if color.lightness() > 150 else QColor("#f7f7f7")
+        self.selected_tag_highlight_color_button.setText(color.name())
+        self.selected_tag_highlight_color_button.setStyleSheet(
+            f"QPushButton{{"
+            f"background: rgba{color.toTuple()};"
+            f"color: rgba{text_color.toTuple()};"
+            f"border: 2px solid rgba{color.toTuple()};"
+            f"border-radius: 6px;"
+            f"padding: 4px 10px;"
+            f"font-weight: 600;"
+            f"}}"
+        )
+
+    def _select_selected_tag_highlight_color(self) -> None:
+        initial = resolve_selected_tag_highlight_color(
+            self.selected_tag_highlight_color_button.text()
+        )
+        color = self.selected_tag_highlight_color_dialog.getColor(initial=initial)
+        if color.isValid():
+            self._set_selected_tag_highlight_color(color)
+
     # TODO: Implement Library Settings
     def __build_library_settings(self):  # pyright: ignore[reportUnusedFunction]
         form_layout = QFormLayout(self.library_settings_container)
@@ -340,6 +398,7 @@ class SettingsPanel(PanelWidget):
             "show_filepath": self.filepath_combobox.currentData(),
             "theme": self.theme_combobox.currentData(),
             "tag_click_action": self.tag_click_action_combobox.currentData(),
+            "selected_tag_highlight_color": self.selected_tag_highlight_color_button.text(),
             "date_format": self.dateformat_combobox.currentData(),
             "hour_format": self.hourformat_checkbox.isChecked(),
             "zero_padding": self.zeropadding_checkbox.isChecked(),
@@ -364,6 +423,7 @@ class SettingsPanel(PanelWidget):
         driver.settings.show_filepath = settings["show_filepath"]
         driver.settings.theme = settings["theme"]
         driver.settings.tag_click_action = settings["tag_click_action"]
+        driver.settings.selected_tag_highlight_color = settings["selected_tag_highlight_color"]
         driver.settings.date_format = settings["date_format"]
         driver.settings.hour_format = settings["hour_format"]
         driver.settings.zero_padding = settings["zero_padding"]
@@ -383,6 +443,8 @@ class SettingsPanel(PanelWidget):
         driver.main_window.setWindowTitle(
             Translations.format("app.title", base_title=driver.base_title, library_dir=display_path)
         )
+        if driver.lib.library_dir:
+            driver.refresh_tag_filter_controls()
 
     @classmethod
     def build_modal(cls, driver: "QtDriver") -> PanelModal:

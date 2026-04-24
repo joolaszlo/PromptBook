@@ -2,8 +2,16 @@
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
+
+from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
+
 from tagstudio.core.library.alchemy.enums import BrowsingState
+from tagstudio.core.library.alchemy.models import Entry
 from tagstudio.core.utils.types import unwrap
+from tagstudio.qt.mixed.tag_widget import TagWidget
 from tagstudio.qt.ts_qt import QtDriver
 
 
@@ -52,3 +60,107 @@ def test_close_library(qt_driver: QtDriver):
     # close library again to see there's no error
     qt_driver.close_library()
     qt_driver.close_library(is_shutdown=True)
+
+
+def test_browsing_state_update_multi_tag_and(qt_driver: QtDriver):
+    qt_driver.refresh_tag_filter_controls = Mock()
+
+    foo = unwrap(qt_driver.lib.get_tag_by_name("foo"))
+    bar = unwrap(qt_driver.lib.get_tag_by_name("bar"))
+    entry = Entry(
+        id=3,
+        folder=unwrap(qt_driver.lib.folder),
+        path=Path("foo-bar.txt"),
+        fields=qt_driver.lib.default_fields,
+    )
+    assert qt_driver.lib.add_entries([entry])
+    assert qt_driver.lib.add_tags_to_entries(entry.id, [foo.id, bar.id]) == 2
+
+    qt_driver.update_browsing_state(
+        BrowsingState.from_search_query(f"tag_id:{foo.id} tag_id:{bar.id}")
+    )
+
+    assert qt_driver.active_tag_filter_ids == {foo.id, bar.id}
+    assert qt_driver.frame_content == [entry.id]
+
+
+def test_apply_tag_filter_toggles_shared_tag_selection(qt_driver: QtDriver):
+    recorded_queries: list[str] = []
+
+    def fake_update_browsing_state(state: BrowsingState | None = None) -> None:
+        if state is not None:
+            qt_driver.browsing_history.push(state)
+            recorded_queries.append(state.query or "")
+
+    qt_driver.update_browsing_state = fake_update_browsing_state
+
+    foo = unwrap(qt_driver.lib.get_tag_by_name("foo"))
+    bar = unwrap(qt_driver.lib.get_tag_by_name("bar"))
+
+    qt_driver.apply_tag_filter(foo.id)
+    assert qt_driver.active_tag_filter_ids == {foo.id}
+    assert recorded_queries[-1] == f"tag_id:{foo.id}"
+
+    qt_driver.apply_tag_filter(bar.id)
+    assert qt_driver.active_tag_filter_ids == {foo.id, bar.id}
+    assert recorded_queries[-1] == f"tag_id:{foo.id} tag_id:{bar.id}"
+
+    qt_driver.apply_tag_filter(foo.id)
+    assert qt_driver.active_tag_filter_ids == {bar.id}
+    assert recorded_queries[-1] == f"tag_id:{bar.id}"
+
+    qt_driver.clear_tag_filters()
+    assert not qt_driver.active_tag_filter_ids
+    assert recorded_queries[-1] == ""
+
+
+def test_refresh_tag_filter_controls_stable_labels_and_highlights(qtbot, qt_driver: QtDriver):
+    root = QWidget()
+    layout = QVBoxLayout(root)
+    tags_button = QPushButton()
+    favorite_tags_button = QPushButton()
+    reset_tag_selection_button = QPushButton()
+    pinned_tags_title = QLabel()
+    pinned_tags_container = QWidget()
+    pinned_tags_layout = QVBoxLayout(pinned_tags_container)
+    pinned_tags_container.setLayout(pinned_tags_layout)
+    layout.addWidget(tags_button)
+    layout.addWidget(favorite_tags_button)
+    layout.addWidget(reset_tag_selection_button)
+    layout.addWidget(pinned_tags_title)
+    layout.addWidget(pinned_tags_container)
+    qtbot.addWidget(root)
+
+    qt_driver.main_window = SimpleNamespace(
+        tags_button=tags_button,
+        favorite_tags_button=favorite_tags_button,
+        reset_tag_selection_button=reset_tag_selection_button,
+        pinned_tags_title=pinned_tags_title,
+        pinned_tags_container=pinned_tags_container,
+        pinned_tags_layout=pinned_tags_layout,
+    )
+
+    foo = unwrap(qt_driver.lib.get_tag_by_name("foo"))
+    foo.favorite = True
+    foo.pinned = True
+    qt_driver.lib.update_tag(
+        foo,
+        set(foo.parent_ids),
+        {alias.name for alias in foo.aliases},
+        set(foo.alias_ids),
+    )
+    qt_driver.active_tag_filter_ids = {foo.id}
+
+    qt_driver.refresh_tag_filter_controls()
+
+    assert qt_driver.main_window.tags_button.text() == "Tags"
+    assert qt_driver.main_window.favorite_tags_button.text() == "Favorite Tags"
+    assert qt_driver.main_window.reset_tag_selection_button.text() == "Reset Selection"
+    assert qt_driver.main_window.reset_tag_selection_button.isEnabled()
+    assert qt_driver.main_window.tags_button.styleSheet()
+    assert qt_driver.main_window.favorite_tags_button.styleSheet()
+    assert qt_driver.main_window.pinned_tags_layout.count() == 1
+
+    chip = qt_driver.main_window.pinned_tags_layout.itemAt(0).widget()
+    assert isinstance(chip, TagWidget)
+    assert "border-width: 3px;" in chip.bg_button.styleSheet()

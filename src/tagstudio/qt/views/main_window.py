@@ -472,6 +472,7 @@ class MainWindow(QMainWindow):
         self.tag_filter_selector_layout: QHBoxLayout
         self.tags_button: QPushButton
         self.favorite_tags_button: QPushButton
+        self.reset_tag_selection_button: QPushButton
         self.pinned_tags_title: QLabel
         self.pinned_tags_container: QWidget
         self.pinned_tags_layout: FlowLayout
@@ -644,6 +645,13 @@ class MainWindow(QMainWindow):
         self.favorite_tags_button.setObjectName("favorite_tags_button")
         self.favorite_tags_button.setMinimumSize(QSize(0, 32))
         self.tag_filter_selector_layout.addWidget(self.favorite_tags_button)
+
+        self.reset_tag_selection_button = QPushButton(
+            Translations["home.reset_selection"], self.central_widget
+        )
+        self.reset_tag_selection_button.setObjectName("reset_tag_selection_button")
+        self.reset_tag_selection_button.setMinimumSize(QSize(0, 32))
+        self.tag_filter_selector_layout.addWidget(self.reset_tag_selection_button)
         self.tag_filter_selector_layout.addStretch(1)
 
         self.tag_filter_layout.addLayout(self.tag_filter_selector_layout)

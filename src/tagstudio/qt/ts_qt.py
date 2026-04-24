@@ -93,7 +93,7 @@ from tagstudio.qt.mixed.settings_panel import SettingsPanel
 from tagstudio.qt.mixed.tag_color_manager import TagColorManager
 from tagstudio.qt.mixed.tag_database import TagDatabasePanel
 from tagstudio.qt.mixed.tag_search import TagSearchModal
-from tagstudio.qt.mixed.tag_widget import TagWidget
+from tagstudio.qt.mixed.tag_widget import TagWidget, resolve_selected_tag_highlight_color
 from tagstudio.qt.models.palette import ColorType, UiColor, get_ui_color
 from tagstudio.qt.platform_strings import trash_term
 from tagstudio.qt.previews.vendored.ffmpeg import FFMPEG_CMD, FFPROBE_CMD
@@ -213,7 +213,7 @@ class QtDriver(DriverMixin, QObject):
         self.frame_content: list[int] = []  # List of Entry IDs for the current query
         self._selected: OrderedDict[int, None] = OrderedDict()
         self.pages_count = 0
-        self.active_tag_filter_id: int | None = None
+        self.active_tag_filter_ids: set[int] = set()
 
         self.scrollbar_pos = 0
         self.spacing = None
@@ -272,19 +272,82 @@ class QtDriver(DriverMixin, QObject):
             return None
         return reversed(self._selected).__next__()
 
+    @property
+    def active_tag_filter_id(self) -> int | None:
+        if len(self.active_tag_filter_ids) != 1:
+            return None
+        return next(iter(self.active_tag_filter_ids))
+
+    @active_tag_filter_id.setter
+    def active_tag_filter_id(self, tag_id: int | None) -> None:
+        self.active_tag_filter_ids = set() if tag_id is None else {tag_id}
+
     def __reset_navigation(self) -> None:
         self.browsing_history = History(BrowsingState.show_all())
 
+    def get_tag_filter_highlight_color(self) -> QColor:
+        return resolve_selected_tag_highlight_color(self.settings.selected_tag_highlight_color)
+
+    def is_tag_filter_selected(self, tag_id: int) -> bool:
+        return tag_id in self.active_tag_filter_ids
+
+    def _build_tag_filter_query(self) -> str:
+        return " ".join(f"tag_id:{tag_id}" for tag_id in sorted(self.active_tag_filter_ids))
+
+    def _extract_tag_filter_ids(self, query: str | None) -> set[int]:
+        if not query:
+            return set()
+
+        tag_ids: set[int] = set()
+        for token in query.split():
+            if token.upper() == "AND":
+                continue
+
+            tag_match = re.fullmatch(r"tag_id:(\d+)", token)
+            if not tag_match:
+                return set()
+            tag_ids.add(int(tag_match.group(1)))
+
+        return tag_ids
+
+    def _set_tag_filter_button_highlight(self, button: QPushButton, highlighted: bool) -> None:
+        if not highlighted:
+            button.setStyleSheet("")
+            return
+
+        border_color = self.get_tag_filter_highlight_color()
+        fill_color = QColor(border_color)
+        fill_color.setAlpha(28)
+        hover_fill_color = QColor(border_color)
+        hover_fill_color.setAlpha(42)
+        button.setStyleSheet(
+            f"QPushButton{{"
+            f"border: 2px solid rgba{border_color.toTuple()};"
+            f"border-radius: 6px;"
+            f"background: rgba{fill_color.toTuple()};"
+            f"}}"
+            f"QPushButton:hover{{"
+            f"border-color: rgba{border_color.toTuple()};"
+            f"background: rgba{hover_fill_color.toTuple()};"
+            f"}}"
+        )
+
     def apply_tag_filter(self, tag_id: int):
-        """Toggle a single active tag filter and refresh search results."""
-        if self.active_tag_filter_id == tag_id:
-            self.active_tag_filter_id = None
-            next_state = self.browsing_history.current.with_search_query("")
+        """Toggle a tag inside the shared active tag filter state."""
+        if tag_id in self.active_tag_filter_ids:
+            self.active_tag_filter_ids.remove(tag_id)
         else:
-            self.active_tag_filter_id = tag_id
-            next_state = BrowsingState.from_tag_id(tag_id, self.browsing_history.current)
+            self.active_tag_filter_ids.add(tag_id)
+
+        next_state = self.browsing_history.current.with_search_query(self._build_tag_filter_query())
         self.update_browsing_state(next_state)
-        self.refresh_tag_filter_controls()
+
+    def clear_tag_filters(self) -> None:
+        if not self.active_tag_filter_ids:
+            return
+
+        self.active_tag_filter_ids.clear()
+        self.update_browsing_state(self.browsing_history.current.with_search_query(""))
 
     def get_pinned_tags(self) -> list[Tag]:
         return sorted((tag for tag in self.lib.tags if tag.pinned), key=lambda tag: tag.name.lower())
@@ -294,25 +357,29 @@ class QtDriver(DriverMixin, QObject):
         if not hasattr(self, "main_window"):
             return
 
-        active_tag = self.lib.get_tag(self.active_tag_filter_id) if self.active_tag_filter_id else None
-        tags_label = (
-            Translations.format("home.tags_active", tag_name=active_tag.name)
-            if active_tag
-            else Translations["home.tags"]
+        has_selected_tags = bool(self.active_tag_filter_ids)
+        has_selected_favorite_tags = any(
+            bool(tag and tag.favorite) for tag in map(self.lib.get_tag, self.active_tag_filter_ids)
         )
-        favorite_label = (
-            Translations.format("home.favorite_tags_active", tag_name=active_tag.name)
-            if active_tag and active_tag.favorite
-            else Translations["home.favorite_tags"]
+        selection_color = self.get_tag_filter_highlight_color()
+
+        self.main_window.tags_button.setText(Translations["home.tags"])
+        self.main_window.favorite_tags_button.setText(Translations["home.favorite_tags"])
+        self.main_window.reset_tag_selection_button.setText(Translations["home.reset_selection"])
+        self.main_window.reset_tag_selection_button.setEnabled(has_selected_tags)
+        self._set_tag_filter_button_highlight(self.main_window.tags_button, has_selected_tags)
+        self._set_tag_filter_button_highlight(
+            self.main_window.favorite_tags_button, has_selected_favorite_tags
         )
-        self.main_window.tags_button.setText(tags_label)
-        self.main_window.favorite_tags_button.setText(favorite_label)
+        self._set_tag_filter_button_highlight(self.main_window.reset_tag_selection_button, False)
 
         pinned_layout = self.main_window.pinned_tags_layout
-        while pinned_layout.count():
+        pinned_count = pinned_layout.count() if callable(getattr(pinned_layout, "count", None)) else 0
+        while isinstance(pinned_count, int) and pinned_count > 0:
             widget = pinned_layout.takeAt(0)
             if widget and widget.widget():
                 widget.widget().deleteLater()
+            pinned_count = pinned_layout.count() if callable(getattr(pinned_layout, "count", None)) else 0
 
         tags = self.get_pinned_tags()
         self.main_window.pinned_tags_container.setVisible(bool(tags))
@@ -326,6 +393,8 @@ class QtDriver(DriverMixin, QObject):
             if self.active_tag_filter_id == tag.id:
                 chip.bg_button.setText(f"✓ {tag.name}")
             chip.bg_button.clicked.connect(lambda checked=False, tag_id=tag.id: self.apply_tag_filter(tag_id))
+            chip.set_selected(tag.id in self.active_tag_filter_ids, selection_color)
+            chip.set_tag(tag)
             pinned_layout.addWidget(chip)
 
         self.main_window.pinned_tags_container.updateGeometry()
@@ -448,21 +517,29 @@ class QtDriver(DriverMixin, QObject):
             )
         )
         self.tags_filter_modal = TagSearchModal(
-            self.lib, is_tag_chooser=True, title=Translations["home.tags"]
+            self.lib,
+            is_tag_chooser=True,
+            title=Translations["home.tags"],
+            show_filter_selection=True,
         )
+        self.tags_filter_modal.tsp.set_driver(self)
         self.tags_filter_modal.tsp.tag_chosen.connect(self.apply_tag_filter)
         self.favorite_tags_filter_modal = TagSearchModal(
             self.lib,
             is_tag_chooser=True,
             title=Translations["home.favorite_tags"],
             tag_filter=lambda tag: tag.favorite,
+            show_filter_selection=True,
         )
+        self.favorite_tags_filter_modal.tsp.set_driver(self)
         self.favorite_tags_filter_modal.tsp.tag_chosen.connect(self.apply_tag_filter)
 
         self.main_window.tags_button.clicked.connect(self.tags_filter_modal.show)
         self.main_window.favorite_tags_button.clicked.connect(self.favorite_tags_filter_modal.show)
+        self.main_window.reset_tag_selection_button.clicked.connect(self.clear_tag_filters)
         self.main_window.tags_button.setEnabled(False)
         self.main_window.favorite_tags_button.setEnabled(False)
+        self.main_window.reset_tag_selection_button.setEnabled(False)
         self.main_window.add_entry_button.setEnabled(False)
         self.main_window.pinned_tags_title.setVisible(False)
         self.main_window.pinned_tags_container.setVisible(False)
@@ -841,7 +918,7 @@ class QtDriver(DriverMixin, QObject):
         self.cached_values.sync()
 
         # Reset library state
-        self.active_tag_filter_id = None
+        self.active_tag_filter_ids.clear()
         self.main_window.preview_panel.set_selection(self.selected)
         self.main_window.search_field.setText("")
         scrollbar: QScrollArea = self.main_window.entry_scroll_area
@@ -875,8 +952,13 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.pagination.setHidden(True)
         self.main_window.tags_button.setText(Translations["home.tags"])
         self.main_window.favorite_tags_button.setText(Translations["home.favorite_tags"])
+        self.main_window.reset_tag_selection_button.setText(Translations["home.reset_selection"])
         self.main_window.tags_button.setEnabled(False)
         self.main_window.favorite_tags_button.setEnabled(False)
+        self.main_window.reset_tag_selection_button.setEnabled(False)
+        self._set_tag_filter_button_highlight(self.main_window.tags_button, False)
+        self._set_tag_filter_button_highlight(self.main_window.favorite_tags_button, False)
+        self._set_tag_filter_button_highlight(self.main_window.reset_tag_selection_button, False)
         self.main_window.add_entry_button.setEnabled(False)
         self.main_window.pinned_tags_title.setVisible(False)
         self.main_window.pinned_tags_container.setVisible(False)
@@ -1663,8 +1745,7 @@ class QtDriver(DriverMixin, QObject):
             self.browsing_history.push(state)
 
         current_query = (self.browsing_history.current.query or "").strip()
-        tag_match = re.fullmatch(r"tag_id:(\d+)", current_query)
-        self.active_tag_filter_id = int(tag_match.group(1)) if tag_match else None
+        self.active_tag_filter_ids = self._extract_tag_filter_ids(current_query)
 
         self.main_window.search_field.setText(self.browsing_history.current.query or "")
 
@@ -1882,6 +1963,7 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.menu_bar.library_info_action.setEnabled(True)
         self.main_window.tags_button.setEnabled(True)
         self.main_window.favorite_tags_button.setEnabled(True)
+        self.main_window.reset_tag_selection_button.setEnabled(False)
         self.main_window.add_entry_button.setEnabled(True)
 
         self.main_window.preview_panel.set_selection(self.selected)

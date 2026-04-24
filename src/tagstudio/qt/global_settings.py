@@ -27,6 +27,7 @@ MIN_THUMB_CACHE_SIZE = 10  # Number in MiB
 # See: https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#webp-saving
 DEFAULT_CACHED_IMAGE_QUALITY = 80
 DEFAULT_CACHED_IMAGE_RES = 256
+DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR = "#4da3ff"
 
 
 class Theme(IntEnum):
@@ -76,6 +77,7 @@ class GlobalSettings(BaseModel):
     theme: Theme = Field(default=Theme.SYSTEM)
     splash: Splash = Field(default=Splash.DEFAULT)
     windows_start_command: bool = Field(default=False)
+    selected_tag_highlight_color: str = Field(default=DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR)
 
     date_format: str = Field(default="%x")
     hour_format: bool = Field(default=True)
