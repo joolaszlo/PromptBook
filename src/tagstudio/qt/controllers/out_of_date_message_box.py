@@ -11,7 +11,7 @@ logger = structlog.get_logger(__name__)
 
 
 class OutOfDateMessageBox(QMessageBox):
-    """A warning dialog for if the TagStudio is not running under the latest release version."""
+    """A warning dialog for if the PromptBook is not running under the latest release version."""
 
     def __init__(self):
         super().__init__()

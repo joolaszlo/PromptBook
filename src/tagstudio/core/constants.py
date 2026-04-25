@@ -2,7 +2,7 @@
 # Licensed under the GPL-3.0 License.
 # Created for PromptBook: https://github.com/CyanVoxel/PromptBook
 
-VERSION: str = "1.0"  # Major.Minor.Patch
+VERSION: str = "1.0.0"  # Major.Minor.Patch
 VERSION_BRANCH: str = ""  # Usually "" or "Pre-Release"
 
 # The folder & file names where PromptBook keeps its data relative to a library.
