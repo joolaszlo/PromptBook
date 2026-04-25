@@ -223,7 +223,7 @@ class QtDriver(DriverMixin, QObject):
         self.spacing = None
 
         self.branch: str = (" (" + VERSION_BRANCH + ")") if VERSION_BRANCH else ""
-        self.base_title: str = f"TagStudio Alpha {VERSION}{self.branch}"
+        self.base_title: str = f"PromptBook {VERSION}{self.branch}"
         # self.title_text: str = self.base_title
         # self.buffer = {}
         self.thumb_job_queue: Queue = Queue()
@@ -484,10 +484,10 @@ class QtDriver(DriverMixin, QObject):
         self.tag_manager_panel = PanelModal(
             widget=TagDatabasePanel(self, self.lib),
             title=Translations["tag_manager.title"],
-            done_callback=lambda checked=False: (
+            done_callback=lambda: (
                 self.main_window.preview_panel.set_selection(self.selected, update_preview=False),
                 self.refresh_tag_filter_controls(),
-            ),
+            ) and None,
             has_save=False,
         )
 

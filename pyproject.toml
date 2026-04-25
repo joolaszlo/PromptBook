@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "TagStudio"
-description = "A User-Focused Photo & File Management System."
-version = "9.5.6"
+name = "PromptBook"
+description = "Organize prompts together with their generated image and video results."
+version = "1.0"
 license = "GPL-3.0-only"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
