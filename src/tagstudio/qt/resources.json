@@ -11,6 +11,10 @@
         "path": "qt/images/splash/95.png",
         "mode": "qpixmap"
     },
+    "splash_pb": {
+        "path": "qt/images/splash/pb.png",
+        "mode": "qpixmap"
+    },
     "icon": {
         "path": "icon.png",
         "mode": "pil"

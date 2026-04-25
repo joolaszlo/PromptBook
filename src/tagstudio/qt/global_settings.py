@@ -41,8 +41,9 @@ class Splash(StrEnum):
     DEFAULT = "default"
     RANDOM = "random"
     CLASSIC = "classic"
-    GOO_GEARS = "goo_gears"
+    GOO_GEARS = "goo_gdeactivateears"
     NINETY_FIVE = "95"
+    PB = "pb"
 
 
 class TomlEnumEncoder(toml.TomlEncoder):

@@ -26,7 +26,7 @@ class SplashScreen:
     VERSION_STR: str = (
         f"Version {VERSION} {(' (' + VERSION_BRANCH + ')') if VERSION_BRANCH else ''}"
     )
-    DEFAULT_SPLASH = Splash.GOO_GEARS
+    DEFAULT_SPLASH = Splash.CLASSIC
 
     def __init__(
         self,
@@ -134,6 +134,27 @@ class SplashScreen:
                     int(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight),
                     SplashScreen.VERSION_STR,
                 )
+            case Splash.PB:
+                # Copyright
+                font = painter.font()
+                font.setPointSize(math.floor(22 * point_size_scale))
+                painter.setFont(font)
+                pen = QPen(QColor("#9782ff"))
+                painter.setPen(pen)
+                painter.drawText(
+                    QRect(40, 450, 960, 540),
+                    SplashScreen.COPYRIGHT_STR,
+                )
+                # Version
+                font = painter.font()
+                font.setPointSize(math.floor(22 * point_size_scale))
+                painter.setFont(font)
+                pen = QPen(QColor("#809782ff"))
+                painter.setPen(pen)
+                painter.drawText(
+                    QRect(40, 475, 960, 540),
+                    SplashScreen.VERSION_STR,
+                ) 
 
             case _:
                 pass
