@@ -1,10 +1,10 @@
 {
     "about.config_path": "Konfigurační cesta",
-    "about.description": "TagStudio je aplikace pro organizaci fotografií a souborů, založená na systému využívajícím tagy, který se zaměřuje na poskytnutí svobody a flexibility. Žádné proprietární programy nebo formáty, žádná záplava vedlejších souborů a žádné převrácení struktury vašeho souborového systému.",
+    "about.description": "Tento software je mediální knihovna zaměřená na prompty, určená ke správě promptů spolu s obrázky a videi, které vytvářejí. Vychází z TagStudio a rozšiřuje původní koncept směrem k organizaci promptů, jejich výběru a sledování výsledků pro kreativní a generativní AI pracovní postupy.",
     "about.documentation": "Dokumentace",
     "about.license": "Licence",
     "about.module.found": "Nalezeno",
-    "about.title": "O TagStudiu",
+    "about.title": "O PromptBook",
     "about.website": "Webová stránka",
     "app.git": "Git Commit",
     "app.pre_release": "Beta verze",
@@ -38,7 +38,7 @@
     "entries.duplicate.merge": "Sloučit Duplicitní Položky",
     "entries.duplicate.merge.label": "Slučování Duplicitních Položek...",
     "entries.duplicate.refresh": "Obnovit Duplicitní Položky",
-    "entries.duplicates.description": "Duplicitní položky jsou definovány jako více položek, které ukazují na stejný soubor na disku. Jejich sloučením se spojí značky a metadata ze všech duplikátů do jediné konsolidované položky. Nesmí se zaměňovat s „duplicitními soubory“, což jsou duplikáty samotných vašich souborů mimo TagStudio.",
+    "entries.duplicates.description": "Duplicitní položky jsou definovány jako více položek, které ukazují na stejný soubor na disku. Jejich sloučením se spojí značky a metadata ze všech duplikátů do jediné konsolidované položky. Nesmí se zaměňovat s „duplicitními soubory“, což jsou duplikáty samotných vašich souborů mimo PromptBook.",
     "entries.mirror.confirmation": "Opravdu chcete zrcadlit následujících {count} položek?",
     "entries.unlinked.relink.manual": "Znovu propojit ručně",
     "entries.unlinked.relink.title": "Propojuji záznamy",
@@ -51,7 +51,7 @@
     "file.date_created": "Datum vytvoření",
     "file.date_modified": "Datum změny",
     "file.dimensions": "Rozměry",
-    "file.duplicates.description": "TagStudio podporuje import výsledku z DupeGuru pro správu duplikátních souborů.",
+    "file.duplicates.description": "PromptBook podporuje import výsledku z DupeGuru pro správu duplikátních souborů.",
     "file.duplicates.dupeguru.file_extension": "DupeGuru soubory (*.dupeguru)",
     "file.duplicates.fix": "Opravit duplikátní soubory"
 }

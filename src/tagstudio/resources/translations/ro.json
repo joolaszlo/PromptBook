@@ -1,10 +1,10 @@
 {
     "about.config_path": "Loc de configurare",
-    "about.description": "TagStudio e o aplicație de organizare a fotografiilor și documentelor cu un sistem bazat pe etichete, care se concentrează pe oferirea de libertate și flexibilitate utilizatorului. Fără programe sau formate proprietare, fără o mare de documente sidecar secundare și fără o modificare completă a structurii sistemului de documente.",
+    "about.description": "Acest software este o bibliotecă media axată pe prompturi, pentru gestionarea prompturilor împreună cu imaginile și videoclipurile pe care le produc. Bazat pe TagStudio, extinde conceptul original către organizarea, selecția și urmărirea rezultatelor prompturilor pentru fluxuri de lucru creative și de IA generativă.",
     "about.documentation": "Documentaţie",
     "about.license": "Licenţă",
     "about.module.found": "Găsit",
-    "about.title": "Despre TagStudio",
+    "about.title": "Despre PromptBook",
     "about.website": "Website",
     "app.git": "Angajare Git",
     "app.pre_release": "Pre-Lansare",

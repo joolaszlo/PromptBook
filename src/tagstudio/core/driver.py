@@ -31,7 +31,7 @@ class DriverMixin:
             library_path = Path(str(self.cached_values.value(SettingItems.LAST_LIBRARY)))
             if not (library_path / TS_FOLDER_NAME).exists():
                 logger.error(
-                    "TagStudio folder does not exist.",
+                    "PromptBook folder does not exist.",
                     library_path=library_path,
                     ts_folder=TS_FOLDER_NAME,
                 )

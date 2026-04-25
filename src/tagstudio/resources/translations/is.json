@@ -1,10 +1,10 @@
 {
     "about.config_path": "Stillingarslóð",
-    "about.description": "TagStudio er forrit sem skipuleggur og heldur utan um myndir og skrár í gegnum merkja kerfi, sem einblínir á frelsi og sveigjanleika fyrir notandann. Enginn séreigna-hugbúnaður eða skráarsnið, engar aukaskrár, og engin enduruppröðun á skráarkerfinu þínu í heild.",
+    "about.description": "Þessi hugbúnaður er miðlasafn með áherslu á kveikjur, ætlað til að halda utan um kveikjur ásamt myndunum og myndböndunum sem þær búa til. Byggt á TagStudio útvíkkar það upprunalegu hugmyndina í átt að skipulagningu kveikja, vali og rakningu niðurstaðna fyrir skapandi og generatíf gervigreindarvinnuflæði.",
     "about.documentation": "Skjölun",
     "about.license": "Leyfi",
     "about.module.found": "Fannst",
-    "about.title": "Um TagStudio",
+    "about.title": "Um PromptBook",
     "about.website": "Vefsíða",
     "app.git": "Git Commit",
     "app.pre_release": "Forútgáfa",

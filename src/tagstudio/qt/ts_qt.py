@@ -470,15 +470,15 @@ class QtDriver(DriverMixin, QObject):
             appid = "cyanvoxel.tagstudio.9"
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)  # type: ignore[attr-defined,unused-ignore]
 
-        self.app.setApplicationName("tagstudio")
-        self.app.setApplicationDisplayName("TagStudio")
+        self.app.setApplicationName("promptbook")
+        self.app.setApplicationDisplayName("PromptBook")
         if platform.system() != "Darwin":
             fallback_icon = QIcon()
             fallback_icon.addFile(str(self.rm.get_path("icon")))
-            self.app.setWindowIcon(QIcon.fromTheme("tagstudio", fallback_icon))
+            self.app.setWindowIcon(QIcon.fromTheme("promptbook", fallback_icon))
 
             if platform.system() != "Windows":
-                self.app.setDesktopFileName("tagstudio")
+                self.app.setDesktopFileName("promptbook")
 
         # Initialize the Tag Manager panel
         self.tag_manager_panel = PanelModal(
@@ -1848,7 +1848,7 @@ class QtDriver(DriverMixin, QObject):
         SettingsPanel.build_modal(self).show()
 
     def open_library(self, path: Path) -> None:
-        """Open a TagStudio library."""
+        """Open a PromptBook library."""
         library_dir_display = (
             path if self.settings.show_filepath == ShowFilepathOption.SHOW_FULL_PATHS else path.name
         )

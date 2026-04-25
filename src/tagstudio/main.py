@@ -4,7 +4,7 @@
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
 
-"""TagStudio launcher."""
+"""PromptBook launcher."""
 
 import argparse
 import traceback
@@ -28,21 +28,21 @@ def main():
         "--open",
         dest="open",
         type=str,
-        help="Path to a TagStudio Library folder to open on start.",
+        help="Path to a PromptBook Library folder to open on start.",
     )
     parser.add_argument(
         "-s",
         "--settings-file",
         dest="settings_file",
         type=str,
-        help="Path to a TagStudio .toml global settings file to use.",
+        help="Path to a PromptBook .toml global settings file to use.",
     )
     parser.add_argument(
         "-c",
         "--cache-file",
         dest="cache_file",
         type=str,
-        help="Path to a TagStudio .ini or .plist cache file to use.",
+        help="Path to a PromptBook .ini or .plist cache file to use.",
     )
 
     # parser.add_argument('--browse', dest='browse', action='store_true',
@@ -59,8 +59,8 @@ def main():
         "-v",
         "--version",
         action="version",
-        help="Displays TagStudio version information.",
-        version=f"TagStudio v{VERSION} {VERSION_BRANCH}",
+        help="Displays PromptBook version information.",
+        version=f"PromptBook v{VERSION} {VERSION_BRANCH}",
     )
     args = parser.parse_args()
 
@@ -72,7 +72,7 @@ def main():
         driver.start()
     except Exception:
         traceback.print_exc()
-        logger.info(f"\nTagStudio Frontend ({ui_name}) Crashed! Press Enter to Continue...")
+        logger.info(f"\nPromptBook Frontend ({ui_name}) Crashed! Press Enter to Continue...")
         input()
 
 

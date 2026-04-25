@@ -72,7 +72,7 @@ class AboutModal(QWidget):
 
         # Title ----------------------------------------------------------------
         branch: str = (" (" + VERSION_BRANCH + ")") if VERSION_BRANCH else ""
-        self.title_label = QLabel(f"<h2>TagStudio Alpha {VERSION}{branch}</h2>")
+        self.title_label = QLabel(f"<h2>PromptBook {VERSION}{branch}</h2>")
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Description ----------------------------------------------------------

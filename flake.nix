@@ -1,5 +1,5 @@
 {
-  description = "TagStudio";
+  description = "Promptbook";
 
   inputs = {
     flake-parts = {

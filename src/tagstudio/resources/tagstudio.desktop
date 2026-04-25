@@ -1,10 +1,10 @@
 [Desktop Entry]
 Type=Application
-Name=TagStudio
-GenericName=Tag Management System
-Comment=Tag, find, and organize files
-Icon=tagstudio
-Exec=tagstudio
+Name=PromptBook
+GenericName=Prompt and Media Library
+Comment=Organize prompts and their visual results
+Icon=promptbook
+Exec=promptbook
 Terminal=false
 Categories=AudioVideo;Qt;
 Keywords=files;folders;tags;
