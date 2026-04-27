@@ -101,18 +101,36 @@ def test_apply_tag_filter_toggles_shared_tag_selection(qt_driver: QtDriver):
 
     qt_driver.apply_tag_filter(foo.id)
     assert qt_driver.active_tag_filter_ids == {foo.id}
+    assert not qt_driver.excluded_tag_filter_ids
+    assert recorded_queries[-1] == f"tag_id:{foo.id}"
+
+    qt_driver.apply_excluded_tag_filter(foo.id)
+    assert not qt_driver.active_tag_filter_ids
+    assert qt_driver.excluded_tag_filter_ids == {foo.id}
+    assert recorded_queries[-1] == f"not tag_id:{foo.id}"
+
+    qt_driver.apply_tag_filter(foo.id)
+    assert qt_driver.active_tag_filter_ids == {foo.id}
+    assert not qt_driver.excluded_tag_filter_ids
     assert recorded_queries[-1] == f"tag_id:{foo.id}"
 
     qt_driver.apply_tag_filter(bar.id)
     assert qt_driver.active_tag_filter_ids == {foo.id, bar.id}
     assert recorded_queries[-1] == f"tag_id:{foo.id} tag_id:{bar.id}"
 
-    qt_driver.apply_tag_filter(foo.id)
+    qt_driver.apply_excluded_tag_filter(foo.id)
     assert qt_driver.active_tag_filter_ids == {bar.id}
+    assert qt_driver.excluded_tag_filter_ids == {foo.id}
+    assert recorded_queries[-1] == f"tag_id:{bar.id} not tag_id:{foo.id}"
+
+    qt_driver.apply_excluded_tag_filter(foo.id)
+    assert qt_driver.active_tag_filter_ids == {bar.id}
+    assert not qt_driver.excluded_tag_filter_ids
     assert recorded_queries[-1] == f"tag_id:{bar.id}"
 
     qt_driver.clear_tag_filters()
     assert not qt_driver.active_tag_filter_ids
+    assert not qt_driver.excluded_tag_filter_ids
     assert recorded_queries[-1] == ""
 
 
@@ -181,6 +199,16 @@ def test_refresh_tag_filter_controls_stable_labels_and_highlights(qtbot, qt_driv
     assert chip.bg_button.graphicsEffect() is not None
     assert chip.bg_button.contextMenuPolicy() == Qt.ContextMenuPolicy.NoContextMenu
     assert chip.bg_button.actions() == []
+
+    qt_driver.active_tag_filter_ids = set()
+    qt_driver.excluded_tag_filter_ids = {foo.id}
+    qt_driver.refresh_tag_filter_controls()
+
+    chip = qt_driver.main_window.pinned_tags_layout.itemAt(0).widget()
+    assert isinstance(chip, TagWidget)
+    assert "text-decoration: line-through;" in chip.bg_button.styleSheet()
+    assert "border-color: rgba(122, 75, 81, 255);" in chip.bg_button.styleSheet()
+    assert chip.bg_button.graphicsEffect() is None
 
 
 def test_add_entry_pinned_tags_disable_context_menu(qtbot, qt_driver: QtDriver):

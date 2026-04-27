@@ -311,7 +311,13 @@ class TagSearchPanel(PanelWidget):
         # Create any new tag widgets needed up to the given index
         if self.scroll_layout.count() <= index:
             while self.scroll_layout.count() <= index:
-                new_tw = TagWidget(tag=None, has_edit=True, has_remove=True, library=self.lib)
+                new_tw = TagWidget(
+                    tag=None,
+                    has_edit=True,
+                    has_remove=True,
+                    library=self.lib,
+                    enable_exclude_action=True,
+                )
                 new_tw.setHidden(True)
                 self.scroll_layout.addWidget(new_tw)
 
@@ -325,6 +331,7 @@ class TagSearchPanel(PanelWidget):
         self.safe_disconnect(tag_widget.search_for_tag_action.triggered)
         self.safe_disconnect(tag_widget.pinned_action.toggled)
         self.safe_disconnect(tag_widget.favorite_action.toggled)
+        self.safe_disconnect(tag_widget.exclude_action.triggered)
 
         tag_widget.set_tag(tag)
 
@@ -362,8 +369,10 @@ class TagSearchPanel(PanelWidget):
                 self.driver.is_tag_filter_selected(tag_id),
                 self.driver.get_tag_filter_highlight_color(),
             )
+            tag_widget.set_excluded(self.driver.is_tag_filter_excluded(tag_id))
         else:
             tag_widget.set_selected(False)
+            tag_widget.set_excluded(False)
 
         if self.driver is not None:
             tag_widget.search_for_tag_action.triggered.connect(
@@ -375,8 +384,15 @@ class TagSearchPanel(PanelWidget):
                 )
             )
             tag_widget.search_for_tag_action.setEnabled(True)
+            tag_widget.exclude_action.triggered.connect(
+                lambda checked=False, tag_id=tag.id, driver=self.driver: (
+                    driver.apply_excluded_tag_filter(tag_id)
+                )
+            )
+            tag_widget.exclude_action.setEnabled(True)
         else:
             tag_widget.search_for_tag_action.setEnabled(False)
+            tag_widget.exclude_action.setEnabled(False)
 
     def set_tag_flag(self, tag_id: int, flag_name: str, checked: bool):
         tag = self.lib.get_tag(tag_id)

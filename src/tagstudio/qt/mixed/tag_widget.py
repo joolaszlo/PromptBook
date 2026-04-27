@@ -8,7 +8,15 @@ from typing import TYPE_CHECKING, override
 
 import structlog
 from PySide6.QtCore import QEvent, QObject, QRectF, QSignalBlocker, Qt, Signal
-from PySide6.QtGui import QAction, QColor, QEnterEvent, QFontMetrics, QPainter, QPaintEvent
+from PySide6.QtGui import (
+    QAction,
+    QColor,
+    QEnterEvent,
+    QFontMetrics,
+    QMouseEvent,
+    QPainter,
+    QPaintEvent,
+)
 from PySide6.QtWidgets import (
     QGraphicsDropShadowEffect,
     QHBoxLayout,
@@ -156,6 +164,7 @@ class TagWidget(QWidget):
     on_remove = Signal()
     on_click = Signal()
     on_edit = Signal()
+    on_right_click = Signal()
 
     tag: Tag | None
 
@@ -169,13 +178,17 @@ class TagWidget(QWidget):
         on_click_callback: Callable[[], None] | None = None,
         on_edit_callback: Callable[[], None] | None = None,
         enable_context_menu: bool = True,
+        enable_exclude_action: bool = False,
     ) -> None:
         super().__init__()
         self.tag = tag
         self.lib: Library | None = library
         self.has_edit = has_edit
         self.has_remove = has_remove
+        self.enable_context_menu = enable_context_menu
+        self.enable_exclude_action = enable_exclude_action
         self._selected = False
+        self._excluded = False
         self._selected_border_color = resolve_selected_tag_highlight_color()
 
         # if on_click_callback:
@@ -186,6 +199,7 @@ class TagWidget(QWidget):
 
         self.bg_button = QPushButton(self)
         self.bg_button.setFlat(True)
+        self.bg_button.installEventFilter(self)
 
         # add callbacks
         if on_remove_callback is not None:
@@ -220,10 +234,14 @@ class TagWidget(QWidget):
         self.favorite_action = QAction(self)
         self.favorite_action.setText("Favorite")
         self.favorite_action.setCheckable(True)
+        self.exclude_action = QAction(self)
+        self.exclude_action.setText("Exclude from search")
         if enable_context_menu:
             self.bg_button.addAction(self.search_for_tag_action)
             self.bg_button.addAction(self.pinned_action)
             self.bg_button.addAction(self.favorite_action)
+            if enable_exclude_action:
+                self.bg_button.addAction(self.exclude_action)
         # add_to_search_action = QAction(self)
         # add_to_search_action.setText(Translations.translate_formatted("tag.add_to_search"))
         # self.bg_button.addAction(add_to_search_action)
@@ -282,6 +300,11 @@ class TagWidget(QWidget):
         if self.tag:
             self._apply_style()
 
+    def set_excluded(self, excluded: bool) -> None:
+        self._excluded = excluded
+        if self.tag:
+            self._apply_style()
+
     def _apply_style(self) -> None:
         tag = self.tag
         if not tag:
@@ -313,13 +336,34 @@ class TagWidget(QWidget):
         if self._selected:
             effective_border_color = QColor(self._selected_border_color)
             hover_border_color = get_selection_hover_color(effective_border_color)
-        apply_selection_glow(self.bg_button, selected_glow_color, self._selected)
+        text_decoration = "line-through" if self._excluded else "none"
+        excluded_bg_color: QColor | None = None
+        if self._excluded:
+            text_color = QColor("#d94b5b")
+            effective_border_color = QColor("#7a4b51")
+            hover_border_color = QColor("#d94b5b")
+            excluded_bg_color = QColor("#6b6f76")
+        apply_selection_glow(
+            self.bg_button,
+            selected_glow_color,
+            self._selected and not self._excluded,
+        )
 
-        selected_bg_color = selected_fill_color if self._selected else primary_color
+        selected_bg_color = (
+            selected_fill_color if self._selected and not self._excluded else primary_color
+        )
+        if excluded_bg_color:
+            selected_bg_color = excluded_bg_color
+        hover_bg_color = (
+            selected_hover_fill_color if self._selected and not self._excluded else primary_color
+        )
+        if excluded_bg_color:
+            hover_bg_color = excluded_bg_color.lighter(110)
         self.bg_button.setStyleSheet(
             f"QPushButton{{"
             f"background: rgba{selected_bg_color.toTuple()};"
             f"color: rgba{text_color.toTuple()};"
+            f"text-decoration: {text_decoration};"
             f"font-weight: 600;"
             f"border-color: rgba{effective_border_color.toTuple()};"
             f"border-radius: 6px;"
@@ -332,7 +376,7 @@ class TagWidget(QWidget):
             f"QPushButton::hover{{"
             f"border-color: rgba{hover_border_color.toTuple()};"
             f"background: rgba"
-            f"{(selected_hover_fill_color if self._selected else primary_color).toTuple()};"
+            f"{hover_bg_color.toTuple()};"
             f"}}"
             f"QPushButton::pressed{{"
             f"background: rgba{highlight_color.toTuple()};"
@@ -379,6 +423,19 @@ class TagWidget(QWidget):
 
     def set_has_remove(self, has_remove: bool):
         self.has_remove = has_remove
+
+    @override
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if (
+            watched == self.bg_button
+            and not self.enable_context_menu
+            and isinstance(event, QMouseEvent)
+            and event.button() == Qt.MouseButton.RightButton
+        ):
+            if event.type() == QEvent.Type.MouseButtonRelease:
+                self.on_right_click.emit()
+            return True
+        return super().eventFilter(watched, event)
 
     @override
     def enterEvent(self, event: QEnterEvent) -> None:

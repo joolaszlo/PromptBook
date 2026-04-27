@@ -34,6 +34,7 @@ def test_tag_widget_actions_replaced_correctly(qtbot: QtBot, qt_driver: QtDriver
         tag_widget: ["on_edit()", "on_remove()"],
         tag_widget.bg_button: ["clicked()"],
         tag_widget.search_for_tag_action: ["triggered()"],
+        tag_widget.exclude_action: ["triggered()"],
     }
 
     # Ensure each action has been set

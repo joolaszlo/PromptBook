@@ -218,6 +218,7 @@ class QtDriver(DriverMixin, QObject):
         self._selected: OrderedDict[int, None] = OrderedDict()
         self.pages_count = 0
         self.active_tag_filter_ids: set[int] = set()
+        self.excluded_tag_filter_ids: set[int] = set()
 
         self.scrollbar_pos = 0
         self.spacing = None
@@ -285,6 +286,8 @@ class QtDriver(DriverMixin, QObject):
     @active_tag_filter_id.setter
     def active_tag_filter_id(self, tag_id: int | None) -> None:
         self.active_tag_filter_ids = set() if tag_id is None else {tag_id}
+        if tag_id is not None:
+            self.excluded_tag_filter_ids.discard(tag_id)
 
     def __reset_navigation(self) -> None:
         self.browsing_history = History(BrowsingState.show_all())
@@ -295,24 +298,43 @@ class QtDriver(DriverMixin, QObject):
     def is_tag_filter_selected(self, tag_id: int) -> bool:
         return tag_id in self.active_tag_filter_ids
 
+    def is_tag_filter_excluded(self, tag_id: int) -> bool:
+        return tag_id in self.excluded_tag_filter_ids
+
     def _build_tag_filter_query(self) -> str:
-        return " ".join(f"tag_id:{tag_id}" for tag_id in sorted(self.active_tag_filter_ids))
+        include_terms = [f"tag_id:{tag_id}" for tag_id in sorted(self.active_tag_filter_ids)]
+        exclude_terms = [
+            f"not tag_id:{tag_id}" for tag_id in sorted(self.excluded_tag_filter_ids)
+        ]
+        return " ".join(include_terms + exclude_terms)
 
-    def _extract_tag_filter_ids(self, query: str | None) -> set[int]:
+    def _extract_tag_filter_ids(self, query: str | None) -> tuple[set[int], set[int]]:
         if not query:
-            return set()
+            return set(), set()
 
-        tag_ids: set[int] = set()
+        included_tag_ids: set[int] = set()
+        excluded_tag_ids: set[int] = set()
+        is_excluded = False
         for token in query.split():
             if token.upper() == "AND":
+                continue
+            if token.upper() == "NOT":
+                is_excluded = True
                 continue
 
             tag_match = re.fullmatch(r"tag_id:(\d+)", token)
             if not tag_match:
-                return set()
-            tag_ids.add(int(tag_match.group(1)))
+                return set(), set()
+            if is_excluded:
+                excluded_tag_ids.add(int(tag_match.group(1)))
+            else:
+                included_tag_ids.add(int(tag_match.group(1)))
+            is_excluded = False
 
-        return tag_ids
+        if is_excluded:
+            return set(), set()
+        included_tag_ids.difference_update(excluded_tag_ids)
+        return included_tag_ids, excluded_tag_ids
 
     def _set_tag_filter_button_highlight(self, button: QPushButton, highlighted: bool) -> None:
         border_color = self.get_tag_filter_highlight_color()
@@ -324,16 +346,29 @@ class QtDriver(DriverMixin, QObject):
         if tag_id in self.active_tag_filter_ids:
             self.active_tag_filter_ids.remove(tag_id)
         else:
+            self.excluded_tag_filter_ids.discard(tag_id)
             self.active_tag_filter_ids.add(tag_id)
 
         next_state = self.browsing_history.current.with_search_query(self._build_tag_filter_query())
         self.update_browsing_state(next_state)
 
+    def apply_excluded_tag_filter(self, tag_id: int):
+        """Toggle a tag inside the shared excluded tag filter state."""
+        if tag_id in self.excluded_tag_filter_ids:
+            self.excluded_tag_filter_ids.remove(tag_id)
+        else:
+            self.active_tag_filter_ids.discard(tag_id)
+            self.excluded_tag_filter_ids.add(tag_id)
+
+        next_state = self.browsing_history.current.with_search_query(self._build_tag_filter_query())
+        self.update_browsing_state(next_state)
+
     def clear_tag_filters(self) -> None:
-        if not self.active_tag_filter_ids:
+        if not self.active_tag_filter_ids and not self.excluded_tag_filter_ids:
             return
 
         self.active_tag_filter_ids.clear()
+        self.excluded_tag_filter_ids.clear()
         self.update_browsing_state(self.browsing_history.current.with_search_query(""))
 
     def get_pinned_tags(self) -> list[Tag]:
@@ -344,9 +379,13 @@ class QtDriver(DriverMixin, QObject):
         if not hasattr(self, "main_window"):
             return
 
-        has_selected_tags = bool(self.active_tag_filter_ids)
+        has_selected_tags = bool(self.active_tag_filter_ids or self.excluded_tag_filter_ids)
         has_selected_favorite_tags = any(
-            bool(tag and tag.favorite) for tag in map(self.lib.get_tag, self.active_tag_filter_ids)
+            bool(tag and tag.favorite)
+            for tag in map(
+                self.lib.get_tag,
+                self.active_tag_filter_ids | self.excluded_tag_filter_ids,
+            )
         )
         selection_color = self.get_tag_filter_highlight_color()
 
@@ -385,8 +424,14 @@ class QtDriver(DriverMixin, QObject):
             chip.favorite_action.setVisible(False)
             if self.active_tag_filter_id == tag.id:
                 chip.bg_button.setText(f"✓ {tag.name}")
-            chip.bg_button.clicked.connect(lambda checked=False, tag_id=tag.id: self.apply_tag_filter(tag_id))
+            chip.bg_button.clicked.connect(
+                lambda checked=False, tag_id=tag.id: self.apply_tag_filter(tag_id)
+            )
+            chip.on_right_click.connect(
+                lambda tag_id=tag.id: self.apply_excluded_tag_filter(tag_id)
+            )
             chip.set_selected(tag.id in self.active_tag_filter_ids, selection_color)
+            chip.set_excluded(tag.id in self.excluded_tag_filter_ids)
             chip.set_tag(tag)
             pinned_layout.addWidget(chip)
 
@@ -912,6 +957,7 @@ class QtDriver(DriverMixin, QObject):
 
         # Reset library state
         self.active_tag_filter_ids.clear()
+        self.excluded_tag_filter_ids.clear()
         self.main_window.preview_panel.set_selection(self.selected)
         self.main_window.search_field.setText("")
         scrollbar: QScrollArea = self.main_window.entry_scroll_area
@@ -1738,7 +1784,9 @@ class QtDriver(DriverMixin, QObject):
             self.browsing_history.push(state)
 
         current_query = (self.browsing_history.current.query or "").strip()
-        self.active_tag_filter_ids = self._extract_tag_filter_ids(current_query)
+        self.active_tag_filter_ids, self.excluded_tag_filter_ids = self._extract_tag_filter_ids(
+            current_query
+        )
 
         self.main_window.search_field.setText(self.browsing_history.current.query or "")
 
