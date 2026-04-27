@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, override
 
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QMouseEvent
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QColor, QMouseEvent
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -26,15 +26,25 @@ from tagstudio.core.library.category_sidebar import (
     CategorySidebarSettings,
 )
 from tagstudio.qt.category_sidebar_icons import category_sidebar_icon
+from tagstudio.qt.mixed.tag_widget import (
+    get_selection_fill_color,
+    get_selection_hover_color,
+)
 
 if TYPE_CHECKING:
     from tagstudio.qt.ts_qt import QtDriver
 
 
 class CategorySidebarItemWidget(QPushButton):
+    right_clicked = Signal()
+
     def __init__(self, item: CategoryItem, collapsed: bool) -> None:
         super().__init__()
         self.item = item
+        self._collapsed = collapsed
+        self._included = False
+        self._excluded = False
+        self._highlight_color = QColor("#4da3ff")
         self.setObjectName("category_sidebar_item")
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -46,8 +56,21 @@ class CategorySidebarItemWidget(QPushButton):
         self.set_collapsed(collapsed)
 
     def set_collapsed(self, collapsed: bool) -> None:
+        self._collapsed = collapsed
         self.setText("" if collapsed else self.item.name)
         self.setToolTip(self.item.name)
+        self._apply_style()
+
+    def set_filter_state(
+        self,
+        included: bool,
+        excluded: bool,
+        highlight_color: QColor,
+    ) -> None:
+        self._included = included
+        self._excluded = excluded
+        self._highlight_color = QColor(highlight_color)
+        self._apply_style()
 
     @override
     def mousePressEvent(self, event: QMouseEvent) -> None:
@@ -59,9 +82,60 @@ class CategorySidebarItemWidget(QPushButton):
     @override
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.RightButton:
+            if self.rect().contains(event.position().toPoint()):
+                self.right_clicked.emit()
             event.accept()
             return
         super().mouseReleaseEvent(event)
+
+    def _apply_style(self) -> None:
+        text_color = QColor("#d8dde6")
+        border_color = QColor(120, 128, 140, 0)
+        hover_border_color = QColor(120, 128, 140, 80)
+        background_color = QColor(0, 0, 0, 0)
+        hover_background_color = QColor(120, 128, 140, 45)
+        text_decoration = "none"
+        icon_color = text_color
+
+        if self._included and not self._excluded:
+            border_color = QColor(self._highlight_color)
+            hover_border_color = get_selection_hover_color(border_color)
+            background_color = get_selection_fill_color(border_color)
+            hover_background_color = get_selection_fill_color(border_color, 68)
+            icon_color = border_color
+        elif self._excluded:
+            text_color = QColor("#d94b5b")
+            icon_color = text_color
+            border_color = QColor("#7a4b51")
+            hover_border_color = QColor("#d94b5b")
+            background_color = QColor("#6b6f76")
+            hover_background_color = background_color.lighter(110)
+            text_decoration = "line-through"
+
+        self.setIcon(category_sidebar_icon(self.item.icon, color=icon_color, size=18))
+        horizontal_padding = 0 if self._collapsed else 8
+        self.setStyleSheet(
+            "QPushButton#category_sidebar_item {"
+            f"background: rgba{background_color.toTuple()};"
+            f"color: rgba{text_color.toTuple()};"
+            f"border-color: rgba{border_color.toTuple()};"
+            "border-style: solid;"
+            "border-width: 1px;"
+            "border-radius: 6px;"
+            f"padding: 5px {horizontal_padding}px;"
+            "text-align: left;"
+            "font-weight: 600;"
+            f"text-decoration: {text_decoration};"
+            "}"
+            "QPushButton#category_sidebar_item:hover {"
+            f"background: rgba{hover_background_color.toTuple()};"
+            f"border-color: rgba{hover_border_color.toTuple()};"
+            "}"
+            "QPushButton#category_sidebar_item:pressed {"
+            "background: rgba(77, 163, 255, 60);"
+            "border-color: rgba(77, 163, 255, 120);"
+            "}"
+        )
 
 
 class CategorySidebarWidget(QFrame):
@@ -139,23 +213,6 @@ class CategorySidebarWidget(QFrame):
             "QFrame#category_sidebar_separator {"
             "background: rgba(120, 128, 140, 65);"
             "max-height: 1px;"
-            "}"
-            "QPushButton#category_sidebar_item {"
-            "background: transparent;"
-            "color: #d8dde6;"
-            "border: 1px solid transparent;"
-            "border-radius: 6px;"
-            "padding: 5px 8px;"
-            "text-align: left;"
-            "font-weight: 600;"
-            "}"
-            "QPushButton#category_sidebar_item:hover {"
-            "background: rgba(120, 128, 140, 45);"
-            "border-color: rgba(120, 128, 140, 80);"
-            "}"
-            "QPushButton#category_sidebar_item:pressed {"
-            "background: rgba(77, 163, 255, 60);"
-            "border-color: rgba(77, 163, 255, 120);"
             "}"
             "QPushButton#category_sidebar_settings_button,"
             "QPushButton#category_sidebar_collapse_button {"
@@ -244,7 +301,23 @@ class CategorySidebarWidget(QFrame):
             self.content_layout.addSpacing(4)
 
         for item in group.items:
-            self.content_layout.addWidget(CategorySidebarItemWidget(item, collapsed))
+            item_widget = CategorySidebarItemWidget(item, collapsed)
+            tag_id = self._tag_filter_id_for_item(item)
+            if tag_id is not None:
+                item_widget.clicked.connect(
+                    lambda checked=False, tag_id=tag_id: self.driver.apply_tag_filter(tag_id)
+                )
+                item_widget.right_clicked.connect(
+                    lambda tag_id=tag_id: self.driver.apply_excluded_tag_filter(tag_id)
+                )
+                item_widget.set_filter_state(
+                    self.driver.is_tag_filter_selected(tag_id),
+                    self.driver.is_tag_filter_excluded(tag_id),
+                    self.driver.get_tag_filter_highlight_color(),
+                )
+            else:
+                item_widget.setEnabled(False)
+            self.content_layout.addWidget(item_widget)
 
     def _add_separator(self) -> None:
         separator = QFrame()
@@ -252,3 +325,9 @@ class CategorySidebarWidget(QFrame):
         separator.setFrameShape(QFrame.Shape.HLine)
         separator.setFixedHeight(1)
         self.content_layout.addWidget(separator)
+
+    def _tag_filter_id_for_item(self, item: CategoryItem) -> int | None:
+        for rule in item.filter_rules:
+            if rule.type == "tag" and rule.tag_id is not None:
+                return rule.tag_id
+        return None

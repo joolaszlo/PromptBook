@@ -1842,6 +1842,7 @@ class QtDriver(DriverMixin, QObject):
             self.pages_count, self.browsing_history.current.page_index, emit=False
         )
         self.refresh_tag_filter_controls()
+        self.refresh_category_sidebar()
 
     def remove_recent_library(self, item_key: str):
         self.cached_values.beginGroup(SettingItems.LIBS_LIST)
