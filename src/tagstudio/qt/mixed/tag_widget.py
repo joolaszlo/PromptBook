@@ -168,6 +168,7 @@ class TagWidget(QWidget):
         on_remove_callback: Callable[[], None] | None = None,
         on_click_callback: Callable[[], None] | None = None,
         on_edit_callback: Callable[[], None] | None = None,
+        enable_context_menu: bool = True,
     ) -> None:
         super().__init__()
         self.tag = tag
@@ -199,25 +200,30 @@ class TagWidget(QWidget):
             edit_action = QAction(self)
             edit_action.setText(Translations["generic.edit"])
             edit_action.triggered.connect(self.on_edit.emit)
-            self.bg_button.addAction(edit_action)
-        # if on_click_callback:
-        self.bg_button.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
+            if enable_context_menu:
+                self.bg_button.addAction(edit_action)
+        self.bg_button.setContextMenuPolicy(
+            Qt.ContextMenuPolicy.ActionsContextMenu
+            if enable_context_menu
+            else Qt.ContextMenuPolicy.NoContextMenu
+        )
 
         # TODO: This currently doesn't work in "Add Tag" menus. Either fix this or
         # disable it in that context.
         self.search_for_tag_action = QAction(self)
         self.search_for_tag_action.setText(Translations["tag.search_for_tag"])
-        self.bg_button.addAction(self.search_for_tag_action)
 
         self.pinned_action = QAction(self)
         self.pinned_action.setText("Pinned")
         self.pinned_action.setCheckable(True)
-        self.bg_button.addAction(self.pinned_action)
 
         self.favorite_action = QAction(self)
         self.favorite_action.setText("Favorite")
         self.favorite_action.setCheckable(True)
-        self.bg_button.addAction(self.favorite_action)
+        if enable_context_menu:
+            self.bg_button.addAction(self.search_for_tag_action)
+            self.bg_button.addAction(self.pinned_action)
+            self.bg_button.addAction(self.favorite_action)
         # add_to_search_action = QAction(self)
         # add_to_search_action.setText(Translations.translate_formatted("tag.add_to_search"))
         # self.bg_button.addAction(add_to_search_action)

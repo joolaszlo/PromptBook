@@ -373,7 +373,13 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.pinned_tags_title.setVisible(bool(tags))
 
         for tag in tags:
-            chip = TagWidget(tag=tag, has_edit=False, has_remove=False, library=self.lib)
+            chip = TagWidget(
+                tag=tag,
+                has_edit=False,
+                has_remove=False,
+                library=self.lib,
+                enable_context_menu=False,
+            )
             chip.search_for_tag_action.setVisible(False)
             chip.pinned_action.setVisible(False)
             chip.favorite_action.setVisible(False)

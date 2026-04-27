@@ -6,11 +6,13 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
 from tagstudio.core.library.alchemy.enums import BrowsingState
 from tagstudio.core.library.alchemy.models import Entry
 from tagstudio.core.utils.types import unwrap
+from tagstudio.qt.mixed.add_entry_modal import AddEntryModal
 from tagstudio.qt.mixed.tag_widget import TagWidget
 from tagstudio.qt.ts_qt import QtDriver
 
@@ -177,3 +179,19 @@ def test_refresh_tag_filter_controls_stable_labels_and_highlights(qtbot, qt_driv
     assert isinstance(chip, TagWidget)
     assert "border-width: 2px;" in chip.bg_button.styleSheet()
     assert chip.bg_button.graphicsEffect() is not None
+    assert chip.bg_button.contextMenuPolicy() == Qt.ContextMenuPolicy.NoContextMenu
+    assert chip.bg_button.actions() == []
+
+
+def test_add_entry_pinned_tags_disable_context_menu(qtbot, qt_driver: QtDriver):
+    modal = AddEntryModal(lambda file_path, prompt, tags: True, qt_driver.lib)
+    qtbot.addWidget(modal)
+
+    foo = unwrap(qt_driver.lib.get_tag_by_name("foo"))
+    foo.pinned = True
+    modal.set_pinned_tags([foo])
+
+    chip = modal.pinned_tags_layout.itemAt(0).widget()
+    assert isinstance(chip, TagWidget)
+    assert chip.bg_button.contextMenuPolicy() == Qt.ContextMenuPolicy.NoContextMenu
+    assert chip.bg_button.actions() == []

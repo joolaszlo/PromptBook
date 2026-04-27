@@ -257,7 +257,13 @@ class AddEntryModal(QDialog):
             return
 
         for tag in self._pinned_tags:
-            tag_widget = TagWidget(tag, has_edit=False, has_remove=False, library=self.lib)
+            tag_widget = TagWidget(
+                tag,
+                has_edit=False,
+                has_remove=False,
+                library=self.lib,
+                enable_context_menu=False,
+            )
             tag_widget.search_for_tag_action.setVisible(False)
             tag_widget.pinned_action.setVisible(False)
             tag_widget.favorite_action.setVisible(False)
