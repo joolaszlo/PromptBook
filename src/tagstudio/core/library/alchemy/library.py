@@ -67,6 +67,10 @@ from tagstudio.core.constants import (
     TS_FOLDER_NAME,
 )
 from tagstudio.core.enums import LibraryPrefs
+from tagstudio.core.library.category_sidebar import (
+    CATEGORY_SIDEBAR_SETTINGS_ID,
+    CategorySidebarSettings,
+)
 from tagstudio.core.library.alchemy import default_color_groups
 from tagstudio.core.library.alchemy.constants import (
     DB_VERSION,
@@ -92,6 +96,7 @@ from tagstudio.core.library.alchemy.fields import (
 )
 from tagstudio.core.library.alchemy.joins import TagEntry, TagParent
 from tagstudio.core.library.alchemy.models import (
+    CategorySidebarSettingsRecord,
     Entry,
     Folder,
     Namespace,
@@ -549,6 +554,8 @@ class Library:
                     self.__apply_db103_schema_changes(session)
                 if loaded_db_version < 104:
                     self.__apply_db104_schema_changes(session)
+                if loaded_db_version < 105:
+                    self.__apply_db105_schema_changes(session)
                 if loaded_db_version == 6:
                     self.__apply_repairs_for_db6(session)
 
@@ -753,6 +760,27 @@ class Library:
         except Exception as e:
             logger.error(
                 "[Library][Migration] Could not create pinned/favorite columns in tags table!",
+                error=e,
+            )
+            session.rollback()
+
+    def __apply_db105_schema_changes(self, session: Session):
+        """Apply database schema changes introduced in DB_VERSION 105."""
+        create_category_sidebar_settings_table = text(
+            "CREATE TABLE IF NOT EXISTS category_sidebar_settings ("
+            "id INTEGER NOT NULL, "
+            "collapsed BOOLEAN NOT NULL DEFAULT 0, "
+            "groups JSON NOT NULL DEFAULT '[]', "
+            "PRIMARY KEY (id)"
+            ")"
+        )
+        try:
+            session.execute(create_category_sidebar_settings_table)
+            session.commit()
+            logger.info("[Library][Migration] Added category sidebar settings table")
+        except Exception as e:
+            logger.error(
+                "[Library][Migration] Could not create category sidebar settings table!",
                 error=e,
             )
             session.rollback()
@@ -1952,6 +1980,51 @@ class Library:
             session.add(pref)
             session.commit()
             # TODO - try/except
+
+    def get_category_sidebar_settings(self) -> CategorySidebarSettings:
+        with Session(self.engine) as session:
+            record = session.get(
+                CategorySidebarSettingsRecord,
+                CATEGORY_SIDEBAR_SETTINGS_ID,
+            )
+            if record is None:
+                return CategorySidebarSettings()
+
+            return CategorySidebarSettings.from_mapping(
+                {
+                    "collapsed": record.collapsed,
+                    "groups": record.groups,
+                }
+            )
+
+    def set_category_sidebar_settings(
+        self,
+        settings: CategorySidebarSettings | dict[str, Any],
+    ) -> CategorySidebarSettings:
+        if isinstance(settings, CategorySidebarSettings):
+            normalized_settings = settings.normalized()
+        else:
+            normalized_settings = CategorySidebarSettings.from_mapping(settings)
+
+        with Session(self.engine) as session:
+            record = session.get(
+                CategorySidebarSettingsRecord,
+                CATEGORY_SIDEBAR_SETTINGS_ID,
+            )
+            if record is None:
+                record = CategorySidebarSettingsRecord(
+                    id=CATEGORY_SIDEBAR_SETTINGS_ID,
+                    collapsed=normalized_settings.collapsed,
+                    groups=[group.to_dict() for group in normalized_settings.groups],
+                )
+            else:
+                record.collapsed = normalized_settings.collapsed
+                record.groups = [group.to_dict() for group in normalized_settings.groups]
+
+            session.add(record)
+            session.commit()
+
+        return normalized_settings
 
     def mirror_entry_fields(self, *entries: Entry) -> None:
         """Mirror fields among multiple Entry items."""

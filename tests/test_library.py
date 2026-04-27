@@ -11,6 +11,12 @@ import pytest
 import structlog
 
 from tagstudio.core.enums import DefaultEnum, LibraryPrefs
+from tagstudio.core.library.category_sidebar import (
+    CategoryFilterRule,
+    CategoryGroup,
+    CategoryItem,
+    CategorySidebarSettings,
+)
 from tagstudio.core.library.alchemy.enums import BrowsingState
 from tagstudio.core.library.alchemy.fields import (
     FieldID,  # pyright: ignore[reportPrivateUsage]
@@ -202,6 +208,70 @@ def test_search_library_case_insensitive(library: Library):
 def test_preferences(library: Library):
     for pref in LibraryPrefs:
         assert library.prefs(pref) == pref.default
+
+
+def test_category_sidebar_settings_default_empty(library: Library):
+    settings = library.get_category_sidebar_settings()
+
+    assert settings.collapsed is False
+    assert settings.groups == []
+
+
+def test_category_sidebar_settings_round_trip_and_normalizes_names(library: Library):
+    saved = library.set_category_sidebar_settings(
+        CategorySidebarSettings(
+            collapsed=True,
+            groups=[
+                CategoryGroup(
+                    id="group-2",
+                    name="",
+                    order=2,
+                    items=[],
+                ),
+                CategoryGroup(
+                    id="group-1",
+                    name="",
+                    order=1,
+                    items=[
+                        CategoryItem(
+                            id="item-2",
+                            name="",
+                            icon="star",
+                            order=2,
+                            filter_rules=[
+                                CategoryFilterRule(
+                                    type="tag",
+                                    tag_id=1000,
+                                )
+                            ],
+                        ),
+                        CategoryItem(
+                            id="item-1",
+                            name="",
+                            icon="",
+                            order=1,
+                            filter_rules=[],
+                        ),
+                    ],
+                ),
+            ],
+        )
+    )
+
+    settings = library.get_category_sidebar_settings()
+
+    assert saved.to_dict() == settings.to_dict()
+    assert settings.collapsed is True
+    assert [group.name for group in settings.groups] == ["New Group", "New Group 2"]
+    assert [group.order for group in settings.groups] == [0, 1]
+    assert [item.name for item in settings.groups[0].items] == [
+        "New Category",
+        "New Category 2",
+    ]
+    assert [item.order for item in settings.groups[0].items] == [0, 1]
+    assert settings.groups[0].items[1].icon == "star"
+    assert settings.groups[0].items[1].filter_rules[0].type == "tag"
+    assert settings.groups[0].items[1].filter_rules[0].tag_id == 1000
 
 
 def test_remove_entry_field(library: Library, entry_full: Entry):

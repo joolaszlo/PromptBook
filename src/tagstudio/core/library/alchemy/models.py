@@ -343,6 +343,25 @@ class Preferences(Base):
     value: Mapped[dict] = mapped_column(JSON, nullable=False)
 
 
+class CategorySidebarSettingsRecord(Base):
+    __tablename__ = "category_sidebar_settings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    collapsed: Mapped[bool] = mapped_column(nullable=False, default=False)
+    groups: Mapped[list[dict]] = mapped_column(JSON, nullable=False, default=list)
+
+    def __init__(
+        self,
+        id: int,
+        collapsed: bool = False,
+        groups: list[dict] | None = None,
+    ) -> None:
+        self.id = id
+        self.collapsed = collapsed
+        self.groups = groups or []
+        super().__init__()
+
+
 class Version(Base):
     __tablename__ = "versions"
 
