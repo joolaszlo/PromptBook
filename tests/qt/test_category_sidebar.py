@@ -9,6 +9,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QLabel
 from pytestqt.qtbot import QtBot
 
+from tagstudio.core.library.alchemy.models import Tag
 from tagstudio.core.library.category_sidebar import (
     CategoryFilterRule,
     CategoryGroup,
@@ -16,19 +17,36 @@ from tagstudio.core.library.category_sidebar import (
     CategorySidebarSettings,
 )
 from tagstudio.qt.mixed.category_sidebar import CategorySidebarItemWidget, CategorySidebarWidget
+from tagstudio.qt.mixed.category_sidebar_settings import CategorySidebarSettingsPanel
 
 
 class DummyLibrary:
     def __init__(self) -> None:
         self.library_dir = Path(".")
-        self.saved_settings: CategorySidebarSettings | None = None
+        self.saved_settings = CategorySidebarSettings()
+        self.tags = [
+            Tag(id=1000, name="Person"),
+            Tag(id=1001, name="Place"),
+        ]
+
+    def get_category_sidebar_settings(self) -> CategorySidebarSettings:
+        return CategorySidebarSettings.from_mapping(self.saved_settings.to_dict())
 
     def set_category_sidebar_settings(
         self,
         settings: CategorySidebarSettings,
     ) -> CategorySidebarSettings:
-        self.saved_settings = settings
-        return settings
+        self.saved_settings = CategorySidebarSettings.from_mapping(settings.to_dict())
+        return self.saved_settings
+
+    def tag_display_name(self, tag: Tag | None) -> str:
+        return tag.name if tag else "<NO TAG>"
+
+    def get_tag(self, tag_id: int) -> Tag | None:
+        for tag in self.tags:
+            if tag.id == tag_id:
+                return tag
+        return None
 
 
 class DummyDriver:
@@ -36,6 +54,7 @@ class DummyDriver:
         self.lib = DummyLibrary()
         self.included_tag_ids: set[int] = set()
         self.excluded_tag_ids: set[int] = set()
+        self.refresh_category_sidebar_count = 0
 
     def apply_tag_filter(self, tag_id: int) -> None:
         if tag_id in self.included_tag_ids:
@@ -59,6 +78,9 @@ class DummyDriver:
 
     def get_tag_filter_highlight_color(self) -> QColor:
         return QColor("#4da3ff")
+
+    def refresh_category_sidebar(self) -> None:
+        self.refresh_category_sidebar_count += 1
 
 
 def make_settings() -> CategorySidebarSettings:
@@ -129,3 +151,50 @@ def test_category_sidebar_item_clicks_use_tag_filter_state(qtbot: QtBot):
     qtbot.mouseClick(item, Qt.MouseButton.RightButton)
     assert driver.included_tag_ids == set()
     assert driver.excluded_tag_ids == set()
+
+
+def test_category_sidebar_settings_adds_group_and_item(qtbot: QtBot):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    panel.add_group()
+    panel.add_item()
+
+    panel.group_name_edit.clear()
+    panel._on_group_name_changed("")
+    panel.item_name_edit.clear()
+    panel._on_item_name_changed("")
+    panel.icon_combobox.setCurrentIndex(panel.icon_combobox.findData("camera"))
+    panel.tag_combobox.setCurrentIndex(panel.tag_combobox.findData(1000))
+    panel.apply_settings()
+
+    settings = driver.lib.saved_settings
+    assert driver.refresh_category_sidebar_count == 1
+    assert [group.name for group in settings.groups] == ["New Group"]
+    assert [item.name for item in settings.groups[0].items] == ["New Category"]
+    assert settings.groups[0].items[0].icon == "camera"
+    assert settings.groups[0].items[0].filter_rules[0].tag_id == 1000
+
+
+def test_category_sidebar_settings_persists_order(qtbot: QtBot):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    panel.add_group()
+    panel.add_group()
+    panel.move_group(-1)
+    panel.add_item()
+    panel.add_item()
+    panel.move_item(-1)
+    panel.apply_settings()
+
+    settings = driver.lib.saved_settings
+    assert [group.name for group in settings.groups] == ["New Group 2", "New Group"]
+    assert [group.order for group in settings.groups] == [0, 1]
+    assert [item.name for item in settings.groups[0].items] == [
+        "New Category 2",
+        "New Category",
+    ]
+    assert [item.order for item in settings.groups[0].items] == [0, 1]

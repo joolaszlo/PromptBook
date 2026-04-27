@@ -12,7 +12,6 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -26,6 +25,7 @@ from tagstudio.core.library.category_sidebar import (
     CategorySidebarSettings,
 )
 from tagstudio.qt.category_sidebar_icons import category_sidebar_icon
+from tagstudio.qt.mixed.category_sidebar_settings import CategorySidebarSettingsPanel
 from tagstudio.qt.mixed.tag_widget import (
     get_selection_fill_color,
     get_selection_hover_color,
@@ -179,7 +179,7 @@ class CategorySidebarWidget(QFrame):
         self.settings_button.setIcon(category_sidebar_icon("settings", size=18))
         self.settings_button.setIconSize(QSize(18, 18))
         self.settings_button.setToolTip("Category sidebar settings")
-        self.settings_button.clicked.connect(self.open_settings_placeholder)
+        self.settings_button.clicked.connect(self.open_settings)
         self.footer_layout.addWidget(self.settings_button)
 
         self.collapse_button = QPushButton()
@@ -240,12 +240,9 @@ class CategorySidebarWidget(QFrame):
             self.settings = self.driver.lib.set_category_sidebar_settings(self.settings)
         self.render()
 
-    def open_settings_placeholder(self) -> None:
-        QMessageBox.information(
-            self,
-            "Category Sidebar",
-            "Category sidebar settings will be added here.",
-        )
+    def open_settings(self) -> None:
+        self.settings_modal = CategorySidebarSettingsPanel.build_modal(self.driver)
+        self.settings_modal.show()
 
     def render(self) -> None:
         while self.content_layout.count():
