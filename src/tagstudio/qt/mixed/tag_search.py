@@ -2,9 +2,10 @@
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
-
+import warnings
 import contextlib
 from collections.abc import Callable
+from signal import signal
 from typing import TYPE_CHECKING, Union
 from warnings import catch_warnings
 
@@ -28,6 +29,7 @@ from tagstudio.core.constants import RESERVED_TAG_END, RESERVED_TAG_START
 from tagstudio.core.library.alchemy.enums import BrowsingState, TagColorEnum
 from tagstudio.core.library.alchemy.library import Library
 from tagstudio.core.library.alchemy.models import Tag
+from tagstudio.qt.mixed import tag_widget
 from tagstudio.qt.mixed.tag_widget import TagWidget
 from tagstudio.qt.models.palette import ColorType, get_tag_color
 from tagstudio.qt.translations import Translations
@@ -292,6 +294,18 @@ class TagSearchPanel(PanelWidget):
             self.scroll_layout.addWidget(cb)
             self.create_button_in_layout = True
 
+
+
+
+    def safe_disconnect(self, signal) -> None:
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                signal.disconnect()
+        except (RuntimeError, TypeError):
+            pass
+
+
     def set_tag_widget(self, tag: Tag | None, index: int):
         """Set the tag of a tag widget at a specific index."""
         # Create any new tag widgets needed up to the given index
@@ -305,13 +319,12 @@ class TagSearchPanel(PanelWidget):
         tag_widget: TagWidget = self.scroll_layout.itemAt(index).widget()  # pyright: ignore[reportAssignmentType]
         assert isinstance(tag_widget, TagWidget)
 
-        with contextlib.suppress(RuntimeError, TypeError):
-            tag_widget.on_edit.disconnect()
-            tag_widget.on_remove.disconnect()
-            tag_widget.bg_button.clicked.disconnect()
-            tag_widget.search_for_tag_action.triggered.disconnect()
-            tag_widget.pinned_action.toggled.disconnect()
-            tag_widget.favorite_action.toggled.disconnect()
+        self.safe_disconnect(tag_widget.on_edit)
+        self.safe_disconnect(tag_widget.on_remove)
+        self.safe_disconnect(tag_widget.bg_button.clicked)
+        self.safe_disconnect(tag_widget.search_for_tag_action.triggered)
+        self.safe_disconnect(tag_widget.pinned_action.toggled)
+        self.safe_disconnect(tag_widget.favorite_action.toggled)
 
         tag_widget.set_tag(tag)
 
