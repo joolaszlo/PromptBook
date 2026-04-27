@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSignalBlocker, Qt
+from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -39,6 +40,68 @@ from tagstudio.qt.views.panel_modal import PanelModal, PanelWidget
 if TYPE_CHECKING:
     from tagstudio.core.library.alchemy.models import Tag
     from tagstudio.qt.ts_qt import QtDriver
+
+
+class CategorySidebarListWidget(QListWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDragDropOverwriteMode(False)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+
+
+class CategorySidebarGroupListWidget(CategorySidebarListWidget):
+    def __init__(self, panel: "CategorySidebarSettingsPanel") -> None:
+        super().__init__()
+        self.panel = panel
+        self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:  # noqa: N802
+        if event.source() is self.panel.item_list:
+            event.setDropAction(Qt.DropAction.MoveAction)
+            event.accept()
+            return
+        super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event: QDragMoveEvent) -> None:  # noqa: N802
+        if event.source() is self.panel.item_list:
+            event.setDropAction(Qt.DropAction.MoveAction)
+            event.accept()
+            return
+        super().dragMoveEvent(event)
+
+    def dropEvent(self, event: QDropEvent) -> None:  # noqa: N802
+        if event.source() is self.panel.item_list:
+            target_group = self.itemAt(event.position().toPoint())
+            if target_group is None:
+                event.ignore()
+                return
+
+            target_group_id = target_group.data(Qt.ItemDataRole.UserRole)
+            if self.panel.move_current_item_to_group(target_group_id):
+                event.setDropAction(Qt.DropAction.MoveAction)
+                event.accept()
+                return
+
+            event.ignore()
+            return
+
+        super().dropEvent(event)
+        self.panel.sync_group_order_from_list()
+
+
+class CategorySidebarItemListWidget(CategorySidebarListWidget):
+    def __init__(self, panel: "CategorySidebarSettingsPanel") -> None:
+        super().__init__()
+        self.panel = panel
+        self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+
+    def dropEvent(self, event: QDropEvent) -> None:  # noqa: N802
+        super().dropEvent(event)
+        self.panel.sync_current_item_order_from_list()
 
 
 class CategorySidebarSettingsPanel(PanelWidget):
@@ -92,9 +155,8 @@ class CategorySidebarSettingsPanel(PanelWidget):
         title.setObjectName("category_sidebar_settings_header")
         layout.addWidget(title)
 
-        self.group_list = QListWidget()
+        self.group_list = CategorySidebarGroupListWidget(self)
         self.group_list.setObjectName("category_sidebar_group_list")
-        self.group_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.group_list.currentRowChanged.connect(self._on_group_row_changed)
         layout.addWidget(self.group_list, 1)
 
@@ -131,9 +193,8 @@ class CategorySidebarSettingsPanel(PanelWidget):
         title.setObjectName("category_sidebar_settings_header")
         layout.addWidget(title)
 
-        self.item_list = QListWidget()
+        self.item_list = CategorySidebarItemListWidget(self)
         self.item_list.setObjectName("category_sidebar_item_list")
-        self.item_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.item_list.currentRowChanged.connect(self._on_item_row_changed)
         layout.addWidget(self.item_list, 1)
 
@@ -156,6 +217,20 @@ class CategorySidebarSettingsPanel(PanelWidget):
         order_row.addWidget(self.item_up_button)
         order_row.addWidget(self.item_down_button)
         layout.addLayout(order_row)
+
+        sort_row = QHBoxLayout()
+        sort_row.setContentsMargins(0, 0, 0, 0)
+        self.item_sort_az_button = QPushButton("Sort A-Z")
+        self.item_sort_az_button.clicked.connect(
+            lambda: self.sort_current_group_items(reverse=False)
+        )
+        self.item_sort_za_button = QPushButton("Sort Z-A")
+        self.item_sort_za_button.clicked.connect(
+            lambda: self.sort_current_group_items(reverse=True)
+        )
+        sort_row.addWidget(self.item_sort_az_button)
+        sort_row.addWidget(self.item_sort_za_button)
+        layout.addLayout(sort_row)
 
         self.splitter.addWidget(panel)
 
@@ -386,6 +461,8 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self.item_down_button.setEnabled(
             has_item and self.item_list.currentRow() < self.item_list.count() - 1
         )
+        self.item_sort_az_button.setEnabled(has_group and self.item_list.count() > 1)
+        self.item_sort_za_button.setEnabled(has_group and self.item_list.count() > 1)
         self._loading_details = False
 
     def _tag_id_for_item(self, item: CategoryItem | None) -> int | None:
@@ -479,6 +556,22 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self.settings.normalized()
         self._reload_groups(self.settings.groups[new_row].id)
 
+    def sync_group_order_from_list(self) -> None:
+        ordered_ids = [
+            self.group_list.item(row).data(Qt.ItemDataRole.UserRole)
+            for row in range(self.group_list.count())
+        ]
+        groups_by_id = {group.id: group for group in self.settings.groups}
+        self.settings.groups = [
+            groups_by_id[group_id] for group_id in ordered_ids if group_id in groups_by_id
+        ]
+        for index, group in enumerate(self.settings.groups):
+            group.order = index
+        current = self.group_list.currentItem()
+        current_id = current.data(Qt.ItemDataRole.UserRole) if current else None
+        self.settings.normalized()
+        self._reload_groups(current_id)
+
     def add_item(self) -> None:
         group = self.current_group()
         if not group:
@@ -510,6 +603,59 @@ class CategorySidebarSettingsPanel(PanelWidget):
             item.order = index
         self.settings.normalized()
         self._reload_items(group.items[new_row].id)
+
+    def sync_current_item_order_from_list(self) -> None:
+        group = self.current_group()
+        if not group:
+            return
+
+        ordered_ids = [
+            self.item_list.item(row).data(Qt.ItemDataRole.UserRole)
+            for row in range(self.item_list.count())
+        ]
+        items_by_id = {item.id: item for item in group.items}
+        group.items = [items_by_id[item_id] for item_id in ordered_ids if item_id in items_by_id]
+        for index, item in enumerate(group.items):
+            item.order = index
+        self.settings.normalized()
+        current = self.item_list.currentItem()
+        self._reload_items(current.data(Qt.ItemDataRole.UserRole) if current else None)
+
+    def move_current_item_to_group(self, target_group_id: str) -> bool:
+        source_group = self.current_group()
+        item = self.current_item()
+        target_group = next(
+            (group for group in self.settings.groups if group.id == target_group_id),
+            None,
+        )
+        if not source_group or not item or not target_group or source_group.id == target_group.id:
+            return False
+
+        source_group.items = [
+            candidate for candidate in source_group.items if candidate.id != item.id
+        ]
+        item.order = len(target_group.items)
+        target_group.items.append(item)
+        for group in (source_group, target_group):
+            for index, group_item in enumerate(group.items):
+                group_item.order = index
+
+        self.settings.normalized()
+        self._reload_groups(target_group.id)
+        self._reload_items(item.id)
+        return True
+
+    def sort_current_group_items(self, *, reverse: bool) -> None:
+        group = self.current_group()
+        if not group:
+            return
+
+        selected_item_id = self.current_item().id if self.current_item() else None
+        group.items.sort(key=lambda item: item.name.casefold(), reverse=reverse)
+        for index, item in enumerate(group.items):
+            item.order = index
+        self.settings.normalized()
+        self._reload_items(selected_item_id)
 
     def apply_settings(self) -> None:
         self.settings = self.settings.normalized()

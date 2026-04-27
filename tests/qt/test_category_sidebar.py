@@ -198,3 +198,90 @@ def test_category_sidebar_settings_persists_order(qtbot: QtBot):
         "New Category",
     ]
     assert [item.order for item in settings.groups[0].items] == [0, 1]
+
+
+def test_category_sidebar_settings_syncs_dragged_group_order(qtbot: QtBot):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    panel.add_group()
+    panel.add_group()
+    moved = panel.group_list.takeItem(1)
+    panel.group_list.insertItem(0, moved)
+    panel.group_list.setCurrentRow(0)
+    panel.sync_group_order_from_list()
+    panel.apply_settings()
+
+    settings = driver.lib.saved_settings
+    assert [group.name for group in settings.groups] == ["New Group 2", "New Group"]
+    assert [group.order for group in settings.groups] == [0, 1]
+
+
+def test_category_sidebar_settings_syncs_dragged_item_order(qtbot: QtBot):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    panel.add_group()
+    panel.add_item()
+    panel.add_item()
+    moved = panel.item_list.takeItem(1)
+    panel.item_list.insertItem(0, moved)
+    panel.item_list.setCurrentRow(0)
+    panel.sync_current_item_order_from_list()
+    panel.apply_settings()
+
+    settings = driver.lib.saved_settings
+    assert [item.name for item in settings.groups[0].items] == [
+        "New Category 2",
+        "New Category",
+    ]
+    assert [item.order for item in settings.groups[0].items] == [0, 1]
+
+
+def test_category_sidebar_settings_moves_item_between_groups(qtbot: QtBot):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    panel.add_group()
+    first_group_id = panel.current_group().id
+    panel.add_item()
+    panel.item_name_edit.setText("Subject")
+    panel._on_item_name_changed("Subject")
+    panel.tag_combobox.setCurrentIndex(panel.tag_combobox.findData(1000))
+    panel.add_group()
+    second_group_id = panel.current_group().id
+    panel.group_list.setCurrentRow(0)
+    panel.item_list.setCurrentRow(0)
+
+    assert panel.move_current_item_to_group(second_group_id)
+    panel.apply_settings()
+
+    settings = driver.lib.saved_settings
+    first_group = next(group for group in settings.groups if group.id == first_group_id)
+    second_group = next(group for group in settings.groups if group.id == second_group_id)
+    assert first_group.items == []
+    assert [item.name for item in second_group.items] == ["Subject"]
+    assert second_group.items[0].filter_rules[0].tag_id == 1000
+
+
+def test_category_sidebar_settings_sorts_selected_group_items(qtbot: QtBot):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    panel.add_group()
+    panel.add_item()
+    panel.item_name_edit.setText("Beta")
+    panel._on_item_name_changed("Beta")
+    panel.add_item()
+    panel.item_name_edit.setText("Alpha")
+    panel._on_item_name_changed("Alpha")
+
+    panel.sort_current_group_items(reverse=False)
+    assert [item.name for item in panel.current_group().items] == ["Alpha", "Beta"]
+
+    panel.sort_current_group_items(reverse=True)
+    assert [item.name for item in panel.current_group().items] == ["Beta", "Alpha"]
