@@ -31,6 +31,10 @@ from tagstudio.core.library.category_sidebar import (
     CategoryGroup,
     CategoryItem,
     CategorySidebarSettings,
+    FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL,
+    FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY,
+    FILTER_RULE_TYPE_TAG,
+    FILTER_RULE_TYPE_TAG_PREFIX,
 )
 from tagstudio.qt.category_sidebar_icons import (
     DEFAULT_CATEGORY_SIDEBAR_ICON,
@@ -265,11 +269,27 @@ class CategorySidebarSettingsPanel(PanelWidget):
 
         self.item_details_widget = QWidget()
         item_form = QFormLayout(self.item_details_widget)
+        self.item_form = item_form
         item_form.setContentsMargins(0, 0, 0, 0)
         self.item_name_edit = QLineEdit()
         self.item_name_edit.setObjectName("category_sidebar_item_name_edit")
         self.item_name_edit.textEdited.connect(self._on_item_name_changed)
         item_form.addRow("Category Name", self.item_name_edit)
+
+        self.rule_type_combobox = QComboBox()
+        self.rule_type_combobox.setObjectName("category_sidebar_rule_type_combobox")
+        self.rule_type_combobox.addItem("Single tag", FILTER_RULE_TYPE_TAG)
+        self.rule_type_combobox.addItem("Tag prefix", FILTER_RULE_TYPE_TAG_PREFIX)
+        self.rule_type_combobox.addItem("Multiple tags", FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY)
+        self.rule_type_combobox.currentIndexChanged.connect(self._on_rule_type_changed)
+        item_form.addRow("Rule Type", self.rule_type_combobox)
+
+        self.rule_include_combobox = QComboBox()
+        self.rule_include_combobox.setObjectName("category_sidebar_rule_include_combobox")
+        self.rule_include_combobox.addItem("Include", True)
+        self.rule_include_combobox.addItem("Exclude", False)
+        self.rule_include_combobox.currentIndexChanged.connect(self._on_rule_include_changed)
+        item_form.addRow("Rule State", self.rule_include_combobox)
 
         self.icon_picker_widget = QWidget()
         icon_picker_layout = QVBoxLayout(self.icon_picker_widget)
@@ -298,13 +318,44 @@ class CategorySidebarSettingsPanel(PanelWidget):
         icon_picker_layout.addWidget(self.icon_scroll_area)
         item_form.addRow("Icon", self.icon_picker_widget)
 
-        self.tag_combobox = QComboBox()
-        self.tag_combobox.setObjectName("category_sidebar_tag_combobox")
-        self.tag_combobox.addItem("No linked tag", None)
+        self.single_tag_combobox = QComboBox()
+        self.single_tag_combobox.setObjectName("category_sidebar_single_tag_combobox")
+        self.single_tag_combobox.addItem("No linked tag", None)
         for tag in self._sorted_tags():
-            self.tag_combobox.addItem(self._tag_label(tag), tag.id)
-        self.tag_combobox.currentIndexChanged.connect(self._on_tag_changed)
-        item_form.addRow("Linked Tag", self.tag_combobox)
+            self.single_tag_combobox.addItem(self._tag_label(tag), tag.id)
+        self.single_tag_combobox.currentIndexChanged.connect(self._on_single_tag_changed)
+        item_form.addRow("Linked Tag", self.single_tag_combobox)
+
+        self.prefix_edit = QLineEdit()
+        self.prefix_edit.setObjectName("category_sidebar_prefix_edit")
+        self.prefix_edit.setPlaceholderText("story_")
+        self.prefix_edit.textEdited.connect(self._on_prefix_changed)
+        item_form.addRow("Tag Prefix", self.prefix_edit)
+
+        self.multiple_match_combobox = QComboBox()
+        self.multiple_match_combobox.setObjectName("category_sidebar_multiple_match_combobox")
+        self.multiple_match_combobox.addItem(
+            "Any selected tag",
+            FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY,
+        )
+        self.multiple_match_combobox.addItem(
+            "All selected tags",
+            FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL,
+        )
+        self.multiple_match_combobox.currentIndexChanged.connect(self._on_multiple_match_changed)
+        item_form.addRow("Match", self.multiple_match_combobox)
+
+        self.multiple_tags_list = QListWidget()
+        self.multiple_tags_list.setObjectName("category_sidebar_multiple_tags_list")
+        self.multiple_tags_list.setMaximumHeight(120)
+        for tag in self._sorted_tags():
+            tag_item = QListWidgetItem(self._tag_label(tag))
+            tag_item.setData(Qt.ItemDataRole.UserRole, tag.id)
+            tag_item.setFlags(tag_item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            tag_item.setCheckState(Qt.CheckState.Unchecked)
+            self.multiple_tags_list.addItem(tag_item)
+        self.multiple_tags_list.itemChanged.connect(self._on_multiple_tags_changed)
+        item_form.addRow("Tags", self.multiple_tags_list)
         layout.addWidget(self.item_details_widget)
 
         self.empty_details_label = QLabel("Select a group or category to edit its details.")
@@ -483,9 +534,48 @@ class CategorySidebarSettingsPanel(PanelWidget):
             item.icon = icon_name
         self._set_selected_icon(icon_name)
 
-        tag_id = self._tag_id_for_item(item)
-        tag_index = self.tag_combobox.findData(tag_id)
-        self.tag_combobox.setCurrentIndex(tag_index if tag_index >= 0 else 0)
+        rule = self._current_rule(item)
+        rule_type = rule.type if rule else FILTER_RULE_TYPE_TAG
+        if rule_type == FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL:
+            rule_type_index = self.rule_type_combobox.findData(FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY)
+        else:
+            rule_type_index = self.rule_type_combobox.findData(rule_type)
+        self.rule_type_combobox.setCurrentIndex(max(0, rule_type_index))
+
+        include_index = self.rule_include_combobox.findData(rule.include if rule else True)
+        self.rule_include_combobox.setCurrentIndex(max(0, include_index))
+
+        tag_id = rule.tag_id if rule and rule.type == FILTER_RULE_TYPE_TAG else None
+        tag_index = self.single_tag_combobox.findData(tag_id)
+        self.single_tag_combobox.setCurrentIndex(tag_index if tag_index >= 0 else 0)
+
+        self.prefix_edit.setText(
+            rule.prefix if rule and rule.type == FILTER_RULE_TYPE_TAG_PREFIX and rule.prefix else ""
+        )
+
+        match_type = (
+            rule.type
+            if rule and rule.type == FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL
+            else FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY
+        )
+        match_index = self.multiple_match_combobox.findData(match_type)
+        self.multiple_match_combobox.setCurrentIndex(max(0, match_index))
+        selected_tag_ids = set(
+            rule.tag_ids
+            if rule
+            and rule.type
+            in {FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY, FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL}
+            else []
+        )
+        with QSignalBlocker(self.multiple_tags_list):
+            for row in range(self.multiple_tags_list.count()):
+                tag_item = self.multiple_tags_list.item(row)
+                tag_item.setCheckState(
+                    Qt.CheckState.Checked
+                    if tag_item.data(Qt.ItemDataRole.UserRole) in selected_tag_ids
+                    else Qt.CheckState.Unchecked
+                )
+        self._update_rule_editor_visibility(rule_type)
 
         has_group = group is not None
         has_item = item is not None
@@ -504,13 +594,50 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self.item_sort_za_button.setEnabled(has_group and self.item_list.count() > 1)
         self._loading_details = False
 
-    def _tag_id_for_item(self, item: CategoryItem | None) -> int | None:
-        if not item:
+    def _current_rule(self, item: CategoryItem | None = None) -> CategoryFilterRule | None:
+        item = item or self.current_item()
+        if not item or not item.filter_rules:
             return None
-        for rule in item.filter_rules:
-            if rule.type == "tag":
-                return rule.tag_id
-        return None
+        return item.filter_rules[0]
+
+    def _set_current_rule(self, rule: CategoryFilterRule | None) -> None:
+        item = self.current_item()
+        if not item:
+            return
+        item.filter_rules = [rule] if rule else []
+
+    def _tag_name_for_id(self, tag_id: int | None) -> str | None:
+        if tag_id is None:
+            return None
+        tag = self.driver.lib.get_tag(tag_id)
+        return tag.name if tag else None
+
+    def _checked_multiple_tag_ids(self) -> list[int]:
+        tag_ids: list[int] = []
+        for row in range(self.multiple_tags_list.count()):
+            tag_item = self.multiple_tags_list.item(row)
+            if tag_item.checkState() == Qt.CheckState.Checked:
+                tag_id = tag_item.data(Qt.ItemDataRole.UserRole)
+                if tag_id is not None:
+                    tag_ids.append(tag_id)
+        return tag_ids
+
+    def _update_rule_editor_visibility(self, rule_type: str) -> None:
+        is_single_tag = rule_type == FILTER_RULE_TYPE_TAG
+        is_prefix = rule_type == FILTER_RULE_TYPE_TAG_PREFIX
+        is_multiple = rule_type in {
+            FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY,
+            FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL,
+        }
+        for widget, visible in (
+            (self.single_tag_combobox, is_single_tag),
+            (self.prefix_edit, is_prefix),
+            (self.multiple_match_combobox, is_multiple),
+            (self.multiple_tags_list, is_multiple),
+        ):
+            widget.setVisible(visible)
+            if label := self.item_form.labelForField(widget):
+                label.setVisible(visible)
 
     def _on_group_name_changed(self, text: str) -> None:
         if self._loading_details:
@@ -586,24 +713,82 @@ class CategorySidebarSettingsPanel(PanelWidget):
         if current:
             current.setIcon(category_sidebar_icon(item.icon, size=18))
 
-    def _on_tag_changed(self) -> None:
+    def _on_rule_type_changed(self, *args) -> None:
         if self._loading_details:
             return
-        item = self.current_item()
-        if not item:
+        rule_type = self.rule_type_combobox.currentData() or FILTER_RULE_TYPE_TAG
+        self._update_rule_editor_visibility(rule_type)
+
+        if rule_type == FILTER_RULE_TYPE_TAG:
+            self._on_single_tag_changed()
+        elif rule_type == FILTER_RULE_TYPE_TAG_PREFIX:
+            self._on_prefix_changed(self.prefix_edit.text())
+        else:
+            self._on_multiple_tags_changed()
+
+    def _on_rule_include_changed(self, *args) -> None:
+        if self._loading_details:
             return
-        tag_id = self.tag_combobox.currentData()
-        tag = self.driver.lib.get_tag(tag_id) if tag_id is not None else None
-        item.filter_rules = (
-            [
-                CategoryFilterRule(
-                    type="tag",
-                    tag_id=tag_id,
-                    tag_name=tag.name if tag else None,
-                )
-            ]
+        rule = self._current_rule()
+        if not rule:
+            self._on_rule_type_changed()
+            return
+        rule.include = bool(self.rule_include_combobox.currentData())
+
+    def _on_single_tag_changed(self, *args) -> None:
+        if self._loading_details:
+            return
+        tag_id = self.single_tag_combobox.currentData()
+        self._set_current_rule(
+            CategoryFilterRule(
+                type=FILTER_RULE_TYPE_TAG,
+                tag_id=tag_id,
+                tag_name=self._tag_name_for_id(tag_id),
+                include=bool(self.rule_include_combobox.currentData()),
+            )
             if tag_id is not None
-            else []
+            else None
+        )
+
+    def _on_prefix_changed(self, text: str) -> None:
+        if self._loading_details:
+            return
+        prefix = text.strip()
+        self._set_current_rule(
+            CategoryFilterRule(
+                type=FILTER_RULE_TYPE_TAG_PREFIX,
+                prefix=prefix,
+                include=bool(self.rule_include_combobox.currentData()),
+            )
+            if prefix
+            else None
+        )
+
+    def _on_multiple_match_changed(self, *args) -> None:
+        if self._loading_details:
+            return
+        self._on_multiple_tags_changed()
+
+    def _on_multiple_tags_changed(self, *args) -> None:
+        if self._loading_details:
+            return
+        tag_ids = self._checked_multiple_tag_ids()
+        self._set_current_rule(
+            CategoryFilterRule(
+                type=(
+                    self.multiple_match_combobox.currentData()
+                    or FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY
+                ),
+                tag_ids=tag_ids,
+                tag_names=[
+                    tag_name
+                    for tag_id in tag_ids
+                    if (tag_name := self._tag_name_for_id(tag_id)) is not None
+                ],
+                include=bool(self.rule_include_combobox.currentData()),
+            )
+            if tag_ids
+            else None
         )
 
     def add_group(self) -> None:

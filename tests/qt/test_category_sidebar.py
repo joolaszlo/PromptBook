@@ -9,12 +9,16 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QLabel
 from pytestqt.qtbot import QtBot
 
+from tagstudio.core.library.alchemy.enums import BrowsingState
 from tagstudio.core.library.alchemy.models import Tag
 from tagstudio.core.library.category_sidebar import (
     CategoryFilterRule,
     CategoryGroup,
     CategoryItem,
     CategorySidebarSettings,
+    FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL,
+    FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY,
+    FILTER_RULE_TYPE_TAG_PREFIX,
 )
 from tagstudio.qt.mixed.category_sidebar import CategorySidebarItemWidget, CategorySidebarWidget
 from tagstudio.qt.mixed.category_sidebar_settings import CategorySidebarSettingsPanel
@@ -55,6 +59,11 @@ class DummyDriver:
         self.included_tag_ids: set[int] = set()
         self.excluded_tag_ids: set[int] = set()
         self.refresh_category_sidebar_count = 0
+        self.browsing_history = type(
+            "DummyHistory",
+            (),
+            {"current": BrowsingState.from_search_query("")},
+        )()
 
     def apply_tag_filter(self, tag_id: int) -> None:
         if tag_id in self.included_tag_ids:
@@ -81,6 +90,9 @@ class DummyDriver:
 
     def refresh_category_sidebar(self) -> None:
         self.refresh_category_sidebar_count += 1
+
+    def update_browsing_state(self, state: BrowsingState) -> None:
+        self.browsing_history.current = state
 
 
 def make_settings() -> CategorySidebarSettings:
@@ -153,6 +165,39 @@ def test_category_sidebar_item_clicks_use_tag_filter_state(qtbot: QtBot):
     assert driver.excluded_tag_ids == set()
 
 
+def test_category_sidebar_item_click_applies_advanced_filter_query(qtbot: QtBot):
+    driver = DummyDriver()
+    sidebar = CategorySidebarWidget(driver)
+    qtbot.addWidget(sidebar)
+    sidebar.set_settings(
+        CategorySidebarSettings(
+            groups=[
+                CategoryGroup(
+                    name="Group",
+                    items=[
+                        CategoryItem(
+                            name="Story",
+                            filter_rules=[
+                                CategoryFilterRule(
+                                    type=FILTER_RULE_TYPE_TAG_PREFIX,
+                                    prefix="story_",
+                                    include=True,
+                                )
+                            ],
+                        )
+                    ],
+                )
+            ]
+        )
+    )
+
+    item = sidebar.findChild(CategorySidebarItemWidget)
+    assert item is not None
+
+    qtbot.mouseClick(item, Qt.MouseButton.LeftButton)
+    assert driver.browsing_history.current.query == 'tag:"story_%"'
+
+
 def test_category_sidebar_settings_adds_group_and_item(qtbot: QtBot):
     driver = DummyDriver()
     panel = CategorySidebarSettingsPanel(driver)
@@ -166,7 +211,7 @@ def test_category_sidebar_settings_adds_group_and_item(qtbot: QtBot):
     panel.item_name_edit.clear()
     panel._on_item_name_changed("")
     panel.select_icon("camera")
-    panel.tag_combobox.setCurrentIndex(panel.tag_combobox.findData(1000))
+    panel.single_tag_combobox.setCurrentIndex(panel.single_tag_combobox.findData(1000))
     panel.apply_settings()
 
     settings = driver.lib.saved_settings
@@ -175,6 +220,51 @@ def test_category_sidebar_settings_adds_group_and_item(qtbot: QtBot):
     assert [item.name for item in settings.groups[0].items] == ["New Category"]
     assert settings.groups[0].items[0].icon == "camera"
     assert settings.groups[0].items[0].filter_rules[0].tag_id == 1000
+
+
+def test_category_sidebar_settings_builds_prefix_rule(qtbot: QtBot):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    panel.add_group()
+    panel.add_item()
+    panel.rule_type_combobox.setCurrentIndex(
+        panel.rule_type_combobox.findData(FILTER_RULE_TYPE_TAG_PREFIX)
+    )
+    panel.prefix_edit.setText("story_")
+    panel._on_prefix_changed("story_")
+    panel.rule_include_combobox.setCurrentIndex(panel.rule_include_combobox.findData(False))
+    panel.apply_settings()
+
+    rule = driver.lib.saved_settings.groups[0].items[0].filter_rules[0]
+    assert rule.type == FILTER_RULE_TYPE_TAG_PREFIX
+    assert rule.prefix == "story_"
+    assert rule.include is False
+    assert rule.to_query() == 'not tag:"story_%"'
+
+
+def test_category_sidebar_settings_builds_multiple_tag_rule(qtbot: QtBot):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    panel.add_group()
+    panel.add_item()
+    panel.rule_type_combobox.setCurrentIndex(
+        panel.rule_type_combobox.findData(FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY)
+    )
+    panel.multiple_match_combobox.setCurrentIndex(
+        panel.multiple_match_combobox.findData(FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL)
+    )
+    panel.multiple_tags_list.item(0).setCheckState(Qt.CheckState.Checked)
+    panel.multiple_tags_list.item(1).setCheckState(Qt.CheckState.Checked)
+    panel.apply_settings()
+
+    rule = driver.lib.saved_settings.groups[0].items[0].filter_rules[0]
+    assert rule.type == FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL
+    assert rule.tag_ids == [1000, 1001]
+    assert rule.to_query() == "(tag_id:1000 tag_id:1001)"
 
 
 def test_category_sidebar_settings_icon_picker_search_and_fallback(qtbot: QtBot):
@@ -266,7 +356,7 @@ def test_category_sidebar_settings_moves_item_between_groups(qtbot: QtBot):
     panel.add_item()
     panel.item_name_edit.setText("Subject")
     panel._on_item_name_changed("Subject")
-    panel.tag_combobox.setCurrentIndex(panel.tag_combobox.findData(1000))
+    panel.single_tag_combobox.setCurrentIndex(panel.single_tag_combobox.findData(1000))
     panel.add_group()
     second_group_id = panel.current_group().id
     panel.group_list.setCurrentRow(0)

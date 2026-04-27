@@ -299,7 +299,7 @@ class CategorySidebarWidget(QFrame):
 
         for item in group.items:
             item_widget = CategorySidebarItemWidget(item, collapsed)
-            tag_id = self._tag_filter_id_for_item(item)
+            tag_id = item.primary_tag_id()
             if tag_id is not None:
                 item_widget.clicked.connect(
                     lambda checked=False, tag_id=tag_id: self.driver.apply_tag_filter(tag_id)
@@ -310,6 +310,15 @@ class CategorySidebarWidget(QFrame):
                 item_widget.set_filter_state(
                     self.driver.is_tag_filter_selected(tag_id),
                     self.driver.is_tag_filter_excluded(tag_id),
+                    self.driver.get_tag_filter_highlight_color(),
+                )
+            elif query := item.filter_query():
+                item_widget.clicked.connect(
+                    lambda checked=False, query=query: self._apply_filter_query(query)
+                )
+                item_widget.set_filter_state(
+                    self._current_filter_query() == query,
+                    False,
                     self.driver.get_tag_filter_highlight_color(),
                 )
             else:
@@ -323,8 +332,14 @@ class CategorySidebarWidget(QFrame):
         separator.setFixedHeight(1)
         self.content_layout.addWidget(separator)
 
-    def _tag_filter_id_for_item(self, item: CategoryItem) -> int | None:
-        for rule in item.filter_rules:
-            if rule.type == "tag" and rule.tag_id is not None:
-                return rule.tag_id
-        return None
+    def _current_filter_query(self) -> str:
+        browsing_history = getattr(self.driver, "browsing_history", None)
+        current = getattr(browsing_history, "current", None)
+        return getattr(current, "query", "") or ""
+
+    def _apply_filter_query(self, query: str) -> None:
+        browsing_history = getattr(self.driver, "browsing_history", None)
+        current = getattr(browsing_history, "current", None)
+        if current is None:
+            return
+        self.driver.update_browsing_state(current.with_search_query(query))
