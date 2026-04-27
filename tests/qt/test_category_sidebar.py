@@ -165,7 +165,7 @@ def test_category_sidebar_settings_adds_group_and_item(qtbot: QtBot):
     panel._on_group_name_changed("")
     panel.item_name_edit.clear()
     panel._on_item_name_changed("")
-    panel.icon_combobox.setCurrentIndex(panel.icon_combobox.findData("camera"))
+    panel.select_icon("camera")
     panel.tag_combobox.setCurrentIndex(panel.tag_combobox.findData(1000))
     panel.apply_settings()
 
@@ -175,6 +175,22 @@ def test_category_sidebar_settings_adds_group_and_item(qtbot: QtBot):
     assert [item.name for item in settings.groups[0].items] == ["New Category"]
     assert settings.groups[0].items[0].icon == "camera"
     assert settings.groups[0].items[0].filter_rules[0].tag_id == 1000
+
+
+def test_category_sidebar_settings_icon_picker_search_and_fallback(qtbot: QtBot):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    panel.add_group()
+    panel.add_item()
+    panel.icon_search_edit.setText("cam")
+
+    assert "camera" in panel._icon_buttons
+    assert "tag" not in panel._icon_buttons
+
+    panel.select_icon("missing-icon")
+    assert panel.current_item().icon == "tag"
 
 
 def test_category_sidebar_settings_persists_order(qtbot: QtBot):

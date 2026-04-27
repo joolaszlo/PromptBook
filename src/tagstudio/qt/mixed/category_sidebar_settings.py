@@ -13,12 +13,14 @@ from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QListWidget,
     QListWidgetItem,
     QPushButton,
+    QScrollArea,
     QSplitter,
     QVBoxLayout,
     QWidget,
@@ -34,6 +36,7 @@ from tagstudio.qt.category_sidebar_icons import (
     DEFAULT_CATEGORY_SIDEBAR_ICON,
     category_sidebar_icon,
     category_sidebar_icon_names,
+    resolve_category_sidebar_icon_name,
 )
 from tagstudio.qt.views.panel_modal import PanelModal, PanelWidget
 
@@ -116,6 +119,8 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self._loading_details = False
         self._last_group_id: str | None = None
         self._last_item_id: str | None = None
+        self._icon_buttons: dict[str, QPushButton] = {}
+        self._selected_icon_name = DEFAULT_CATEGORY_SIDEBAR_ICON
 
         self.setMinimumSize(780, 500)
         self.root_layout = QVBoxLayout(self)
@@ -266,16 +271,32 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self.item_name_edit.textEdited.connect(self._on_item_name_changed)
         item_form.addRow("Category Name", self.item_name_edit)
 
-        self.icon_combobox = QComboBox()
-        self.icon_combobox.setObjectName("category_sidebar_icon_combobox")
-        for icon_name in category_sidebar_icon_names():
-            self.icon_combobox.addItem(
-                category_sidebar_icon(icon_name, size=18),
-                icon_name,
-                icon_name,
-            )
-        self.icon_combobox.currentIndexChanged.connect(self._on_icon_changed)
-        item_form.addRow("Icon", self.icon_combobox)
+        self.icon_picker_widget = QWidget()
+        icon_picker_layout = QVBoxLayout(self.icon_picker_widget)
+        icon_picker_layout.setContentsMargins(0, 0, 0, 0)
+        icon_picker_layout.setSpacing(6)
+
+        self.icon_search_edit = QLineEdit()
+        self.icon_search_edit.setObjectName("category_sidebar_icon_search_edit")
+        self.icon_search_edit.setPlaceholderText("Search icons")
+        self.icon_search_edit.textChanged.connect(self._refresh_icon_grid)
+        icon_picker_layout.addWidget(self.icon_search_edit)
+
+        self.icon_scroll_area = QScrollArea()
+        self.icon_scroll_area.setObjectName("category_sidebar_icon_scroll_area")
+        self.icon_scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.icon_scroll_area.setWidgetResizable(True)
+        self.icon_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.icon_scroll_area.setMaximumHeight(150)
+
+        self.icon_grid_widget = QWidget()
+        self.icon_grid_widget.setObjectName("category_sidebar_icon_grid_widget")
+        self.icon_grid_layout = QGridLayout(self.icon_grid_widget)
+        self.icon_grid_layout.setContentsMargins(0, 0, 0, 0)
+        self.icon_grid_layout.setSpacing(4)
+        self.icon_scroll_area.setWidget(self.icon_grid_widget)
+        icon_picker_layout.addWidget(self.icon_scroll_area)
+        item_form.addRow("Icon", self.icon_picker_widget)
 
         self.tag_combobox = QComboBox()
         self.tag_combobox.setObjectName("category_sidebar_tag_combobox")
@@ -335,6 +356,14 @@ class CategorySidebarSettingsPanel(PanelWidget):
             "border-radius: 6px;"
             "padding: 5px;"
             "}"
+            "QScrollArea#category_sidebar_icon_scroll_area {"
+            "background: #101318;"
+            "border: 1px solid rgba(120, 128, 140, 80);"
+            "border-radius: 6px;"
+            "}"
+            "QWidget#category_sidebar_icon_grid_widget {"
+            "background: #101318;"
+            "}"
             "QPushButton {"
             "background: #242a32;"
             "color: #d8dde6;"
@@ -349,6 +378,17 @@ class CategorySidebarSettingsPanel(PanelWidget):
             "QPushButton:disabled {"
             "color: #626a75;"
             "background: #171a1f;"
+            "}"
+            "QPushButton#category_sidebar_icon_button {"
+            "min-width: 30px;"
+            "max-width: 30px;"
+            "min-height: 30px;"
+            "max-height: 30px;"
+            "padding: 0;"
+            "}"
+            "QPushButton#category_sidebar_icon_button:checked {"
+            "background: rgba(77, 163, 255, 80);"
+            "border-color: rgba(77, 163, 255, 170);"
             "}"
         )
 
@@ -438,11 +478,10 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self.empty_details_label.setVisible(group is None)
         self.item_name_edit.setText(item.name if item else "")
 
-        icon_name = item.icon if item and item.icon else DEFAULT_CATEGORY_SIDEBAR_ICON
-        icon_index = self.icon_combobox.findData(icon_name)
-        if icon_index < 0:
-            icon_index = self.icon_combobox.findData(DEFAULT_CATEGORY_SIDEBAR_ICON)
-        self.icon_combobox.setCurrentIndex(max(0, icon_index))
+        icon_name = resolve_category_sidebar_icon_name(item.icon if item else None)
+        if item:
+            item.icon = icon_name
+        self._set_selected_icon(icon_name)
 
         tag_id = self._tag_id_for_item(item)
         tag_index = self.tag_combobox.findData(tag_id)
@@ -495,13 +534,54 @@ class CategorySidebarSettingsPanel(PanelWidget):
         if current:
             current.setText(text)
 
-    def _on_icon_changed(self) -> None:
+    def _refresh_icon_grid(self) -> None:
+        while self.icon_grid_layout.count():
+            item = self.icon_grid_layout.takeAt(0)
+            if item and item.widget():
+                widget = item.widget()
+                widget.setParent(None)
+                widget.deleteLater()
+
+        query = self.icon_search_edit.text().strip().casefold()
+        matching_icon_names = [
+            icon_name
+            for icon_name in category_sidebar_icon_names()
+            if not query or query in icon_name.casefold()
+        ]
+        self._icon_buttons = {}
+        for index, icon_name in enumerate(matching_icon_names):
+            button = QPushButton()
+            button.setObjectName("category_sidebar_icon_button")
+            button.setCheckable(True)
+            button.setToolTip(icon_name)
+            button.setIcon(category_sidebar_icon(icon_name, size=18))
+            button.clicked.connect(lambda checked=False, name=icon_name: self.select_icon(name))
+            self._icon_buttons[icon_name] = button
+            self.icon_grid_layout.addWidget(button, index // 7, index % 7)
+
+        self.icon_grid_layout.setRowStretch((len(matching_icon_names) // 7) + 1, 1)
+        self._sync_icon_button_states()
+
+    def _set_selected_icon(self, icon_name: str | None) -> None:
+        self._selected_icon_name = resolve_category_sidebar_icon_name(icon_name)
+        if not self._icon_buttons:
+            self._refresh_icon_grid()
+            return
+        self._sync_icon_button_states()
+
+    def _sync_icon_button_states(self) -> None:
+        for icon_name, button in self._icon_buttons.items():
+            with QSignalBlocker(button):
+                button.setChecked(icon_name == self._selected_icon_name)
+
+    def select_icon(self, icon_name: str | None) -> None:
         if self._loading_details:
             return
         item = self.current_item()
         if not item:
             return
-        item.icon = self.icon_combobox.currentData() or DEFAULT_CATEGORY_SIDEBAR_ICON
+        item.icon = resolve_category_sidebar_icon_name(icon_name)
+        self._set_selected_icon(item.icon)
         current = self.item_list.currentItem()
         if current:
             current.setIcon(category_sidebar_icon(item.icon, size=18))
