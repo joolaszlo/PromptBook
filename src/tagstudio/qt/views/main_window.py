@@ -39,6 +39,7 @@ from tagstudio.core.enums import ShowFilepathOption
 from tagstudio.core.library.alchemy.enums import SortingModeEnum, TagColorEnum
 from tagstudio.qt.controllers.preview_panel_controller import PreviewPanel
 from tagstudio.qt.helpers.color_overlay import theme_fg_overlay
+from tagstudio.qt.mixed.category_sidebar import CategorySidebarWidget
 from tagstudio.qt.mixed.landing import LandingWidget
 from tagstudio.qt.mixed.pagination import Pagination
 from tagstudio.qt.mixed.tag_widget import get_border_color, get_highlight_color, get_text_color
@@ -490,6 +491,7 @@ class MainWindow(QMainWindow):
         # initialized in setup_content
         self.content_layout: QHBoxLayout
         self.content_splitter: QSplitter
+        self.category_sidebar: CategorySidebarWidget
 
         # initialized in setup_entry_list
         self.entry_list_container: QWidget
@@ -812,13 +814,20 @@ class MainWindow(QMainWindow):
         self.content_splitter.setObjectName("content_splitter")
         self.content_splitter.setHandleWidth(12)
 
+        self.setup_category_sidebar(driver)
         self.setup_entry_list(driver)
         self.setup_preview_panel(driver)
 
-        self.content_splitter.setStretchFactor(0, 1)
+        self.content_splitter.setStretchFactor(0, 0)
+        self.content_splitter.setStretchFactor(1, 1)
+        self.content_splitter.setStretchFactor(2, 0)
         self.content_layout.addWidget(self.content_splitter)
 
         self.central_layout.addLayout(self.content_layout, 10, 0, 1, 1)
+
+    def setup_category_sidebar(self, driver: "QtDriver"):
+        self.category_sidebar = CategorySidebarWidget(driver)
+        self.content_splitter.addWidget(self.category_sidebar)
 
     def setup_entry_list(self, driver: "QtDriver"):
         self.entry_list_container = QWidget()

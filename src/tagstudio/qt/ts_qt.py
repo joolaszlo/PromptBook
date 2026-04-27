@@ -51,6 +51,7 @@ import tagstudio.qt.resources_rc  # noqa: F401
 from tagstudio.core.constants import TAG_ARCHIVED, TAG_FAVORITE, VERSION, VERSION_BRANCH
 from tagstudio.core.driver import DriverMixin
 from tagstudio.core.enums import MacroID, SettingItems, ShowFilepathOption
+from tagstudio.core.library.category_sidebar import CategorySidebarSettings
 from tagstudio.core.library.alchemy.enums import (
     BrowsingState,
     FieldTypeEnum,
@@ -371,6 +372,14 @@ class QtDriver(DriverMixin, QObject):
         self.excluded_tag_filter_ids.clear()
         self.update_browsing_state(self.browsing_history.current.with_search_query(""))
 
+    def refresh_category_sidebar(self) -> None:
+        if not hasattr(self, "main_window"):
+            return
+        if not self.lib.library_dir:
+            self.main_window.category_sidebar.set_settings(CategorySidebarSettings())
+            return
+        self.main_window.category_sidebar.set_settings(self.lib.get_category_sidebar_settings())
+
     def get_pinned_tags(self) -> list[Tag]:
         return sorted((tag for tag in self.lib.tags if tag.pinned), key=lambda tag: tag.name.lower())
 
@@ -581,6 +590,7 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.add_entry_button.setEnabled(False)
         self.main_window.pinned_tags_title.setVisible(False)
         self.main_window.pinned_tags_container.setVisible(False)
+        self.refresh_category_sidebar()
 
         # region Menu Bar
 
@@ -1001,6 +1011,7 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.add_entry_button.setEnabled(False)
         self.main_window.pinned_tags_title.setVisible(False)
         self.main_window.pinned_tags_container.setVisible(False)
+        self.refresh_category_sidebar()
         try:
             self.main_window.menu_bar.save_library_backup_action.setEnabled(False)
             self.main_window.menu_bar.close_library_action.setEnabled(False)
@@ -2006,6 +2017,7 @@ class QtDriver(DriverMixin, QObject):
         self.main_window.favorite_tags_button.setEnabled(True)
         self.main_window.reset_tag_selection_button.setEnabled(False)
         self.main_window.add_entry_button.setEnabled(True)
+        self.refresh_category_sidebar()
 
         self.main_window.preview_panel.set_selection(self.selected)
 
