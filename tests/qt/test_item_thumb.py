@@ -3,6 +3,8 @@
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
 
+from pathlib import Path
+
 import pytest
 
 from tagstudio.core.library.alchemy.enums import ItemType
@@ -24,3 +26,25 @@ def test_badge_visual_state(qt_driver: QtDriver, entry_min: int, new_value: bool
     # TODO
     # assert thumb.favorite_badge.isHidden() == initial_state
     assert thumb.is_favorite == new_value
+
+
+def test_video_extension_does_not_show_duration_badge(qt_driver: QtDriver):
+    thumb = ItemThumb(
+        ItemType.ENTRY, qt_driver.lib, qt_driver, (100, 100), show_filename_label=False
+    )
+
+    thumb.set_extension(Path("example.mp4"))
+
+    assert thumb.ext_badge.isHidden() is False
+    assert thumb.count_badge.isHidden() is True
+
+
+def test_image_extension_badges_are_unchanged(qt_driver: QtDriver):
+    thumb = ItemThumb(
+        ItemType.ENTRY, qt_driver.lib, qt_driver, (100, 100), show_filename_label=False
+    )
+
+    thumb.set_extension(Path("example.png"))
+
+    assert thumb.ext_badge.isHidden() is True
+    assert thumb.count_badge.isHidden() is True
