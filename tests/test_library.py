@@ -210,6 +210,16 @@ def test_preferences(library: Library):
         assert library.prefs(pref) == pref.default
 
 
+def test_tag_from_strings_returns_new_tag_ids(library: Library):
+    tag_ids = library.tag_from_strings(["sidecar_one", "sidecar_two"])
+
+    assert len(tag_ids) == 2
+    assert {unwrap(library.get_tag(tag_id)).name for tag_id in tag_ids} == {
+        "sidecar_one",
+        "sidecar_two",
+    }
+
+
 def test_category_sidebar_settings_default_empty(library: Library):
     settings = library.get_category_sidebar_settings()
 

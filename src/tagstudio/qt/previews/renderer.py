@@ -1615,6 +1615,9 @@ class ThumbRenderer(QObject):
 
         def fetch_cached_image(file_name: Path):
             image: Image.Image | None = None
+            if self.driver.cache_manager is None:
+                return image
+
             cached_path = self.driver.cache_manager.get_file_path(file_name)
 
             if cached_path and cached_path.is_file():
@@ -1876,7 +1879,7 @@ class ThumbRenderer(QObject):
                 if image:
                     image = self._resize_image(image, (adj_size, adj_size))
 
-                if save_to_file and savable_media_type and image:
+                if save_to_file and savable_media_type and image and self.driver.cache_manager:
                     self.driver.cache_manager.save_image(image, save_to_file, mode="RGBA")
 
             except (

@@ -1422,10 +1422,10 @@ class Library:
                 if tag:
                     tags.append(tag.id)
                 else:
-                    new = session.add(Tag(name=string))  # type: ignore
-                    if new:
-                        tags.append(new.id)
-                        session.flush()
+                    new_tag = Tag(name=string)
+                    session.add(new_tag)
+                    session.flush()
+                    tags.append(new_tag.id)
             session.commit()
         return tags
 

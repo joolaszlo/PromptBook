@@ -204,7 +204,7 @@ class QtDriver(DriverMixin, QObject):
     applied_theme: Theme
 
     lib: Library
-    cache_manager: CacheManager
+    cache_manager: CacheManager | None
 
     browsing_history: History[BrowsingState]
 
@@ -213,6 +213,7 @@ class QtDriver(DriverMixin, QObject):
         # prevent recursive badges update when multiple items selected
         self.badge_update_lock = False
         self.lib = Library()
+        self.cache_manager = None
         self.rm: ResourceManager = ResourceManager()
         self.args = args
         self.frame_content: list[int] = []  # List of Entry IDs for the current query
@@ -371,6 +372,11 @@ class QtDriver(DriverMixin, QObject):
         self.active_tag_filter_ids.clear()
         self.excluded_tag_filter_ids.clear()
         self.update_browsing_state(self.browsing_history.current.with_search_query(""))
+
+    def clear_thumb_cache(self) -> None:
+        if self.cache_manager is None:
+            return
+        self.cache_manager.clear_cache()
 
     def refresh_category_sidebar(self) -> None:
         if not hasattr(self, "main_window"):
@@ -745,7 +751,7 @@ class QtDriver(DriverMixin, QObject):
 
         # TODO: Move this to a settings screen.
         self.main_window.menu_bar.clear_thumb_cache_action.triggered.connect(
-            lambda: self.cache_manager.clear_cache()
+            self.clear_thumb_cache
         )
 
         # endregion
@@ -1467,7 +1473,10 @@ class QtDriver(DriverMixin, QObject):
             parsed_items = TagStudioCore.get_gdl_sidecar(full_path, source)
             for field_id, value in parsed_items.items():
                 if isinstance(value, list) and len(value) > 0 and isinstance(value[0], str):
-                    value = self.lib.tag_from_strings(value)
+                    tag_ids = self.lib.tag_from_strings(value)
+                    if tag_ids:
+                        self.lib.add_tags_to_entries(entry.id, tag_ids)
+                    continue
                 self.lib.add_field_to_entry(
                     entry.id,
                     field_id=field_id,
@@ -1949,7 +1958,7 @@ class QtDriver(DriverMixin, QObject):
             max_size=self.settings.thumb_cache_size,
             img_quality=self.settings.cached_thumb_quality,
         )
-        cache_size = self.settings.thumb_cache_size * self.cache_manager.STAT_MULTIPLIER
+        cache_size = self.settings.thumb_cache_size * CacheManager.STAT_MULTIPLIER
         logger.info(
             f"[Config] Thumbnail Cache Size: {format_size(cache_size)}",
         )
