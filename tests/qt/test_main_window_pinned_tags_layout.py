@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication, QLabel, QSizePolicy, QVBoxLayout, QW
 from pytestqt.qtbot import QtBot
 
 import tagstudio.qt.views.main_window as main_window_module
+from tagstudio.qt.translations import Translations
 
 
 class DummyThumbGridLayout(QVBoxLayout):
@@ -151,7 +152,7 @@ def test_top_search_row_keeps_bounded_search_pair_and_edge_action(qtbot: QtBot):
     assert search_items[4].spacerItem() is not None
     assert window.search_field.geometry().right() < window.search_button.geometry().left()
     assert window.search_button.geometry().right() < window.add_entry_button.geometry().left()
-    assert window.add_entry_button.text() == "Add Prompt"
+    assert window.add_entry_button.text() == Translations["entry.add_prompt"]
     assert window.search_button.sizePolicy().horizontalPolicy() == QSizePolicy.Policy.Fixed
     assert window.add_entry_button.sizePolicy().horizontalPolicy() == QSizePolicy.Policy.Fixed
     assert window.search_field.maximumWidth() <= int(

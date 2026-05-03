@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 from tagstudio.core.library.alchemy.models import Tag
 from tagstudio.core.library.alchemy.fields import FieldID
 from tagstudio.qt.mixed.tag_widget import TagWidget
+from tagstudio.qt.translations import Translations
 from tagstudio.qt.views.layouts.flow_layout import FlowLayout, FlowWidget
 
 if TYPE_CHECKING:
@@ -34,7 +35,7 @@ if TYPE_CHECKING:
 class FilenameConflictDialog(QDialog):
     def __init__(self, existing_path: Path, suggested_name: str, parent: QWidget | None = None):
         super().__init__(parent)
-        self.setWindowTitle("Filename Conflict")
+        self.setWindowTitle(Translations["entry.filename_conflict.title"])
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setMinimumWidth(420)
 
@@ -42,7 +43,7 @@ class FilenameConflictDialog(QDialog):
         self.root_layout.setContentsMargins(12, 12, 12, 12)
         self.root_layout.setSpacing(8)
 
-        title = QLabel("A file with this name already exists in the current library directory.")
+        title = QLabel(Translations["entry.filename_conflict.description"])
         title.setWordWrap(True)
         self.root_layout.addWidget(title)
 
@@ -53,7 +54,7 @@ class FilenameConflictDialog(QDialog):
         )
         self.root_layout.addWidget(self.existing_path_label)
 
-        self.filename_label = QLabel("Rename file")
+        self.filename_label = QLabel(Translations["entry.rename_file"])
         self.root_layout.addWidget(self.filename_label)
 
         self.filename_field = QLineEdit(suggested_name)
@@ -71,11 +72,11 @@ class FilenameConflictDialog(QDialog):
         self.button_layout.setContentsMargins(0, 0, 0, 0)
         self.button_layout.addStretch(1)
 
-        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button = QPushButton(Translations["generic.cancel"])
         self.cancel_button.clicked.connect(self.reject)
         self.button_layout.addWidget(self.cancel_button)
 
-        self.rename_button = QPushButton("Rename")
+        self.rename_button = QPushButton(Translations["generic.rename"])
         self.rename_button.setDefault(True)
         self.rename_button.clicked.connect(self._confirm_rename)
         self.button_layout.addWidget(self.rename_button)
@@ -89,12 +90,12 @@ class FilenameConflictDialog(QDialog):
     def _confirm_rename(self) -> None:
         filename = self.filename
         if not filename:
-            self._set_error("Filename is required.")
+            self._set_error(Translations["entry.error.filename_required"])
             return
 
         path = Path(filename)
         if path.name != filename or filename in {".", ".."}:
-            self._set_error("Enter a filename only, not a path.")
+            self._set_error(Translations["entry.error.filename_only"])
             return
 
         self._set_error("")
@@ -129,7 +130,7 @@ class AddEntryModal(QDialog):
 
         self.setWindowFlag(Qt.WindowType.Dialog, True)
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
-        self.setWindowTitle("Add New Entry")
+        self.setWindowTitle(Translations["entry.add.window_title"])
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setMinimumSize(520, 360)
 
@@ -137,7 +138,7 @@ class AddEntryModal(QDialog):
         self.root_layout.setContentsMargins(12, 12, 12, 12)
         self.root_layout.setSpacing(10)
 
-        self.media_title = QLabel("Add Media")
+        self.media_title = QLabel(Translations["entry.add_media"])
         self.media_title.setStyleSheet("font-weight:bold;font-size:14px;")
         self.root_layout.addWidget(self.media_title)
 
@@ -150,29 +151,29 @@ class AddEntryModal(QDialog):
         self.file_field.setReadOnly(True)
         self.media_layout.addWidget(self.file_field)
 
-        self.browse_button = QPushButton("Browse...")
+        self.browse_button = QPushButton(Translations["generic.browse"])
         self.browse_button.clicked.connect(self._browse_for_media)
         self.media_layout.addWidget(self.browse_button)
 
         self.root_layout.addWidget(self.media_row)
 
-        self.title_title = QLabel("Title")
+        self.title_title = QLabel(Translations["entry.title"])
         self.title_title.setStyleSheet("font-weight:bold;font-size:14px;")
         self.root_layout.addWidget(self.title_title)
 
         self.title_field = QLineEdit()
-        self.title_field.setPlaceholderText("Enter title")
+        self.title_field.setPlaceholderText(Translations["entry.title.placeholder"])
         self.root_layout.addWidget(self.title_field)
 
-        self.prompt_title = QLabel("Prompt")
+        self.prompt_title = QLabel(Translations["entry.prompt"])
         self.prompt_title.setStyleSheet("font-weight:bold;font-size:14px;")
         self.root_layout.addWidget(self.prompt_title)
 
         self.prompt_field = QPlainTextEdit()
-        self.prompt_field.setPlaceholderText("Enter prompt text")
+        self.prompt_field.setPlaceholderText(Translations["entry.prompt.placeholder"])
         self.root_layout.addWidget(self.prompt_field)
 
-        self.pinned_tags_title = QLabel("Pinned Tags")
+        self.pinned_tags_title = QLabel(Translations["home.pinned_tags"])
         self.pinned_tags_title.setStyleSheet("font-weight:bold;font-size:14px;")
         self.root_layout.addWidget(self.pinned_tags_title)
 
@@ -194,11 +195,11 @@ class AddEntryModal(QDialog):
         self.button_layout.setContentsMargins(0, 0, 0, 0)
         self.button_layout.addStretch(1)
 
-        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button = QPushButton(Translations["generic.cancel"])
         self.cancel_button.clicked.connect(self._cancel)
         self.button_layout.addWidget(self.cancel_button)
 
-        self.add_entry_button = QPushButton("Add Entry")
+        self.add_entry_button = QPushButton(Translations["entry.add"])
         self.add_entry_button.setDefault(True)
         self.add_entry_button.clicked.connect(self._submit)
         self.button_layout.addWidget(self.add_entry_button)
@@ -206,7 +207,7 @@ class AddEntryModal(QDialog):
         self.root_layout.addWidget(self.button_container)
 
     def _browse_for_media(self) -> None:
-        filename, _ = QFileDialog.getOpenFileName(self, "Select Media")
+        filename, _ = QFileDialog.getOpenFileName(self, Translations["entry.select_media"])
         if not filename:
             return
 
@@ -216,12 +217,12 @@ class AddEntryModal(QDialog):
 
     def _submit(self) -> None:
         if self._selected_file is not None and not self._selected_file.exists():
-            self._set_error("The selected file could not be found.")
+            self._set_error(Translations["entry.error.file_not_found"])
             return
 
         title = self.title_field.text().strip()
         if self._selected_file is None and not title:
-            self._set_error("Title is required when no media is selected.")
+            self._set_error(Translations["entry.error.title_required_no_media"])
             return
 
         self._set_error("")
@@ -299,8 +300,10 @@ class AddEntryModal(QDialog):
         tag_widget.set_tag(tag)
         if tag.id in self._selected_tag_ids:
             display_name = self.lib.tag_display_name(tag)
-            tag_widget.bg_button.setText(f"Added: {display_name}")
-            tag_widget.bg_button.setToolTip("Will be added to this entry")
+            tag_widget.bg_button.setText(
+                Translations.format("entry.tag_added", tag_name=display_name)
+            )
+            tag_widget.bg_button.setToolTip(Translations["entry.tag_will_be_added"])
         else:
             tag_widget.bg_button.setToolTip("")
 
@@ -332,7 +335,7 @@ class EditEntryModal(QDialog):
 
         self.setWindowFlag(Qt.WindowType.Dialog, True)
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
-        self.setWindowTitle("Edit Entry")
+        self.setWindowTitle(Translations["entry.edit.window_title"])
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setMinimumSize(520, 360)
 
@@ -340,7 +343,7 @@ class EditEntryModal(QDialog):
         self.root_layout.setContentsMargins(12, 12, 12, 12)
         self.root_layout.setSpacing(10)
 
-        self.media_title = QLabel("Media")
+        self.media_title = QLabel(Translations["entry.media"])
         self.media_title.setStyleSheet("font-weight:bold;font-size:14px;")
         self.root_layout.addWidget(self.media_title)
 
@@ -353,25 +356,25 @@ class EditEntryModal(QDialog):
         self.file_field.setReadOnly(True)
         self.media_layout.addWidget(self.file_field)
 
-        self.browse_button = QPushButton("Browse...")
+        self.browse_button = QPushButton(Translations["generic.browse"])
         self.browse_button.clicked.connect(self._browse_for_media)
         self.media_layout.addWidget(self.browse_button)
         self.root_layout.addWidget(self.media_row)
 
-        self.title_title = QLabel("Title")
+        self.title_title = QLabel(Translations["entry.title"])
         self.title_title.setStyleSheet("font-weight:bold;font-size:14px;")
         self.root_layout.addWidget(self.title_title)
 
         self.title_field = QLineEdit()
-        self.title_field.setPlaceholderText("Enter title")
+        self.title_field.setPlaceholderText(Translations["entry.title.placeholder"])
         self.root_layout.addWidget(self.title_field)
 
-        self.prompt_title = QLabel("Prompt")
+        self.prompt_title = QLabel(Translations["entry.prompt"])
         self.prompt_title.setStyleSheet("font-weight:bold;font-size:14px;")
         self.root_layout.addWidget(self.prompt_title)
 
         self.prompt_field = QPlainTextEdit()
-        self.prompt_field.setPlaceholderText("Enter prompt text")
+        self.prompt_field.setPlaceholderText(Translations["entry.prompt.placeholder"])
         self.root_layout.addWidget(self.prompt_field)
 
         self.error_label = QLabel()
@@ -385,11 +388,11 @@ class EditEntryModal(QDialog):
         self.button_layout.setContentsMargins(0, 0, 0, 0)
         self.button_layout.addStretch(1)
 
-        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button = QPushButton(Translations["generic.cancel"])
         self.cancel_button.clicked.connect(self.hide)
         self.button_layout.addWidget(self.cancel_button)
 
-        self.save_button = QPushButton("Save Entry")
+        self.save_button = QPushButton(Translations["entry.save"])
         self.save_button.setDefault(True)
         self.save_button.clicked.connect(self._submit)
         self.button_layout.addWidget(self.save_button)
@@ -398,7 +401,7 @@ class EditEntryModal(QDialog):
     def set_entry(self, entry: "Entry") -> None:
         self._entry_id = entry.id
         self._selected_file = None
-        self.file_field.setText(str(entry.path or "No media"))
+        self.file_field.setText(str(entry.path or Translations["entry.no_media"]))
         self.title_field.setText(self.lib.get_entry_field_value(entry, FieldID.TITLE))
         self.prompt_field.setPlainText(self.lib.get_entry_field_value(entry, FieldID.DESCRIPTION))
         self._set_error("")
@@ -410,7 +413,7 @@ class EditEntryModal(QDialog):
         title = self.title_field.text().strip()
         has_media_after_save = bool((entry and entry.has_media) or self._selected_file)
         if not has_media_after_save and not title:
-            self._set_error("Title is required when no media is selected.")
+            self._set_error(Translations["entry.error.title_required_no_media"])
             return
         self._set_error("")
         if self._submit_callback(
@@ -423,7 +426,7 @@ class EditEntryModal(QDialog):
         self.error_label.setVisible(bool(text))
 
     def _browse_for_media(self) -> None:
-        filename, _ = QFileDialog.getOpenFileName(self, "Select Media")
+        filename, _ = QFileDialog.getOpenFileName(self, Translations["entry.select_media"])
         if not filename:
             return
         self._selected_file = Path(filename)

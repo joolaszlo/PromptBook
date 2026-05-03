@@ -48,7 +48,7 @@ class TextPreviewWidget(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
     def set_title(self, title: str) -> None:
-        self.__title = title.strip() or "Untitled"
+        self.__title = title.strip() or Translations["generic.untitled"]
         self.update()
 
     @property

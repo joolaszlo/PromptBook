@@ -124,13 +124,13 @@ class PreviewPanelView(QWidget):
         self.__add_tag_button.setMinimumHeight(28)
         self.__add_tag_button.setStyleSheet(BUTTON_STYLE)
 
-        self.__copy_prompt_button = QPushButton("COPY PROMPT")
+        self.__copy_prompt_button = QPushButton(Translations["preview.copy_prompt"])
         self.__copy_prompt_button.setEnabled(False)
         self.__copy_prompt_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.__copy_prompt_button.setMinimumHeight(28)
         self.__copy_prompt_button.setStyleSheet(GREEN_BUTTON_STYLE)
 
-        self.__edit_prompt_button = QPushButton("EDIT ENTRY")
+        self.__edit_prompt_button = QPushButton(Translations["entry.edit.button"])
         self.__edit_prompt_button.setEnabled(False)
         self.__edit_prompt_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.__edit_prompt_button.setMinimumHeight(28)
@@ -234,9 +234,11 @@ class PreviewPanelView(QWidget):
                     else:
                         entry_full = self.lib.get_entry_full(entry_id)
                         title = (
-                            self.lib.get_entry_title(entry_full, fallback="Untitled")
+                            self.lib.get_entry_title(
+                                entry_full, fallback=Translations["generic.untitled"]
+                            )
                             if entry_full is not None
-                            else "Untitled"
+                            else Translations["generic.untitled"]
                         )
                         self.__thumb.display_text_title(title)
                         self.__file_attrs.update_stats()

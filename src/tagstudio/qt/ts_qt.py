@@ -1481,14 +1481,20 @@ class QtDriver(DriverMixin, QObject):
             try:
                 shutil.copy2(source_path, destination)
             except Exception as e:
-                self.show_error_message("Could Not Copy File", str(e))
+                self.show_error_message(Translations["entry.error.copy_failed"], str(e))
                 return False
             if not self.lib.update_entry_path(entry_id, Path(target_name)):
-                self.show_error_message("Entry Not Saved", "An entry already points to that media path.")
+                self.show_error_message(
+                    Translations["entry.error.not_saved"],
+                    Translations["entry.error.media_path_in_use"],
+                )
                 return False
 
         if not (entry.has_media or source_path is not None) and not title.strip():
-            self.show_error_message("Entry Not Saved", "Title is required when no media is selected.")
+            self.show_error_message(
+                Translations["entry.error.not_saved"],
+                Translations["entry.error.title_required_no_media"],
+            )
             return False
         self.lib.upsert_entry_field(entry_id, FieldID.TITLE, title.strip())
         self.lib.upsert_entry_field(entry_id, FieldID.DESCRIPTION, prompt.strip())

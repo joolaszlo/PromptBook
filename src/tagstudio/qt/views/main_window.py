@@ -650,7 +650,7 @@ class MainWindow(QMainWindow):
 
         self.search_bar_layout.addStretch(1)
 
-        self.add_entry_button = QPushButton("Add Prompt", self.central_widget)
+        self.add_entry_button = QPushButton(Translations["entry.add_prompt"], self.central_widget)
         self.add_entry_button.setObjectName("add_entry_button")
         self.add_entry_button.setMinimumSize(QSize(0, 32))
         self.add_entry_button.setEnabled(False)
@@ -734,18 +734,18 @@ class MainWindow(QMainWindow):
         self.search_scope_layout.setContentsMargins(0, 0, 0, 0)
         self.search_scope_layout.setSpacing(8)
 
-        self.search_scope_label = QLabel("Search in:")
+        self.search_scope_label = QLabel(Translations["home.search_in"])
         self.search_scope_layout.addWidget(self.search_scope_label)
 
-        self.search_scope_tags_checkbox = QCheckBox("Tags")
+        self.search_scope_tags_checkbox = QCheckBox(Translations["home.tags"])
         self.search_scope_tags_checkbox.setChecked(False)
         self.search_scope_layout.addWidget(self.search_scope_tags_checkbox)
 
-        self.search_scope_title_checkbox = QCheckBox("Title")
+        self.search_scope_title_checkbox = QCheckBox(Translations["entry.title"])
         self.search_scope_title_checkbox.setChecked(True)
         self.search_scope_layout.addWidget(self.search_scope_title_checkbox)
 
-        self.search_scope_prompt_checkbox = QCheckBox("Prompt")
+        self.search_scope_prompt_checkbox = QCheckBox(Translations["entry.prompt"])
         self.search_scope_prompt_checkbox.setChecked(True)
         self.search_scope_layout.addWidget(self.search_scope_prompt_checkbox)
 

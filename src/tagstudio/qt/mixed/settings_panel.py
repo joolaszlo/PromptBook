@@ -197,7 +197,10 @@ class SettingsPanel(PanelWidget):
         self.title_overlay_font_size_adjust.setValue(
             self.driver.settings.title_overlay_font_size_adjust
         )
-        form_layout.addRow("Title overlay font size adjustment", self.title_overlay_font_size_adjust)
+        form_layout.addRow(
+            Translations["settings.title_overlay_font_size_adjust"],
+            self.title_overlay_font_size_adjust,
+        )
 
         # Preview Panel Metadata
         self.show_preview_created_date_checkbox = QCheckBox()
