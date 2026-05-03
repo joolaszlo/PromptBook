@@ -79,6 +79,13 @@ def test_browsing_state_update_multi_tag_and(qt_driver: QtDriver):
     assert qt_driver.lib.add_tags_to_entries(entry.id, [foo.id, bar.id]) == 2
 
     qt_driver.update_browsing_state(
+        BrowsingState.show_all().with_tag_filters({foo.id, bar.id}, set())
+    )
+
+    assert qt_driver.active_tag_filter_ids == {foo.id, bar.id}
+    assert qt_driver.frame_content == [entry.id]
+
+    qt_driver.update_browsing_state(
         BrowsingState.from_search_query(f"tag_id:{foo.id} tag_id:{bar.id}")
     )
 
@@ -87,12 +94,12 @@ def test_browsing_state_update_multi_tag_and(qt_driver: QtDriver):
 
 
 def test_apply_tag_filter_toggles_shared_tag_selection(qt_driver: QtDriver):
-    recorded_queries: list[str] = []
+    recorded_states: list[BrowsingState] = []
 
     def fake_update_browsing_state(state: BrowsingState | None = None) -> None:
         if state is not None:
             qt_driver.browsing_history.push(state)
-            recorded_queries.append(state.query or "")
+            recorded_states.append(state)
 
     qt_driver.update_browsing_state = fake_update_browsing_state
 
@@ -102,36 +109,42 @@ def test_apply_tag_filter_toggles_shared_tag_selection(qt_driver: QtDriver):
     qt_driver.apply_tag_filter(foo.id)
     assert qt_driver.active_tag_filter_ids == {foo.id}
     assert not qt_driver.excluded_tag_filter_ids
-    assert recorded_queries[-1] == f"tag_id:{foo.id}"
+    assert recorded_states[-1].active_tag_filter_ids == frozenset({foo.id})
+    assert not recorded_states[-1].excluded_tag_filter_ids
 
     qt_driver.apply_excluded_tag_filter(foo.id)
     assert not qt_driver.active_tag_filter_ids
     assert qt_driver.excluded_tag_filter_ids == {foo.id}
-    assert recorded_queries[-1] == f"not tag_id:{foo.id}"
+    assert not recorded_states[-1].active_tag_filter_ids
+    assert recorded_states[-1].excluded_tag_filter_ids == frozenset({foo.id})
 
     qt_driver.apply_tag_filter(foo.id)
     assert qt_driver.active_tag_filter_ids == {foo.id}
     assert not qt_driver.excluded_tag_filter_ids
-    assert recorded_queries[-1] == f"tag_id:{foo.id}"
+    assert recorded_states[-1].active_tag_filter_ids == frozenset({foo.id})
+    assert not recorded_states[-1].excluded_tag_filter_ids
 
     qt_driver.apply_tag_filter(bar.id)
     assert qt_driver.active_tag_filter_ids == {foo.id, bar.id}
-    assert recorded_queries[-1] == f"tag_id:{foo.id} tag_id:{bar.id}"
+    assert recorded_states[-1].active_tag_filter_ids == frozenset({foo.id, bar.id})
 
     qt_driver.apply_excluded_tag_filter(foo.id)
     assert qt_driver.active_tag_filter_ids == {bar.id}
     assert qt_driver.excluded_tag_filter_ids == {foo.id}
-    assert recorded_queries[-1] == f"tag_id:{bar.id} not tag_id:{foo.id}"
+    assert recorded_states[-1].active_tag_filter_ids == frozenset({bar.id})
+    assert recorded_states[-1].excluded_tag_filter_ids == frozenset({foo.id})
 
     qt_driver.apply_excluded_tag_filter(foo.id)
     assert qt_driver.active_tag_filter_ids == {bar.id}
     assert not qt_driver.excluded_tag_filter_ids
-    assert recorded_queries[-1] == f"tag_id:{bar.id}"
+    assert recorded_states[-1].active_tag_filter_ids == frozenset({bar.id})
+    assert not recorded_states[-1].excluded_tag_filter_ids
 
     qt_driver.clear_tag_filters()
     assert not qt_driver.active_tag_filter_ids
     assert not qt_driver.excluded_tag_filter_ids
-    assert recorded_queries[-1] == ""
+    assert not recorded_states[-1].active_tag_filter_ids
+    assert not recorded_states[-1].excluded_tag_filter_ids
 
 
 def test_refresh_tag_filter_controls_stable_labels_and_highlights(qtbot, qt_driver: QtDriver):

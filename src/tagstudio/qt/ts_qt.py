@@ -63,7 +63,6 @@ from tagstudio.core.library.alchemy.library import Library, LibraryStatus
 from tagstudio.core.library.alchemy.models import Entry, Tag
 from tagstudio.core.library.ignore import Ignore
 from tagstudio.core.library.refresh import RefreshTracker
-from tagstudio.core.media_types import MediaCategories
 from tagstudio.core.query_lang.util import ParsingError
 from tagstudio.core.ts_core import TagStudioCore
 from tagstudio.core.utils.str_formatting import is_version_outdated, strip_web_protocol
@@ -304,13 +303,6 @@ class QtDriver(DriverMixin, QObject):
     def is_tag_filter_excluded(self, tag_id: int) -> bool:
         return tag_id in self.excluded_tag_filter_ids
 
-    def _build_tag_filter_query(self) -> str:
-        include_terms = [f"tag_id:{tag_id}" for tag_id in sorted(self.active_tag_filter_ids)]
-        exclude_terms = [
-            f"not tag_id:{tag_id}" for tag_id in sorted(self.excluded_tag_filter_ids)
-        ]
-        return " ".join(include_terms + exclude_terms)
-
     def _extract_tag_filter_ids(self, query: str | None) -> tuple[set[int], set[int]]:
         if not query:
             return set(), set()
@@ -352,7 +344,9 @@ class QtDriver(DriverMixin, QObject):
             self.excluded_tag_filter_ids.discard(tag_id)
             self.active_tag_filter_ids.add(tag_id)
 
-        next_state = self.browsing_history.current.with_search_query(self._build_tag_filter_query())
+        next_state = self.browsing_history.current.with_tag_filters(
+            self.active_tag_filter_ids, self.excluded_tag_filter_ids
+        )
         self.update_browsing_state(next_state)
 
     def apply_excluded_tag_filter(self, tag_id: int):
@@ -363,7 +357,9 @@ class QtDriver(DriverMixin, QObject):
             self.active_tag_filter_ids.discard(tag_id)
             self.excluded_tag_filter_ids.add(tag_id)
 
-        next_state = self.browsing_history.current.with_search_query(self._build_tag_filter_query())
+        next_state = self.browsing_history.current.with_tag_filters(
+            self.active_tag_filter_ids, self.excluded_tag_filter_ids
+        )
         self.update_browsing_state(next_state)
 
     def clear_tag_filters(self) -> None:
@@ -372,7 +368,7 @@ class QtDriver(DriverMixin, QObject):
 
         self.active_tag_filter_ids.clear()
         self.excluded_tag_filter_ids.clear()
-        self.update_browsing_state(self.browsing_history.current.with_search_query(""))
+        self.update_browsing_state(self.browsing_history.current.with_tag_filters(set(), set()))
 
     def clear_thumb_cache(self) -> None:
         if self.cache_manager is None:
@@ -860,7 +856,14 @@ class QtDriver(DriverMixin, QObject):
         def _update_browsing_state():
             try:
                 self.update_browsing_state(
-                    BrowsingState.from_search_query(self.main_window.search_field.text())
+                    self.browsing_history.current.with_text_query(
+                        self.main_window.search_field.text()
+                    )
+                    .with_search_scopes(
+                        tags=self.main_window.search_scope_tags_checkbox.isChecked(),
+                        title=self.main_window.search_scope_title_checkbox.isChecked(),
+                        prompt=self.main_window.search_scope_prompt_checkbox.isChecked(),
+                    )
                     .with_sorting_mode(self.main_window.sorting_mode)
                     .with_sorting_direction(self.main_window.sorting_direction)
                     .with_show_hidden_entries(self.main_window.show_hidden_entries)
@@ -877,6 +880,15 @@ class QtDriver(DriverMixin, QObject):
 
         # Search Field
         self.main_window.search_field.returnPressed.connect(_update_browsing_state)
+        self.main_window.search_scope_tags_checkbox.stateChanged.connect(
+            lambda: _update_browsing_state()
+        )
+        self.main_window.search_scope_title_checkbox.stateChanged.connect(
+            lambda: _update_browsing_state()
+        )
+        self.main_window.search_scope_prompt_checkbox.stateChanged.connect(
+            lambda: _update_browsing_state()
+        )
 
         # Sorting Dropdowns
         self.main_window.sorting_mode_combobox.setCurrentIndex(
@@ -1720,66 +1732,18 @@ class QtDriver(DriverMixin, QObject):
             self.main_window.menu_bar.delete_file_action.setEnabled(False)
 
     def update_completions_list(self, text: str) -> None:
-        matches = re.search(
-            r"((?:.* )?)(mediatype|filetype|path|tag|tag_id):(\"?[A-Za-z0-9\ \t]+\"?)?", text
-        )
-
         completion_list: list[str] = []
-        if len(text) < 3:
-            completion_list = [
-                "mediatype:",
-                "filetype:",
-                "path:",
-                "tag:",
-                "tag_id:",
-                "special:untagged",
-            ]
-            self.main_window.search_field_completion_list.setStringList(completion_list)
-
-        if not matches:
-            return
-
-        query_type: str
-        query_value: str | None
-        prefix, query_type, query_value = matches.groups()
-
-        if not query_value:
-            return
-
-        if query_type == "tag":
-            completion_list = list(map(lambda x: prefix + "tag:" + x.name, self.lib.tags))
-        elif query_type == "tag_id":
-            completion_list = list(map(lambda x: prefix + "tag_id:" + str(x.id), self.lib.tags))
-        elif query_type == "path":
-            completion_list = list(
-                map(lambda x: prefix + "path:" + x, self.lib.get_paths(limit=100))
-            )
-        elif query_type == "mediatype":
-            single_word_completions = map(
-                lambda x: prefix + "mediatype:" + x.name,
-                filter(lambda y: " " not in y.name, MediaCategories.ALL_CATEGORIES),
-            )
-            single_word_completions_quoted = map(
-                lambda x: prefix + 'mediatype:"' + x.name + '"',
-                filter(lambda y: " " not in y.name, MediaCategories.ALL_CATEGORIES),
-            )
-            multi_word_completions = map(
-                lambda x: prefix + 'mediatype:"' + x.name + '"',
-                filter(lambda y: " " in y.name, MediaCategories.ALL_CATEGORIES),
-            )
-
-            all_completions = [
-                single_word_completions,
-                single_word_completions_quoted,
-                multi_word_completions,
-            ]
-            completion_list = [j for i in all_completions for j in i]
-        elif query_type == "filetype":
-            extensions_list: set[str] = set()
-            for media_cat in MediaCategories.ALL_CATEGORIES:
-                extensions_list = extensions_list | media_cat.extensions
-            completion_list = list(
-                map(lambda x: prefix + "filetype:" + x.replace(".", ""), extensions_list)
+        text = text.strip().lower()
+        if (
+            len(text) >= 2
+            and self.main_window.search_scope_tags_checkbox.isChecked()
+            and self.lib is not None
+        ):
+            completion_list = sorted(
+                tag.name
+                for tag in self.lib.tags
+                if text in tag.name.lower()
+                or (tag.shorthand is not None and text in tag.shorthand.lower())
             )
 
         update_completion_list: bool = (
@@ -1864,12 +1828,27 @@ class QtDriver(DriverMixin, QObject):
         if state:
             self.browsing_history.push(state)
 
-        current_query = (self.browsing_history.current.query or "").strip()
-        self.active_tag_filter_ids, self.excluded_tag_filter_ids = self._extract_tag_filter_ids(
-            current_query
-        )
+        current = self.browsing_history.current
+        self.active_tag_filter_ids = set(current.active_tag_filter_ids)
+        self.excluded_tag_filter_ids = set(current.excluded_tag_filter_ids)
+        if not self.active_tag_filter_ids and not self.excluded_tag_filter_ids:
+            self.active_tag_filter_ids, self.excluded_tag_filter_ids = self._extract_tag_filter_ids(
+                (current.query or "").strip()
+            )
 
-        self.main_window.search_field.setText(self.browsing_history.current.query or "")
+        self.main_window.search_field.blockSignals(True)
+        self.main_window.search_field.setText(current.text_query)
+        self.main_window.search_field.blockSignals(False)
+
+        scope_widgets = (
+            (self.main_window.search_scope_tags_checkbox, current.search_tags),
+            (self.main_window.search_scope_title_checkbox, current.search_title),
+            (self.main_window.search_scope_prompt_checkbox, current.search_prompt),
+        )
+        for widget, value in scope_widgets:
+            widget.blockSignals(True)
+            widget.setChecked(value)
+            widget.blockSignals(False)
 
         # inform user about running search
         self.main_window.status_bar.showMessage(Translations["status.library_search_query"])
@@ -1878,7 +1857,7 @@ class QtDriver(DriverMixin, QObject):
         # search the library
         start_time = time.time()
         Ignore.get_patterns(self.lib.library_dir, include_global=True)
-        results = self.lib.search_library(self.browsing_history.current, page_size=0)
+        results = self.lib.search_library(current, page_size=0)
         logger.info("items to render", count=len(results))
         end_time = time.time()
 

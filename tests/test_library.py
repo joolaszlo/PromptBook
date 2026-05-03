@@ -134,6 +134,84 @@ def test_library_search(library: Library, entry_full: Entry):
     assert len(results) == 1
 
 
+def test_library_text_search_scopes_and_tag_filters(library: Library, generate_tag):
+    folder = unwrap(library.folder)
+    scoped_tag = unwrap(library.add_tag(generate_tag("scopeportrait", id=3000)))
+
+    title_entry = Entry(
+        id=10,
+        folder=folder,
+        path=Path("title.txt"),
+        fields=[
+            TextField(type_key=FieldID.TITLE.name, value="AlphaTerm title", position=0),
+            TextField(type_key=FieldID.DESCRIPTION.name, value="plain prompt", position=1),
+        ],
+    )
+    prompt_entry = Entry(
+        id=11,
+        folder=folder,
+        path=Path("prompt.txt"),
+        fields=[
+            TextField(type_key=FieldID.TITLE.name, value="plain title", position=0),
+            TextField(type_key=FieldID.DESCRIPTION.name, value="AlphaTerm prompt", position=1),
+        ],
+    )
+    tag_entry = Entry(
+        id=12,
+        folder=folder,
+        path=Path("tag.txt"),
+        fields=[
+            TextField(type_key=FieldID.TITLE.name, value="plain title", position=0),
+            TextField(type_key=FieldID.DESCRIPTION.name, value="plain prompt", position=1),
+        ],
+    )
+    combined_entry = Entry(
+        id=13,
+        folder=folder,
+        path=Path("combined.txt"),
+        fields=[
+            TextField(type_key=FieldID.TITLE.name, value="AlphaTerm combined", position=0),
+            TextField(type_key=FieldID.DESCRIPTION.name, value="plain prompt", position=1),
+        ],
+    )
+    assert library.add_entries([title_entry, prompt_entry, tag_entry, combined_entry])
+    assert library.add_tags_to_entries(tag_entry.id, [scoped_tag.id]) == 1
+    assert library.add_tags_to_entries(combined_entry.id, [scoped_tag.id]) == 1
+
+    title_results = library.search_library(
+        BrowsingState.show_all()
+        .with_text_query("alphaterm")
+        .with_search_scopes(tags=False, title=True, prompt=False),
+        page_size=500,
+    )
+    assert set(title_results) == {title_entry.id, combined_entry.id}
+
+    prompt_results = library.search_library(
+        BrowsingState.show_all()
+        .with_text_query("alphaterm")
+        .with_search_scopes(tags=False, title=False, prompt=True),
+        page_size=500,
+    )
+    assert set(prompt_results) == {prompt_entry.id}
+
+    tag_text_results = library.search_library(
+        BrowsingState.show_all()
+        .with_text_query("scopeportrait")
+        .with_search_scopes(tags=True, title=False, prompt=False),
+        page_size=500,
+    )
+    assert set(tag_text_results) == {tag_entry.id, combined_entry.id}
+
+    combined_results = library.search_library(
+        BrowsingState.show_all()
+        .with_text_query("alphaterm")
+        .with_search_scopes(tags=False, title=True, prompt=False)
+        .with_tag_filters({scoped_tag.id}, set()),
+        page_size=500,
+    )
+    assert set(combined_results) == {combined_entry.id}
+
+
 def test_tag_search(library: Library):
     tag = library.tags[0]
 

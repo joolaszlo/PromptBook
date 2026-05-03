@@ -1142,6 +1142,16 @@ class Library:
                     f"SQL Expression Builder finished ({format_timespan(end_time - start_time)})"
                 )
 
+            tag_filter_expr = self._entry_tag_filter_expression(
+                set(search.active_tag_filter_ids), set(search.excluded_tag_filter_ids)
+            )
+            if tag_filter_expr is not None:
+                statement = statement.where(tag_filter_expr)
+
+            text_search_expr = self._entry_text_search_expression(search)
+            if text_search_expr is not None:
+                statement = statement.where(text_search_expr)
+
             statement = statement.distinct(Entry.id)
 
             sort_on: ColumnExpressionArgument = Entry.id
@@ -1185,6 +1195,76 @@ class Library:
             session.expunge_all()
 
             return res
+
+    def _entry_tag_filter_expression(
+        self, included_tag_ids: set[int], excluded_tag_ids: set[int]
+    ):
+        expressions = []
+        if included_tag_ids:
+            expressions.append(
+                Entry.id.in_(
+                    select(TagEntry.entry_id)
+                    .where(TagEntry.tag_id.in_(included_tag_ids))
+                    .group_by(TagEntry.entry_id)
+                    .having(func.count(func.distinct(TagEntry.tag_id)) == len(included_tag_ids))
+                )
+            )
+        if excluded_tag_ids:
+            expressions.append(
+                ~Entry.id.in_(
+                    select(TagEntry.entry_id)
+                    .where(TagEntry.tag_id.in_(excluded_tag_ids))
+                    .distinct()
+                )
+            )
+        if not expressions:
+            return None
+        return and_(*expressions)
+
+    def _entry_text_search_expression(self, search: BrowsingState):
+        text = search.text_query.strip()
+        if not text:
+            return None
+
+        expressions = []
+        pattern = f"%{text}%"
+        if search.search_tags:
+            expressions.append(
+                Entry.id.in_(
+                    select(TagEntry.entry_id)
+                    .join(Tag, TagEntry.tag_id == Tag.id)
+                    .outerjoin(TagAlias, TagAlias.tag_id == Tag.id)
+                    .where(
+                        or_(
+                            Tag.name.ilike(pattern),
+                            Tag.shorthand.ilike(pattern),
+                            TagAlias.name.ilike(pattern),
+                        )
+                    )
+                    .distinct()
+                )
+            )
+        if search.search_title:
+            expressions.append(
+                Entry.id.in_(
+                    select(TextField.entry_id)
+                    .where(TextField.type_key == FieldID.TITLE.name)
+                    .where(TextField.value.ilike(pattern))
+                    .distinct()
+                )
+            )
+        if search.search_prompt:
+            expressions.append(
+                Entry.id.in_(
+                    select(TextField.entry_id)
+                    .where(TextField.type_key == FieldID.DESCRIPTION.name)
+                    .where(TextField.value.ilike(pattern))
+                    .distinct()
+                )
+            )
+        if not expressions:
+            return None
+        return or_(*expressions)
 
     def search_tags(self, name: str | None, limit: int = 100) -> list[set[Tag]]:
         """Return a list of Tag records matching the query."""

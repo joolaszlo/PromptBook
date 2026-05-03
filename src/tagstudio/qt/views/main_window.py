@@ -464,9 +464,13 @@ class MainWindow(QMainWindow):
         # region Type declarations for variables that will be initialized in methods
         # initialized in setup_search_bar
         self.search_bar_layout: QHBoxLayout
+        self.search_scope_layout: QHBoxLayout
         self.back_button: QPushButton
         self.forward_button: QPushButton
         self.search_field: QLineEdit
+        self.search_scope_tags_checkbox: QCheckBox
+        self.search_scope_title_checkbox: QCheckBox
+        self.search_scope_prompt_checkbox: QCheckBox
         self.search_field_completion_list: QStringListModel
         self.search_field_completer: QCompleter
         self.search_button: QPushButton
@@ -657,6 +661,28 @@ class MainWindow(QMainWindow):
 
         self.central_layout.addLayout(self.search_bar_layout, 3, 0, 1, 1)
 
+        self.search_scope_layout = QHBoxLayout()
+        self.search_scope_layout.setObjectName("search_scope_layout")
+        self.search_scope_layout.setContentsMargins(70, 0, 0, 0)
+        self.search_scope_layout.setSpacing(8)
+        self.search_scope_label = QLabel("Search in:")
+        self.search_scope_layout.addWidget(self.search_scope_label)
+
+        self.search_scope_tags_checkbox = QCheckBox("Tags")
+        self.search_scope_tags_checkbox.setChecked(False)
+        self.search_scope_layout.addWidget(self.search_scope_tags_checkbox)
+
+        self.search_scope_title_checkbox = QCheckBox("Title")
+        self.search_scope_title_checkbox.setChecked(True)
+        self.search_scope_layout.addWidget(self.search_scope_title_checkbox)
+
+        self.search_scope_prompt_checkbox = QCheckBox("Prompt")
+        self.search_scope_prompt_checkbox.setChecked(True)
+        self.search_scope_layout.addWidget(self.search_scope_prompt_checkbox)
+        self.search_scope_layout.addStretch(1)
+
+        self.central_layout.addLayout(self.search_scope_layout, 4, 0, 1, 1)
+
     def setup_tag_filter_bar(self):
         self.tag_filter_layout = QVBoxLayout()
         self.tag_filter_layout.setObjectName("tag_filter_layout")
@@ -706,7 +732,7 @@ class MainWindow(QMainWindow):
         self.pinned_tags_container.setLayout(self.pinned_tags_layout)
         self.tag_filter_layout.addWidget(self.pinned_tags_container)
 
-        self.central_layout.addLayout(self.tag_filter_layout, 4, 0, 1, 1)
+        self.central_layout.addLayout(self.tag_filter_layout, 5, 0, 1, 1)
 
     def setup_extra_input_bar(self):
         """Sets up inputs for sorting settings and thumbnail size."""
