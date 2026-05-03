@@ -1780,22 +1780,23 @@ class ThumbRenderer(QObject):
         im = image.convert("RGBA")
         width, height = im.size
         pad = max(6, math.ceil(width * 0.07))
-        overlay_height = max(math.ceil(height * 0.34), pad * 4)
+        overlay_rect = (pad, pad, width - pad, height - pad)
         overlay = Image.new("RGBA", im.size, (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
         draw.rounded_rectangle(
-            (pad, height - overlay_height - pad, width - pad, height - pad),
+            overlay_rect,
             radius=max(4, pad // 2),
             fill=(0, 0, 0, 176),
         )
         im.alpha_composite(overlay)
 
         adjustment = getattr(self.driver.settings, "title_overlay_font_size_adjust", 0)
-        font_size = max(8, math.ceil(width * 0.105) + int(adjustment * pixel_ratio))
+        default_font_size = math.ceil(width * 0.105) - math.ceil(4 * pixel_ratio)
+        font_size = max(8, default_font_size + int(adjustment * pixel_ratio))
         font = self._title_overlay_font(font_size)
         text_box = (
             pad * 2,
-            height - overlay_height,
+            pad * 2,
             width - pad * 2,
             height - pad * 2,
         )
@@ -1814,8 +1815,17 @@ class ThumbRenderer(QObject):
         x1, y1, x2, y2 = box
         max_width = max(1, x2 - x1)
         max_height = max(1, y2 - y1)
-        line_height = max(1, draw.textbbox((0, 0), "Ag", font=font)[3])
+        line_bbox = draw.textbbox((0, 0), "Ag", font=font)
+        line_height = max(1, line_bbox[3] - line_bbox[1])
         max_lines = max(1, max_height // line_height)
+
+        def elide_to_width(value: str) -> str:
+            if draw.textlength(value, font=font) <= max_width:
+                return value
+            ellipsis = "..."
+            while value and draw.textlength(value + ellipsis, font=font) > max_width:
+                value = value[:-1]
+            return value.rstrip() + ellipsis if value else ellipsis
 
         lines: list[str] = []
         current = ""
@@ -1826,7 +1836,7 @@ class ThumbRenderer(QObject):
                 continue
             if current:
                 lines.append(current)
-            current = word
+            current = word if draw.textlength(word, font=font) <= max_width else elide_to_width(word)
             if len(lines) == max_lines:
                 break
         if current and len(lines) < max_lines:
@@ -1837,11 +1847,7 @@ class ThumbRenderer(QObject):
         if not lines:
             lines = [text]
 
-        last = lines[-1]
-        while draw.textlength(last + "...", font=font) > max_width and last:
-            last = last[:-1]
-        if last != lines[-1]:
-            lines[-1] = last.rstrip() + "..."
+        lines[-1] = elide_to_width(lines[-1])
 
         y = y1
         for line in lines:
