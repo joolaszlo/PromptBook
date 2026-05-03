@@ -391,6 +391,24 @@ class ItemThumb(FlowWidget):
         self.ext_badge.setHidden(not show_ext_badge)
         self.count_badge.setHidden(not show_count_badge)
 
+    def set_content_badge(self, entry: "Entry") -> None:
+        if not entry.has_media or entry.path is None:
+            badge = "TEXT"
+        else:
+            ext = entry.path.suffix.lower()
+            if MediaCategories.is_ext_in_category(ext, MediaCategories.IMAGE_TYPES):
+                badge = "IMAGE"
+            elif MediaCategories.is_ext_in_category(ext, MediaCategories.VIDEO_TYPES):
+                badge = "VIDEO"
+            elif MediaCategories.is_ext_in_category(ext, MediaCategories.AUDIO_TYPES):
+                badge = "AUDIO"
+            else:
+                badge = "TEXT"
+
+        self.ext_badge.setText(badge)
+        self.ext_badge.setHidden(False)
+        self.count_badge.setHidden(True)
+
     def set_count(self, count: str) -> None:
         if count:
             self.count_badge.setHidden(False)
@@ -401,7 +419,10 @@ class ItemThumb(FlowWidget):
                 self.count_badge.setHidden(True)
 
     def set_filename_text(self, filename: Path):
-        self.file_label.setText(str(filename.name))
+        if str(filename).startswith("__text_entry_"):
+            self.file_label.setText("Text entry")
+        else:
+            self.file_label.setText(str(filename.name))
 
     def set_filename_visibility(self, set_visible: bool):
         """Toggle the visibility of the filename label.
@@ -436,16 +457,17 @@ class ItemThumb(FlowWidget):
 
     def set_item(self, entry: "Entry"):
         self.set_item_id(entry.id)
-        path = unwrap(self.lib.library_dir) / entry.path
+        path = unwrap(self.lib.library_dir) / entry.path if entry.path is not None else None
         self.set_item_path(path)
 
     def set_item_id(self, item_id: int):
         self.item_id = item_id
 
-    def set_item_path(self, path: Path):
+    def set_item_path(self, path: Path | None):
         """Set the absolute filepath for the item. Used for locating on disk."""
         self.item_path = path
-        self.opener.set_filepath(path)
+        if path is not None:
+            self.opener.set_filepath(path)
 
     def assign_badge(self, badge_type: BadgeType, value: bool) -> None:
         mode = self.mode
@@ -512,7 +534,7 @@ class ItemThumb(FlowWidget):
 
         for entry_id in selected_ids:
             entry = self.lib.get_entry(entry_id)
-            if not entry:
+            if not entry or entry.path is None:
                 continue
 
             url = QUrl.fromLocalFile(Path(unwrap(self.lib.library_dir)) / entry.path)

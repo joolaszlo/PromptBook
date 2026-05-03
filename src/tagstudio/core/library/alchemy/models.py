@@ -204,12 +204,12 @@ class Entry(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    folder_id: Mapped[int] = mapped_column(ForeignKey("folders.id"))
-    folder: Mapped[Folder] = relationship("Folder")
+    folder_id: Mapped[int | None] = mapped_column(ForeignKey("folders.id"), nullable=True)
+    folder: Mapped[Folder | None] = relationship("Folder")
 
-    path: Mapped[Path] = mapped_column(PathType, unique=True)
-    filename: Mapped[str] = mapped_column()
-    suffix: Mapped[str] = mapped_column()
+    path: Mapped[Path | None] = mapped_column(PathType, unique=True, nullable=True)
+    filename: Mapped[str] = mapped_column(default="")
+    suffix: Mapped[str] = mapped_column(default="")
     date_created: Mapped[dt | None]
     date_modified: Mapped[dt | None]
     date_added: Mapped[dt | None]
@@ -241,10 +241,14 @@ class Entry(Base):
     def is_archived(self) -> bool:
         return any(tag.id == TAG_ARCHIVED for tag in self.tags)
 
+    @property
+    def has_media(self) -> bool:
+        return self.path is not None
+
     def __init__(
         self,
-        path: Path,
-        folder: Folder,
+        path: Path | None,
+        folder: Folder | None,
         fields: list[BaseField],
         id: int | None = None,
         date_created: dt | None = None,
@@ -255,8 +259,8 @@ class Entry(Base):
         self.path = path
         self.folder = folder
         self.id = id  # pyright: ignore[reportAttributeAccessIssue]
-        self.filename = path.name
-        self.suffix = path.suffix.lstrip(".").lower()
+        self.filename = path.name if path else ""
+        self.suffix = path.suffix.lstrip(".").lower() if path else ""
 
         # The date the file associated with this entry was created.
         # st_birthtime on Windows and Mac, st_ctime on Linux.

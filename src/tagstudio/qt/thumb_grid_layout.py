@@ -102,9 +102,9 @@ class ThumbGridLayout(QLayout):
 
     def _fetch_entries(self, ids: Iterable[int]):
         ids = [id for id in ids if id not in self._entries]
-        entries = self.driver.lib.get_entries(ids)
+        entries = list(self.driver.lib.get_entries_full(ids))
         for entry in entries:
-            self._entry_paths[unwrap(self.driver.lib.library_dir) / entry.path] = entry.id
+            self._entry_paths[self._entry_render_key(entry)] = entry.id
             self._entries[entry.id] = entry
 
         tag_ids = [TAG_ARCHIVED, TAG_FAVORITE]
@@ -129,6 +129,16 @@ class ThumbGridLayout(QLayout):
         entry_id = self._entry_paths[file_path]
         self._update_thumb(entry_id, image, size, file_path)
 
+    def _entry_render_key(self, entry: Entry) -> Path:
+        if entry.path is None:
+            return Path(f"__text_entry_{entry.id}")
+        return unwrap(self.driver.lib.library_dir) / entry.path
+
+    def invalidate_entry(self, entry_id: int) -> None:
+        entry = self._entries.get(entry_id)
+        if entry:
+            self._render_results.pop(self._entry_render_key(entry), None)
+
     def _update_thumb(self, entry_id: int, image: QPixmap, size: QSize, file_path: Path):
         index = self._entry_items.get(entry_id)
         if index is None:
@@ -137,7 +147,9 @@ class ThumbGridLayout(QLayout):
         item_thumb.update_thumb(image, file_path)
         item_thumb.update_size(size)
         item_thumb.set_filename_text(file_path)
-        item_thumb.set_extension(file_path)
+        entry = self._entries.get(entry_id)
+        if entry:
+            item_thumb.set_content_badge(entry)
 
     def _item_thumb(self, index: int) -> ItemThumb:
         if w := getattr(self.driver, "main_window", None):
@@ -280,7 +292,7 @@ class ThumbGridLayout(QLayout):
             item_x = width_offset * col
             item_y = height_offset * row
             item_thumb.setGeometry(QRect(QPoint(item_x, item_y), item.sizeHint()))
-            file_path = unwrap(self.driver.lib.library_dir) / entry.path
+            file_path = self._entry_render_key(entry)
             item_thumb.set_item(entry)
 
             if result := self._render_results.get(file_path):
@@ -298,7 +310,17 @@ class ThumbGridLayout(QLayout):
                     self.driver.thumb_job_queue.put(
                         (
                             self._renderer.render,
-                            (timestamp, file_path, base_size, ratio, False, True),
+                            (
+                                timestamp,
+                                file_path,
+                                base_size,
+                                ratio,
+                                False,
+                                True,
+                                False,
+                                self.driver.lib.get_entry_title(entry, "Untitled"),
+                                not entry.has_media,
+                            ),
                         )
                     )
 

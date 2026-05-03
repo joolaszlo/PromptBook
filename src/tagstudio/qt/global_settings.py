@@ -28,6 +28,7 @@ MIN_THUMB_CACHE_SIZE = 10  # Number in MiB
 DEFAULT_CACHED_IMAGE_QUALITY = 80
 DEFAULT_CACHED_IMAGE_RES = 256
 DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR = "#4da3ff"
+DEFAULT_TITLE_OVERLAY_FONT_SIZE_ADJUST = 0
 
 
 class Theme(IntEnum):
@@ -79,6 +80,7 @@ class GlobalSettings(BaseModel):
     splash: Splash = Field(default=Splash.DEFAULT)
     windows_start_command: bool = Field(default=False)
     selected_tag_highlight_color: str = Field(default=DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR)
+    title_overlay_font_size_adjust: int = Field(default=DEFAULT_TITLE_OVERLAY_FONT_SIZE_ADJUST)
 
     date_format: str = Field(default="%x")
     hour_format: bool = Field(default=True)

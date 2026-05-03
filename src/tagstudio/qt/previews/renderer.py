@@ -1538,6 +1538,8 @@ class ThumbRenderer(QObject):
         is_loading: bool = False,
         is_grid_thumb: bool = False,
         update_on_ratio_change: bool = False,
+        title: str = "",
+        is_text_entry: bool = False,
     ):
         """Render a thumbnail or preview image.
 
@@ -1560,6 +1562,11 @@ class ThumbRenderer(QObject):
         )
         if isinstance(filepath, str):
             filepath = Path(filepath)
+
+        def is_audio_entry(path: Path) -> bool:
+            return MediaCategories.is_ext_in_category(
+                path.suffix.lower(), MediaCategories.AUDIO_TYPES, mime_fallback=True
+            )
 
         def render_default(size: tuple[int, int], pixel_ratio: float) -> Image.Image:
             im = self._get_icon(
@@ -1613,6 +1620,13 @@ class ThumbRenderer(QObject):
 
             return im_
 
+        def render_text_entry(size: tuple[int, int], pixel_ratio: float) -> Image.Image:
+            is_light = QGuiApplication.styleHints().colorScheme() == Qt.ColorScheme.Light
+            bg = (42, 45, 50, 255) if is_light else (238, 239, 241, 255)
+            im = Image.new("RGBA", size, bg)
+            edge: tuple[Image.Image, Image.Image] = self._get_edge(size, pixel_ratio)
+            return self._apply_edge(im, edge)
+
         def fetch_cached_image(file_name: Path):
             image: Image.Image | None = None
             if self.driver.cache_manager is None:
@@ -1635,7 +1649,10 @@ class ThumbRenderer(QObject):
 
         image: Image.Image | None = None
         # Try to get a non-loading thumbnail for the grid.
-        if not is_loading and is_grid_thumb and filepath and filepath != Path("."):
+        if is_text_entry and is_grid_thumb:
+            image = render_text_entry((adj_size, adj_size), pixel_ratio)
+            render_mask_and_edge = False
+        elif not is_loading and is_grid_thumb and filepath and filepath != Path("."):
             # Attempt to retrieve cached image from disk
             mod_time: str = ""
             with contextlib.suppress(Exception):
@@ -1693,6 +1710,14 @@ class ThumbRenderer(QObject):
             except TypeError:
                 pass
 
+        if (
+            image
+            and title.strip()
+            and is_grid_thumb
+            and (is_text_entry or is_audio_entry(filepath))
+        ):
+            image = self._apply_title_overlay(image, title.strip(), pixel_ratio)
+
         # A loading thumbnail (cached in memory)
         elif is_loading:
             # Initialize "Loading" thumbnail
@@ -1742,6 +1767,88 @@ class ThumbRenderer(QObject):
                 QSize(*base_size),
                 filepath,
             )
+
+    def _title_overlay_font(self, size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+        font_path = Path(__file__).parents[2] / "resources/qt/fonts/Oxanium-Bold.ttf"
+        with contextlib.suppress(Exception):
+            return ImageFont.truetype(str(font_path), size=size)
+        return ImageFont.load_default(size=size)
+
+    def _apply_title_overlay(
+        self, image: Image.Image, title: str, pixel_ratio: float
+    ) -> Image.Image:
+        im = image.convert("RGBA")
+        width, height = im.size
+        pad = max(6, math.ceil(width * 0.07))
+        overlay_height = max(math.ceil(height * 0.34), pad * 4)
+        overlay = Image.new("RGBA", im.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+        draw.rounded_rectangle(
+            (pad, height - overlay_height - pad, width - pad, height - pad),
+            radius=max(4, pad // 2),
+            fill=(0, 0, 0, 176),
+        )
+        im.alpha_composite(overlay)
+
+        adjustment = getattr(self.driver.settings, "title_overlay_font_size_adjust", 0)
+        font_size = max(8, math.ceil(width * 0.105) + int(adjustment * pixel_ratio))
+        font = self._title_overlay_font(font_size)
+        text_box = (
+            pad * 2,
+            height - overlay_height,
+            width - pad * 2,
+            height - pad * 2,
+        )
+        self._draw_fitted_text(im, title, text_box, font, fill=(255, 255, 255, 255))
+        return im
+
+    def _draw_fitted_text(
+        self,
+        image: Image.Image,
+        text: str,
+        box: tuple[int, int, int, int],
+        font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+        fill: tuple[int, int, int, int],
+    ) -> None:
+        draw = ImageDraw.Draw(image)
+        x1, y1, x2, y2 = box
+        max_width = max(1, x2 - x1)
+        max_height = max(1, y2 - y1)
+        line_height = max(1, draw.textbbox((0, 0), "Ag", font=font)[3])
+        max_lines = max(1, max_height // line_height)
+
+        lines: list[str] = []
+        current = ""
+        for word in text.split():
+            candidate = word if not current else f"{current} {word}"
+            if draw.textlength(candidate, font=font) <= max_width:
+                current = candidate
+                continue
+            if current:
+                lines.append(current)
+            current = word
+            if len(lines) == max_lines:
+                break
+        if current and len(lines) < max_lines:
+            lines.append(current)
+
+        if len(lines) > max_lines:
+            lines = lines[:max_lines]
+        if not lines:
+            lines = [text]
+
+        last = lines[-1]
+        while draw.textlength(last + "...", font=font) > max_width and last:
+            last = last[:-1]
+        if last != lines[-1]:
+            lines[-1] = last.rstrip() + "..."
+
+        y = y1
+        for line in lines:
+            if y + line_height > y2:
+                break
+            draw.text((x1, y), line, font=font, fill=fill)
+            y += line_height
 
     def _render(
         self,

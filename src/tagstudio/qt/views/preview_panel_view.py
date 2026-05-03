@@ -91,6 +91,7 @@ class PreviewPanelView(QWidget):
     def __init__(self, library: Library, driver: "QtDriver"):
         super().__init__()
         self.lib = library
+        self.driver = driver
 
         self.__thumb = PreviewThumb(self.lib, driver)
         self.__file_attrs = FileAttributes(self.lib, driver)
@@ -129,7 +130,7 @@ class PreviewPanelView(QWidget):
         self.__copy_prompt_button.setMinimumHeight(28)
         self.__copy_prompt_button.setStyleSheet(GREEN_BUTTON_STYLE)
 
-        self.__edit_prompt_button = QPushButton("EDIT PROMPT")
+        self.__edit_prompt_button = QPushButton("EDIT ENTRY")
         self.__edit_prompt_button.setEnabled(False)
         self.__edit_prompt_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.__edit_prompt_button.setMinimumHeight(28)
@@ -222,11 +223,17 @@ class PreviewPanelView(QWidget):
                 entry_id = selected[0]
                 entry: Entry = unwrap(self.lib.get_entry(entry_id))
 
-                filepath: Path = unwrap(self.lib.library_dir) / entry.path
+                filepath: Path | None = (
+                    unwrap(self.lib.library_dir) / entry.path if entry.path is not None else None
+                )
 
                 if update_preview:
-                    stats: FileAttributeData = self.__thumb.display_file(filepath)
-                    self.__file_attrs.update_stats(filepath, stats)
+                    if filepath is not None:
+                        stats: FileAttributeData = self.__thumb.display_file(filepath)
+                        self.__file_attrs.update_stats(filepath, stats)
+                    else:
+                        self.__thumb.hide_preview()
+                        self.__file_attrs.update_stats()
                 self.__file_attrs.update_date_label(filepath)
                 self._fields.update_from_entry(entry_id)
 

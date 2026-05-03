@@ -569,6 +569,8 @@ class Library:
                     self.__apply_db102_repairs(session)
                 if loaded_db_version < 103:
                     self.__apply_db103_default_data(session)
+                if loaded_db_version < 106:
+                    self.__apply_db106_schema_changes(session)
 
                 # Convert file extension list to ts_ignore file, if a .ts_ignore file does not exist
                 self.migrate_sql_to_ts_ignore(library_dir)
@@ -781,6 +783,43 @@ class Library:
         except Exception as e:
             logger.error(
                 "[Library][Migration] Could not create category sidebar settings table!",
+                error=e,
+            )
+            session.rollback()
+
+    def __apply_db106_schema_changes(self, session: Session):
+        """Apply database schema changes introduced in DB_VERSION 106."""
+        # SQLite cannot drop NOT NULL/UNIQUE constraints in-place, so rebuild entries.
+        rebuild_entries_table = text(
+            "CREATE TABLE IF NOT EXISTS entries_new ("
+            "id INTEGER NOT NULL, "
+            "folder_id INTEGER, "
+            "path VARCHAR, "
+            "filename VARCHAR DEFAULT '', "
+            "suffix VARCHAR DEFAULT '', "
+            "date_created DATETIME, "
+            "date_modified DATETIME, "
+            "date_added DATETIME, "
+            "PRIMARY KEY (id), "
+            "FOREIGN KEY(folder_id) REFERENCES folders (id), "
+            "UNIQUE (path)"
+            "); "
+            "INSERT INTO entries_new "
+            "(id, folder_id, path, filename, suffix, date_created, date_modified, date_added) "
+            "SELECT id, folder_id, path, filename, suffix, date_created, date_modified, date_added "
+            "FROM entries; "
+            "DROP TABLE entries; "
+            "ALTER TABLE entries_new RENAME TO entries"
+        )
+        try:
+            for statement in str(rebuild_entries_table).split("; "):
+                if statement.strip():
+                    session.execute(text(statement))
+            session.commit()
+            logger.info("[Library][Migration] Made entry media path optional")
+        except Exception as e:
+            logger.error(
+                "[Library][Migration] Could not make entry media path optional!",
                 error=e,
             )
             session.rollback()
@@ -1337,6 +1376,40 @@ class Library:
 
             session.execute(update_stmt)
             session.commit()
+
+    def get_entry_field_value(self, entry: Entry, field_id: FieldID | str) -> str:
+        field_key = field_id.name if isinstance(field_id, FieldID) else field_id
+        for field in entry.fields:
+            if field.type.key == field_key and isinstance(field.value, str):
+                return field.value
+        return ""
+
+    def get_entry_title(self, entry: Entry, fallback: str = "") -> str:
+        title = self.get_entry_field_value(entry, FieldID.TITLE).strip()
+        if title:
+            return title
+        if entry.path is not None:
+            return fallback or entry.path.stem
+        return fallback
+
+    def upsert_entry_field(
+        self,
+        entry_id: int,
+        field_id: FieldID | str,
+        value: str,
+        entry: Entry | None = None,
+    ) -> bool:
+        field_key = field_id.name if isinstance(field_id, FieldID) else field_id
+        full_entry = entry or self.get_entry_full(entry_id)
+        if full_entry:
+            existing_field = next(
+                (field for field in full_entry.fields if field.type.key == field_key),
+                None,
+            )
+            if existing_field is not None:
+                self.update_entry_field(entry_id, existing_field, value)
+                return True
+        return self.add_field_to_entry(entry_id, field_id=field_key, value=value)
 
     @property
     def field_types(self) -> dict[str, ValueType]:

@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QSpinBox,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -24,6 +25,7 @@ from PySide6.QtWidgets import (
 
 from tagstudio.core.enums import ShowFilepathOption, TagClickActionOption
 from tagstudio.qt.global_settings import (
+    DEFAULT_TITLE_OVERLAY_FONT_SIZE_ADJUST,
     DEFAULT_SELECTED_TAG_HIGHLIGHT_COLOR,
     DEFAULT_THUMB_CACHE_SIZE,
     MIN_THUMB_CACHE_SIZE,
@@ -187,6 +189,15 @@ class SettingsPanel(PanelWidget):
         form_layout.addRow(
             Translations["settings.show_filenames_in_grid"], self.show_filenames_checkbox
         )
+
+        # Title Overlay Font Size
+        self.title_overlay_font_size_adjust = QSpinBox()
+        self.title_overlay_font_size_adjust.setRange(-8, 16)
+        self.title_overlay_font_size_adjust.setSuffix(" px")
+        self.title_overlay_font_size_adjust.setValue(
+            self.driver.settings.title_overlay_font_size_adjust
+        )
+        form_layout.addRow("Title overlay font size adjustment", self.title_overlay_font_size_adjust)
 
         # Preview Panel Metadata
         self.show_preview_created_date_checkbox = QCheckBox()
@@ -390,6 +401,9 @@ class SettingsPanel(PanelWidget):
             ),
             "autoplay": self.autoplay_checkbox.isChecked(),
             "show_filenames_in_grid": self.show_filenames_checkbox.isChecked(),
+            "title_overlay_font_size_adjust": self.title_overlay_font_size_adjust.value()
+            if hasattr(self, "title_overlay_font_size_adjust")
+            else DEFAULT_TITLE_OVERLAY_FONT_SIZE_ADJUST,
             "show_preview_created_date": self.show_preview_created_date_checkbox.isChecked(),
             "show_preview_modified_date": self.show_preview_modified_date_checkbox.isChecked(),
             "show_preview_filename": self.show_preview_filename_checkbox.isChecked(),
@@ -415,6 +429,7 @@ class SettingsPanel(PanelWidget):
         driver.settings.generate_thumbs = settings["generate_thumbs"]
         driver.settings.thumb_cache_size = settings["thumb_cache_size"]
         driver.settings.show_filenames_in_grid = settings["show_filenames_in_grid"]
+        driver.settings.title_overlay_font_size_adjust = settings["title_overlay_font_size_adjust"]
         driver.settings.show_preview_created_date = settings["show_preview_created_date"]
         driver.settings.show_preview_modified_date = settings["show_preview_modified_date"]
         driver.settings.show_preview_filename = settings["show_preview_filename"]

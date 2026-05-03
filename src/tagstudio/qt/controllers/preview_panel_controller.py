@@ -4,7 +4,6 @@
 import contextlib
 import typing
 
-from tagstudio.core.library.alchemy.fields import FieldID
 from tagstudio.core.library.alchemy.library import Library
 from tagstudio.qt.mixed.tag_search import TagSearchModal
 from tagstudio.qt.views.preview_panel_view import PreviewPanelView
@@ -29,7 +28,8 @@ class PreviewPanel(PreviewPanelView):
         self.__add_tag_modal.tsp.tag_chosen.connect(self._add_tag_to_selected)
 
     def _edit_prompt_button_callback(self):
-        self._fields.edit_or_add_field_to_selected(FieldID.DESCRIPTION)
+        if len(self._selected) == 1:
+            self.driver.open_edit_entry_modal(self._selected[0])
 
     def _add_tag_to_selected(self, tag_id: int):
         self._fields.add_tags_to_selected(tag_id)

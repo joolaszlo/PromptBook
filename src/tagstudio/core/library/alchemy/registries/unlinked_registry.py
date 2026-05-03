@@ -34,6 +34,9 @@ class UnlinkedRegistry:
 
         self.unlinked_entries = []
         for i, entry in enumerate(self.lib.all_entries()):
+            if entry.path is None:
+                yield i
+                continue
             full_path = unwrap(self.lib.library_dir) / entry.path
             if not full_path.exists() or not full_path.is_file():
                 self.unlinked_entries.append(entry)
@@ -46,6 +49,8 @@ class UnlinkedRegistry:
         """
         library_dir = unwrap(self.lib.library_dir)
         matches: list[Path] = []
+        if match_entry.path is None:
+            return matches
 
         # NOTE: ignore_to_glob() is needed for wcmatch, not ripgrep.
         ignore_patterns = ignore_to_glob(Ignore.get_patterns(library_dir))

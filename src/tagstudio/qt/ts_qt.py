@@ -19,6 +19,7 @@ import sys
 import time
 from argparse import Namespace
 from collections import OrderedDict
+from datetime import datetime as dt
 from pathlib import Path
 from queue import Queue
 from shutil import which
@@ -81,7 +82,7 @@ from tagstudio.qt.global_settings import (
     Theme,
 )
 from tagstudio.qt.mixed.about_modal import AboutModal
-from tagstudio.qt.mixed.add_entry_modal import AddEntryModal, FilenameConflictDialog
+from tagstudio.qt.mixed.add_entry_modal import AddEntryModal, EditEntryModal, FilenameConflictDialog
 from tagstudio.qt.mixed.build_tag import BuildTagPanel
 from tagstudio.qt.mixed.drop_import_modal import DropImportModal
 from tagstudio.qt.mixed.fix_dupe_files import FixDupeFilesModal
@@ -1159,8 +1160,8 @@ class QtDriver(DriverMixin, QObject):
         else:
             for item in selected:
                 entry = self.lib.get_entry(item)
-                filepath: Path = entry.path
-                pending.append((item, filepath))
+                if entry and entry.path is not None:
+                    pending.append((item, entry.path))
 
         if pending:
             return_code = self.delete_file_confirmation(len(pending), pending[0][1])
@@ -1344,9 +1345,38 @@ class QtDriver(DriverMixin, QObject):
         self.add_entry_modal.set_pinned_tags(self.get_pinned_tags())
         self.add_entry_modal.show()
 
-    def add_entry_from_path(self, source_path: Path, prompt: str, tag_ids: list[int]) -> bool:
+    def add_entry_from_path(
+        self, source_path: Path | None, title: str, prompt: str, tag_ids: list[int]
+    ) -> bool:
         if self.lib.library_dir is None:
             return False
+
+        if source_path is None:
+            entry = Entry(
+                path=None,
+                folder=self.lib.folder,
+                fields=[],
+                date_added=dt.now(),
+            )
+            ids = self.lib.add_entries([entry])
+            if not ids:
+                return False
+            entry_id = ids[0]
+            self.lib.upsert_entry_field(entry_id, FieldID.TITLE, title.strip())
+            prompt_text = prompt.strip()
+            if prompt_text:
+                self.lib.upsert_entry_field(entry_id, FieldID.DESCRIPTION, prompt_text)
+            if tag_ids:
+                self.lib.add_tags_to_entries(entry_id, tag_ids)
+                self.main_window.thumb_layout.add_tags([entry_id], tag_ids)
+                self.emit_badge_signals(tag_ids, emit_on_absent=False)
+
+            self.clear_selected()
+            self.select_entry(entry_id)
+            self.update_browsing_state()
+            self.main_window.preview_panel.set_selection(self.selected)
+            self.main_window.status_bar.showMessage(f'Added entry "{title.strip()}"')
+            return True
 
         target_name = self.resolve_add_entry_filename(source_path.name)
         if target_name is None:
@@ -1362,24 +1392,11 @@ class QtDriver(DriverMixin, QObject):
                 return
 
             prompt_text = prompt.strip()
+            title_text = title.strip()
+            if title_text:
+                self.lib.upsert_entry_field(entry.id, FieldID.TITLE, title_text)
             if prompt_text:
-                full_entry = unwrap(self.lib.get_entry_full(entry.id))
-                description_field = next(
-                    (
-                        field
-                        for field in full_entry.fields
-                        if field.type.key == FieldID.DESCRIPTION.name
-                    ),
-                    None,
-                )
-                if description_field is None:
-                    self.lib.add_field_to_entry(
-                        entry.id,
-                        field_id=FieldID.DESCRIPTION,
-                        value=prompt_text,
-                    )
-                else:
-                    self.lib.update_entry_field(entry.id, description_field, prompt_text)
+                self.lib.upsert_entry_field(entry.id, FieldID.DESCRIPTION, prompt_text)
 
             if tag_ids:
                 self.lib.add_tags_to_entries(entry.id, tag_ids)
@@ -1419,6 +1436,48 @@ class QtDriver(DriverMixin, QObject):
         pw.from_iterable_function(copy_file, None, finish_copy)
         return True
 
+    def open_edit_entry_modal(self, entry_id: int) -> None:
+        entry = self.lib.get_entry_full(entry_id)
+        if not entry:
+            return
+        if not any(field.type.key == FieldID.DESCRIPTION.name for field in entry.fields):
+            self.lib.upsert_entry_field(entry_id, FieldID.DESCRIPTION, "", entry)
+            entry = unwrap(self.lib.get_entry_full(entry_id))
+        if not hasattr(self, "edit_entry_modal"):
+            self.edit_entry_modal = EditEntryModal(self.edit_entry, self.lib, self.main_window)
+        self.edit_entry_modal.set_entry(entry)
+        self.edit_entry_modal.show()
+
+    def edit_entry(self, entry_id: int, source_path: Path | None, title: str, prompt: str) -> bool:
+        entry = self.lib.get_entry(entry_id)
+        if not entry:
+            return False
+        if source_path is not None:
+            if self.lib.library_dir is None:
+                return False
+            target_name = self.resolve_add_entry_filename(source_path.name)
+            if target_name is None:
+                return False
+            destination = self.lib.library_dir / target_name
+            try:
+                shutil.copy2(source_path, destination)
+            except Exception as e:
+                self.show_error_message("Could Not Copy File", str(e))
+                return False
+            if not self.lib.update_entry_path(entry_id, Path(target_name)):
+                self.show_error_message("Entry Not Saved", "An entry already points to that media path.")
+                return False
+
+        if not (entry.has_media or source_path is not None) and not title.strip():
+            self.show_error_message("Entry Not Saved", "Title is required when no media is selected.")
+            return False
+        self.lib.upsert_entry_field(entry_id, FieldID.TITLE, title.strip())
+        self.lib.upsert_entry_field(entry_id, FieldID.DESCRIPTION, prompt.strip())
+        self.main_window.thumb_layout.invalidate_entry(entry_id)
+        self.main_window.preview_panel.set_selection(self.selected)
+        self.update_thumbs()
+        return True
+
     def resolve_add_entry_filename(self, initial_name: str) -> str | None:
         if self.lib.library_dir is None:
             return None
@@ -1452,6 +1511,8 @@ class QtDriver(DriverMixin, QObject):
     def run_macro(self, name: MacroID, entry_id: int):
         """Run a specific Macro on an Entry given a Macro name."""
         entry: Entry = unwrap(self.lib.get_entry(entry_id))
+        if entry.path is None:
+            return
         full_path = unwrap(self.lib.library_dir) / entry.path
         source = "" if entry.path.parent == Path(".") else entry.path.parts[0].lower()
 

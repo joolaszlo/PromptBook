@@ -39,6 +39,9 @@ class IgnoredRegistry:
         library_dir: Path = unwrap(self.lib.library_dir)
 
         for i, entry in enumerate(self.lib.all_entries()):
+            if entry.path is None:
+                yield i
+                continue
             if not Ignore.compiled_patterns:
                 # If the compiled_patterns has malfunctioned, don't consider that a false positive
                 yield i

@@ -22,11 +22,13 @@ from PySide6.QtWidgets import (
 )
 
 from tagstudio.core.library.alchemy.models import Tag
+from tagstudio.core.library.alchemy.fields import FieldID
 from tagstudio.qt.mixed.tag_widget import TagWidget
 from tagstudio.qt.views.layouts.flow_layout import FlowLayout, FlowWidget
 
 if TYPE_CHECKING:
     from tagstudio.core.library.alchemy.library import Library
+    from tagstudio.core.library.alchemy.models import Entry
 
 
 class FilenameConflictDialog(QDialog):
@@ -113,7 +115,7 @@ class FilenameConflictDialog(QDialog):
 class AddEntryModal(QDialog):
     def __init__(
         self,
-        submit_callback: Callable[[Path, str, list[int]], bool],
+        submit_callback: Callable[[Path | None, str, str, list[int]], bool],
         library: "Library",
         parent: QWidget | None = None,
     ):
@@ -153,6 +155,14 @@ class AddEntryModal(QDialog):
         self.media_layout.addWidget(self.browse_button)
 
         self.root_layout.addWidget(self.media_row)
+
+        self.title_title = QLabel("Title")
+        self.title_title.setStyleSheet("font-weight:bold;font-size:14px;")
+        self.root_layout.addWidget(self.title_title)
+
+        self.title_field = QLineEdit()
+        self.title_field.setPlaceholderText("Enter title")
+        self.root_layout.addWidget(self.title_field)
 
         self.prompt_title = QLabel("Prompt")
         self.prompt_title.setStyleSheet("font-weight:bold;font-size:14px;")
@@ -205,17 +215,19 @@ class AddEntryModal(QDialog):
         self._set_error("")
 
     def _submit(self) -> None:
-        if self._selected_file is None:
-            self._set_error("Select a file to add.")
+        if self._selected_file is not None and not self._selected_file.exists():
+            self._set_error("The selected file could not be found.")
             return
 
-        if not self._selected_file.exists():
-            self._set_error("The selected file could not be found.")
+        title = self.title_field.text().strip()
+        if self._selected_file is None and not title:
+            self._set_error("Title is required when no media is selected.")
             return
 
         self._set_error("")
         if self._submit_callback(
             self._selected_file,
+            title,
             self.prompt_field.toPlainText(),
             sorted(self._selected_tag_ids),
         ):
@@ -229,6 +241,7 @@ class AddEntryModal(QDialog):
     def reset(self) -> None:
         self._selected_file = None
         self.file_field.clear()
+        self.title_field.clear()
         self.prompt_field.clear()
         self._selected_tag_ids.clear()
         self._render_pinned_tags()
@@ -302,3 +315,117 @@ class AddEntryModal(QDialog):
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         self.reset()
         event.accept()
+
+
+class EditEntryModal(QDialog):
+    def __init__(
+        self,
+        submit_callback: Callable[[int, Path | None, str, str], bool],
+        library: "Library",
+        parent: QWidget | None = None,
+    ):
+        super().__init__(parent)
+        self._submit_callback = submit_callback
+        self.lib = library
+        self._entry_id: int | None = None
+        self._selected_file: Path | None = None
+
+        self.setWindowFlag(Qt.WindowType.Dialog, True)
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
+        self.setWindowTitle("Edit Entry")
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setMinimumSize(520, 360)
+
+        self.root_layout = QVBoxLayout(self)
+        self.root_layout.setContentsMargins(12, 12, 12, 12)
+        self.root_layout.setSpacing(10)
+
+        self.media_title = QLabel("Media")
+        self.media_title.setStyleSheet("font-weight:bold;font-size:14px;")
+        self.root_layout.addWidget(self.media_title)
+
+        self.media_row = QWidget()
+        self.media_layout = QHBoxLayout(self.media_row)
+        self.media_layout.setContentsMargins(0, 0, 0, 0)
+        self.media_layout.setSpacing(8)
+
+        self.file_field = QLineEdit()
+        self.file_field.setReadOnly(True)
+        self.media_layout.addWidget(self.file_field)
+
+        self.browse_button = QPushButton("Browse...")
+        self.browse_button.clicked.connect(self._browse_for_media)
+        self.media_layout.addWidget(self.browse_button)
+        self.root_layout.addWidget(self.media_row)
+
+        self.title_title = QLabel("Title")
+        self.title_title.setStyleSheet("font-weight:bold;font-size:14px;")
+        self.root_layout.addWidget(self.title_title)
+
+        self.title_field = QLineEdit()
+        self.title_field.setPlaceholderText("Enter title")
+        self.root_layout.addWidget(self.title_field)
+
+        self.prompt_title = QLabel("Prompt")
+        self.prompt_title.setStyleSheet("font-weight:bold;font-size:14px;")
+        self.root_layout.addWidget(self.prompt_title)
+
+        self.prompt_field = QPlainTextEdit()
+        self.prompt_field.setPlaceholderText("Enter prompt text")
+        self.root_layout.addWidget(self.prompt_field)
+
+        self.error_label = QLabel()
+        self.error_label.setWordWrap(True)
+        self.error_label.setStyleSheet("color: #e22c3c;")
+        self.error_label.hide()
+        self.root_layout.addWidget(self.error_label)
+
+        self.button_container = QWidget()
+        self.button_layout = QHBoxLayout(self.button_container)
+        self.button_layout.setContentsMargins(0, 0, 0, 0)
+        self.button_layout.addStretch(1)
+
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.clicked.connect(self.hide)
+        self.button_layout.addWidget(self.cancel_button)
+
+        self.save_button = QPushButton("Save Entry")
+        self.save_button.setDefault(True)
+        self.save_button.clicked.connect(self._submit)
+        self.button_layout.addWidget(self.save_button)
+        self.root_layout.addWidget(self.button_container)
+
+    def set_entry(self, entry: "Entry") -> None:
+        self._entry_id = entry.id
+        self._selected_file = None
+        self.file_field.setText(str(entry.path or "No media"))
+        self.title_field.setText(self.lib.get_entry_title(entry))
+        self.prompt_field.setPlainText(self.lib.get_entry_field_value(entry, FieldID.DESCRIPTION))
+        self._set_error("")
+
+    def _submit(self) -> None:
+        if self._entry_id is None:
+            return
+        entry = self.lib.get_entry(self._entry_id)
+        title = self.title_field.text().strip()
+        has_media_after_save = bool((entry and entry.has_media) or self._selected_file)
+        if not has_media_after_save and not title:
+            self._set_error("Title is required when no media is selected.")
+            return
+        self._set_error("")
+        if self._submit_callback(
+            self._entry_id, self._selected_file, title, self.prompt_field.toPlainText()
+        ):
+            self.hide()
+
+    def _set_error(self, text: str) -> None:
+        self.error_label.setText(text)
+        self.error_label.setVisible(bool(text))
+
+    def _browse_for_media(self) -> None:
+        filename, _ = QFileDialog.getOpenFileName(self, "Select Media")
+        if not filename:
+            return
+        self._selected_file = Path(filename)
+        self.file_field.setText(str(self._selected_file))
+        self._set_error("")
