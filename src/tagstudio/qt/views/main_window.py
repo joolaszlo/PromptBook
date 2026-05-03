@@ -630,6 +630,7 @@ class MainWindow(QMainWindow):
         self.search_field.setPlaceholderText(Translations["home.search_entries"])
         self.search_field.setObjectName("search_field")
         self.search_field.setMinimumSize(QSize(0, 32))
+        self.search_field.setClearButtonEnabled(True)
         self.search_field.setSizePolicy(
             QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
         )

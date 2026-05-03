@@ -875,11 +875,18 @@ class QtDriver(DriverMixin, QObject):
                 )
                 logger.error("[QtDriver] Could not update BrowsingState", error=e)
 
+        def _update_browsing_state_if_search_cleared(text: str):
+            if text == "" and self.browsing_history.current.text_query:
+                _update_browsing_state()
+
         # Search Button
         self.main_window.search_button.clicked.connect(_update_browsing_state)
 
         # Search Field
         self.main_window.search_field.returnPressed.connect(_update_browsing_state)
+        self.main_window.search_field.textChanged.connect(
+            _update_browsing_state_if_search_cleared
+        )
         self.main_window.search_scope_tags_checkbox.stateChanged.connect(
             lambda: _update_browsing_state()
         )
