@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QLayout, QLayoutItem, QScrollArea
 
 from tagstudio.core.constants import TAG_ARCHIVED, TAG_FAVORITE
 from tagstudio.core.library.alchemy.enums import ItemType
+from tagstudio.core.library.alchemy.fields import FieldID
 from tagstudio.core.library.alchemy.models import Entry
 from tagstudio.core.utils.types import unwrap
 from tagstudio.qt.mixed.item_thumb import BadgeType, ItemThumb
@@ -307,6 +308,11 @@ class ThumbGridLayout(QLayout):
 
                 if file_path not in self._render_results:
                     self._render_results[file_path] = None
+                    title = (
+                        self.driver.lib.get_entry_title(entry, "Untitled")
+                        if not entry.has_media
+                        else self.driver.lib.get_entry_field_value(entry, FieldID.TITLE).strip()
+                    )
                     self.driver.thumb_job_queue.put(
                         (
                             self._renderer.render,
@@ -318,7 +324,7 @@ class ThumbGridLayout(QLayout):
                                 False,
                                 True,
                                 False,
-                                self.driver.lib.get_entry_title(entry, "Untitled"),
+                                title,
                                 not entry.has_media,
                             ),
                         )

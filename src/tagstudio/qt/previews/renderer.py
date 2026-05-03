@@ -1563,9 +1563,15 @@ class ThumbRenderer(QObject):
         if isinstance(filepath, str):
             filepath = Path(filepath)
 
-        def is_audio_entry(path: Path) -> bool:
-            return MediaCategories.is_ext_in_category(
-                path.suffix.lower(), MediaCategories.AUDIO_TYPES, mime_fallback=True
+        def supports_title_overlay(path: Path) -> bool:
+            ext = path.suffix.lower()
+            return any(
+                MediaCategories.is_ext_in_category(ext, category, mime_fallback=True)
+                for category in (
+                    MediaCategories.IMAGE_TYPES,
+                    MediaCategories.VIDEO_TYPES,
+                    MediaCategories.AUDIO_TYPES,
+                )
             )
 
         def render_default(size: tuple[int, int], pixel_ratio: float) -> Image.Image:
@@ -1714,7 +1720,7 @@ class ThumbRenderer(QObject):
             image
             and title.strip()
             and is_grid_thumb
-            and (is_text_entry or is_audio_entry(filepath))
+            and (is_text_entry or supports_title_overlay(filepath))
         ):
             image = self._apply_title_overlay(image, title.strip(), pixel_ratio)
 
