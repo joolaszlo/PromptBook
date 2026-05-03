@@ -6,7 +6,7 @@
 from PySide6.QtGui import QGuiApplication
 from pytestqt.qtbot import QtBot
 
-from tagstudio.core.library.alchemy.fields import FieldID
+from tagstudio.core.library.alchemy.fields import FieldID, TextField
 from tagstudio.core.library.alchemy.library import Library
 from tagstudio.core.library.alchemy.models import Entry
 from tagstudio.core.utils.types import unwrap
@@ -41,6 +41,28 @@ def test_update_selection_single(qt_driver: QtDriver, library: Library, entry_fu
     assert panel.add_buttons_enabled
     assert not panel.copy_prompt_enabled
     assert panel.edit_prompt_enabled
+
+
+def test_text_only_entry_shows_title_preview(qt_driver: QtDriver, library: Library):
+    panel = PreviewPanel(library, qt_driver)
+    entry = Entry(
+        id=100,
+        folder=unwrap(library.folder),
+        path=None,
+        fields=[
+            TextField(
+                type_key=FieldID.TITLE.name,
+                value="A Long Text Entry Title For Preview",
+                position=0,
+            )
+        ],
+    )
+    assert library.add_entries([entry])
+
+    panel.set_selection([entry.id])
+
+    assert panel.preview_thumb.text_preview_visible
+    assert panel.preview_thumb.text_preview_title == "A Long Text Entry Title For Preview"
 
 
 def test_update_selection_multiple(qt_driver: QtDriver, library: Library):

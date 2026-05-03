@@ -232,7 +232,13 @@ class PreviewPanelView(QWidget):
                         stats: FileAttributeData = self.__thumb.display_file(filepath)
                         self.__file_attrs.update_stats(filepath, stats)
                     else:
-                        self.__thumb.hide_preview()
+                        entry_full = self.lib.get_entry_full(entry_id)
+                        title = (
+                            self.lib.get_entry_title(entry_full, fallback="Untitled")
+                            if entry_full is not None
+                            else "Untitled"
+                        )
+                        self.__thumb.display_text_title(title)
                         self.__file_attrs.update_stats()
                 self.__file_attrs.update_date_label(filepath)
                 self._fields.update_from_entry(entry_id)

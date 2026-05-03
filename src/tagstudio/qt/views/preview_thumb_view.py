@@ -7,9 +7,18 @@ from pathlib import Path
 from typing import TYPE_CHECKING, override
 
 import structlog
-from PySide6.QtCore import QBuffer, QByteArray, QSize, Qt
-from PySide6.QtGui import QAction, QMovie, QPixmap, QResizeEvent
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QStackedLayout, QWidget
+from PySide6.QtCore import QBuffer, QByteArray, QRectF, QSize, Qt
+from PySide6.QtGui import (
+    QAction,
+    QFont,
+    QFontMetrics,
+    QMovie,
+    QPainter,
+    QPalette,
+    QPixmap,
+    QResizeEvent,
+)
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QSizePolicy, QStackedLayout, QWidget
 
 from tagstudio.core.library.alchemy.library import Library
 from tagstudio.core.media_types import MediaType
@@ -27,6 +36,110 @@ logger = structlog.get_logger(__name__)
 
 
 THUMB_SIZE_FACTOR = 2
+
+
+class TextPreviewWidget(QWidget):
+    """Preview surface for entries that have no media to render."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.__title = ""
+        self.setMinimumSize(266, 266)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+    def set_title(self, title: str) -> None:
+        self.__title = title.strip() or "Untitled"
+        self.update()
+
+    @property
+    def title(self) -> str:
+        return self.__title
+
+    def __title_font(self) -> QFont:
+        font = QFont(self.font())
+        font.setBold(True)
+        font.setPointSize(max(18, min(20, int(min(self.width(), self.height()) * 0.11))))
+        return font
+
+    def __wrapped_lines(self, rect: QRectF, font: QFont) -> list[str]:
+        metrics = QFontMetrics(font)
+        words = self.__title.split()
+        if not words:
+            return []
+
+        lines: list[str] = []
+        current = ""
+        max_height = int(rect.height())
+        line_height = metrics.lineSpacing()
+
+        for index, word in enumerate(words):
+            candidate = word if not current else f"{current} {word}"
+            if metrics.horizontalAdvance(candidate) <= rect.width():
+                current = candidate
+                continue
+
+            if current:
+                lines.append(current)
+                current = word
+            else:
+                lines.append(
+                    metrics.elidedText(word, Qt.TextElideMode.ElideRight, int(rect.width()))
+                )
+                current = ""
+
+            if (len(lines) + 1) * line_height > max_height:
+                remaining = " ".join([current, *words[index + 1 :]]).strip()
+                if remaining:
+                    lines[-1] = metrics.elidedText(
+                        f"{lines[-1]} {remaining}",
+                        Qt.TextElideMode.ElideRight,
+                        int(rect.width()),
+                    )
+                return lines
+
+        if current:
+            lines.append(current)
+
+        max_lines = max(1, max_height // line_height)
+        if len(lines) > max_lines:
+            visible = lines[:max_lines]
+            visible[-1] = metrics.elidedText(
+                " ".join(lines[max_lines - 1 :]),
+                Qt.TextElideMode.ElideRight,
+                int(rect.width()),
+            )
+            return visible
+        return lines
+
+    @override
+    def paintEvent(self, event):  # type: ignore[no-untyped-def]
+        super().paintEvent(event)
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        palette = self.palette()
+        panel_rect = QRectF(self.rect()).adjusted(6, 6, -6, -6)
+        painter.setPen(palette.color(QPalette.ColorRole.Mid))
+        painter.setBrush(palette.color(QPalette.ColorRole.Base))
+        painter.drawRoundedRect(panel_rect, 8, 8)
+
+        text_rect = panel_rect.adjusted(8, 8, -8, -8)
+        font = self.__title_font()
+        painter.setFont(font)
+        painter.setPen(palette.color(QPalette.ColorRole.Text))
+        painter.setClipRect(text_rect)
+
+        lines = self.__wrapped_lines(text_rect, font)
+        metrics = QFontMetrics(font)
+        line_height = metrics.lineSpacing()
+        total_height = len(lines) * line_height
+        y = text_rect.y() + max(0, (text_rect.height() - total_height) / 2)
+
+        for line in lines:
+            line_rect = QRectF(text_rect.x(), y, text_rect.width(), line_height)
+            painter.drawText(line_rect, Qt.AlignmentFlag.AlignHCenter, line)
+            y += line_height
 
 
 class PreviewThumbView(QWidget):
@@ -98,6 +211,10 @@ class PreviewThumbView(QWidget):
         self.__media_player_page = QWidget()
         self.__stacked_page_setup(self.__media_player_page, self.__media_player)
 
+        self.__text_preview = TextPreviewWidget()
+        self.__text_preview_page = QWidget()
+        self.__text_page_setup(self.__text_preview_page, self.__text_preview)
+
         self.__thumb_renderer = ThumbRenderer(driver)
         self.__thumb_renderer.updated.connect(self.__thumb_renderer_updated_callback)
         self.__thumb_renderer.updated_ratio.connect(self.__thumb_renderer_updated_ratio_callback)
@@ -105,6 +222,7 @@ class PreviewThumbView(QWidget):
         self.__image_layout.addWidget(self.__preview_img_page)
         self.__image_layout.addWidget(self.__preview_gif_page)
         self.__image_layout.addWidget(self.__media_player_page)
+        self.__image_layout.addWidget(self.__text_preview_page)
 
         self.setMinimumSize(*self.__img_button_size)
 
@@ -146,6 +264,12 @@ class PreviewThumbView(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         page.setLayout(layout)
 
+    def __text_page_setup(self, page: QWidget, widget: QWidget) -> None:
+        layout = QHBoxLayout(page)
+        layout.addWidget(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        page.setLayout(layout)
+
     def __update_image_size(self, size: tuple[int, int]) -> None:
         adj_width: float = size[0]
         adj_height: float = size[1]
@@ -181,7 +305,7 @@ class PreviewThumbView(QWidget):
         if m:
             m.setScaledSize(adj_size)
 
-    def __switch_preview(self, preview: MediaType | None) -> None:
+    def __switch_preview(self, preview: MediaType | str | None) -> None:
         if preview in [MediaType.AUDIO, MediaType.VIDEO]:
             self.__media_player.show()
             self.__image_layout.setCurrentWidget(self.__media_player_page)
@@ -205,6 +329,12 @@ class PreviewThumbView(QWidget):
                 self.__preview_gif.movie().stop()
                 self.__gif_buffer.close()
             self.__preview_gif.hide()
+
+        if preview == "text":
+            self.__text_preview.show()
+            self.__image_layout.setCurrentWidget(self.__text_preview_page)
+        else:
+            self.__text_preview.hide()
 
     def __render_thumb(self, filepath: Path) -> None:
         self.__filepath = filepath
@@ -293,6 +423,12 @@ class PreviewThumbView(QWidget):
         self.__switch_preview(MediaType.IMAGE)
         self.__render_thumb(filepath)
 
+    def display_text_title(self, title: str) -> None:
+        """Display a title preview for an entry without media."""
+        self.__filepath = None
+        self.__text_preview.set_title(title)
+        self.__switch_preview("text")
+
     def hide_preview(self) -> None:
         """Completely hide the file preview."""
         self.__switch_preview(None)
@@ -310,3 +446,11 @@ class PreviewThumbView(QWidget):
     @property
     def media_player(self) -> MediaPlayer:
         return self.__media_player
+
+    @property
+    def text_preview_title(self) -> str:
+        return self.__text_preview.title
+
+    @property
+    def text_preview_visible(self) -> bool:
+        return self.__image_layout.currentWidget() == self.__text_preview_page
