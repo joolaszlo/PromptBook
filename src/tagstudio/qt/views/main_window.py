@@ -11,7 +11,7 @@ import structlog
 from PIL import Image, ImageQt
 from PySide6 import QtCore
 from PySide6.QtCore import QMetaObject, QSize, QStringListModel, Qt
-from PySide6.QtGui import QAction, QColor, QPixmap, QResizeEvent
+from PySide6.QtGui import QAction, QColor, QPixmap, QResizeEvent, QShowEvent
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -464,13 +464,9 @@ class MainWindow(QMainWindow):
         # region Type declarations for variables that will be initialized in methods
         # initialized in setup_search_bar
         self.search_bar_layout: QHBoxLayout
-        self.search_scope_layout: QHBoxLayout
         self.back_button: QPushButton
         self.forward_button: QPushButton
         self.search_field: QLineEdit
-        self.search_scope_tags_checkbox: QCheckBox
-        self.search_scope_title_checkbox: QCheckBox
-        self.search_scope_prompt_checkbox: QCheckBox
         self.search_field_completion_list: QStringListModel
         self.search_field_completer: QCompleter
         self.search_button: QPushButton
@@ -478,10 +474,16 @@ class MainWindow(QMainWindow):
 
         # initialized in setup_tag_filter_bar
         self.tag_filter_layout: QVBoxLayout
+        self.tag_filter_row_layout: QHBoxLayout
+        self.tag_filter_selector_container: QWidget
         self.tag_filter_selector_layout: QHBoxLayout
         self.tags_button: QPushButton
         self.favorite_tags_button: QPushButton
         self.reset_tag_selection_button: QPushButton
+        self.search_scope_layout: QHBoxLayout
+        self.search_scope_tags_checkbox: QCheckBox
+        self.search_scope_title_checkbox: QCheckBox
+        self.search_scope_prompt_checkbox: QCheckBox
         self.pinned_tags_title: QLabel
         self.pinned_tags_container: QWidget
         self.pinned_tags_layout: FlowLayout
@@ -536,6 +538,10 @@ class MainWindow(QMainWindow):
         super().resizeEvent(event)
         self._update_top_toolbar_widths()
 
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        QtCore.QTimer.singleShot(0, self._update_top_toolbar_widths)
+
     def _update_top_toolbar_widths(self) -> None:
         if not hasattr(self, "search_field"):
             return
@@ -547,6 +553,25 @@ class MainWindow(QMainWindow):
                 min(self.SEARCH_FIELD_MAX_WIDTH_CAP, responsive_width),
             )
         )
+        if hasattr(self, "tag_filter_selector_container") and hasattr(self, "search_button"):
+            self.search_bar_layout.activate()
+            self.tag_filter_selector_layout.activate()
+            self.tag_filter_row_layout.activate()
+
+            search_button_right = self.search_button.mapTo(
+                self.central_widget, QtCore.QPoint(self.search_button.width(), 0)
+            ).x()
+            min_selector_width = self.tag_filter_selector_container.minimumSizeHint().width()
+            if search_button_right > 0:
+                self.tag_filter_selector_container.setMaximumWidth(
+                    max(min_selector_width, search_button_right)
+                )
+            else:
+                self.tag_filter_selector_container.setMaximumWidth(16777215)
+            self.tag_filter_selector_container.updateGeometry()
+            self.tag_filter_layout.invalidate()
+            self.central_layout.invalidate()
+            self.central_layout.activate()
 
     # region UI Setup Methods
 
@@ -574,6 +599,7 @@ class MainWindow(QMainWindow):
         self.central_layout.setRowStretch(4, 0)
         self.central_layout.setRowStretch(10, 1)
         self.setCentralWidget(self.central_widget)
+        QtCore.QTimer.singleShot(0, self._update_top_toolbar_widths)
 
     def setup_search_bar(self):
         """Sets up Nav Buttons, Search Field, Search Button."""
@@ -661,37 +687,26 @@ class MainWindow(QMainWindow):
 
         self.central_layout.addLayout(self.search_bar_layout, 3, 0, 1, 1)
 
-        self.search_scope_layout = QHBoxLayout()
-        self.search_scope_layout.setObjectName("search_scope_layout")
-        self.search_scope_layout.setContentsMargins(70, 0, 0, 0)
-        self.search_scope_layout.setSpacing(8)
-        self.search_scope_label = QLabel("Search in:")
-        self.search_scope_layout.addWidget(self.search_scope_label)
-
-        self.search_scope_tags_checkbox = QCheckBox("Tags")
-        self.search_scope_tags_checkbox.setChecked(False)
-        self.search_scope_layout.addWidget(self.search_scope_tags_checkbox)
-
-        self.search_scope_title_checkbox = QCheckBox("Title")
-        self.search_scope_title_checkbox.setChecked(True)
-        self.search_scope_layout.addWidget(self.search_scope_title_checkbox)
-
-        self.search_scope_prompt_checkbox = QCheckBox("Prompt")
-        self.search_scope_prompt_checkbox.setChecked(True)
-        self.search_scope_layout.addWidget(self.search_scope_prompt_checkbox)
-        self.search_scope_layout.addStretch(1)
-
-        self.central_layout.addLayout(self.search_scope_layout, 4, 0, 1, 1)
-
     def setup_tag_filter_bar(self):
         self.tag_filter_layout = QVBoxLayout()
         self.tag_filter_layout.setObjectName("tag_filter_layout")
         self.tag_filter_layout.setContentsMargins(0, 0, 0, 0)
         self.tag_filter_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        self.tag_filter_selector_layout = QHBoxLayout()
+        self.tag_filter_row_layout = QHBoxLayout()
+        self.tag_filter_row_layout.setObjectName("tag_filter_row_layout")
+        self.tag_filter_row_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.tag_filter_selector_container = QWidget(self.central_widget)
+        self.tag_filter_selector_container.setObjectName("tag_filter_selector_container")
+        self.tag_filter_selector_container.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+
+        self.tag_filter_selector_layout = QHBoxLayout(self.tag_filter_selector_container)
         self.tag_filter_selector_layout.setObjectName("tag_filter_selector_layout")
         self.tag_filter_selector_layout.setContentsMargins(0, 0, 0, 0)
+        self.tag_filter_selector_layout.setSpacing(6)
 
         self.tags_button = QPushButton(Translations["home.tags"], self.central_widget)
         self.tags_button.setObjectName("tags_button")
@@ -713,7 +728,31 @@ class MainWindow(QMainWindow):
         self.tag_filter_selector_layout.addWidget(self.reset_tag_selection_button)
         self.tag_filter_selector_layout.addStretch(1)
 
-        self.tag_filter_layout.addLayout(self.tag_filter_selector_layout)
+        self.search_scope_layout = QHBoxLayout()
+        self.search_scope_layout.setObjectName("search_scope_layout")
+        self.search_scope_layout.setContentsMargins(0, 0, 0, 0)
+        self.search_scope_layout.setSpacing(8)
+
+        self.search_scope_label = QLabel("Search in:")
+        self.search_scope_layout.addWidget(self.search_scope_label)
+
+        self.search_scope_tags_checkbox = QCheckBox("Tags")
+        self.search_scope_tags_checkbox.setChecked(False)
+        self.search_scope_layout.addWidget(self.search_scope_tags_checkbox)
+
+        self.search_scope_title_checkbox = QCheckBox("Title")
+        self.search_scope_title_checkbox.setChecked(True)
+        self.search_scope_layout.addWidget(self.search_scope_title_checkbox)
+
+        self.search_scope_prompt_checkbox = QCheckBox("Prompt")
+        self.search_scope_prompt_checkbox.setChecked(True)
+        self.search_scope_layout.addWidget(self.search_scope_prompt_checkbox)
+
+        self.tag_filter_selector_layout.addLayout(self.search_scope_layout)
+
+        self.tag_filter_row_layout.addWidget(self.tag_filter_selector_container)
+        self.tag_filter_row_layout.addStretch(1)
+        self.tag_filter_layout.addLayout(self.tag_filter_row_layout)
 
         self.pinned_tags_title = QLabel(Translations["home.pinned_tags"])
         self.pinned_tags_title.setSizePolicy(
@@ -732,7 +771,8 @@ class MainWindow(QMainWindow):
         self.pinned_tags_container.setLayout(self.pinned_tags_layout)
         self.tag_filter_layout.addWidget(self.pinned_tags_container)
 
-        self.central_layout.addLayout(self.tag_filter_layout, 5, 0, 1, 1)
+        self.central_layout.addLayout(self.tag_filter_layout, 4, 0, 1, 1)
+        self._update_top_toolbar_widths()
 
     def setup_extra_input_bar(self):
         """Sets up inputs for sorting settings and thumbnail size."""
