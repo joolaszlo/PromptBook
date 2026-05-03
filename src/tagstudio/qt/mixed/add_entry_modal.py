@@ -399,7 +399,7 @@ class EditEntryModal(QDialog):
         self._entry_id = entry.id
         self._selected_file = None
         self.file_field.setText(str(entry.path or "No media"))
-        self.title_field.setText(self.lib.get_entry_title(entry))
+        self.title_field.setText(self.lib.get_entry_field_value(entry, FieldID.TITLE))
         self.prompt_field.setPlainText(self.lib.get_entry_field_value(entry, FieldID.DESCRIPTION))
         self._set_error("")
 
