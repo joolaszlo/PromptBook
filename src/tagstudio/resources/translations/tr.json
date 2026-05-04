@@ -285,6 +285,7 @@
     "window.title.open_create_library": "Kütüphane Aç/Oluştur",
     "entry.add": "Add Entry",
     "entry.add.window_title": "Add New Entry",
+    "entry.add.selected_tags": "Seçili Etiketler",
     "entry.add_media": "Add Media",
     "entry.add_prompt": "Add Prompt",
     "entry.edit.button": "EDIT ENTRY",

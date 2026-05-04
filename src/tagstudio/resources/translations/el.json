@@ -163,6 +163,7 @@
     "json_migration.heading.names": "Όνομα:",
     "entry.add": "Add Entry",
     "entry.add.window_title": "Add New Entry",
+    "entry.add.selected_tags": "Επιλεγμένες ετικέτες",
     "entry.add_media": "Add Media",
     "entry.add_prompt": "Add Prompt",
     "entry.edit.button": "EDIT ENTRY",

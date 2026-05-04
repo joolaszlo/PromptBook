@@ -365,6 +365,7 @@
     "window.title.open_create_library": "நூலகத்தைத் திறக்கவும்/உருவாக்கவும்",
     "entry.add": "Add Entry",
     "entry.add.window_title": "Add New Entry",
+    "entry.add.selected_tags": "தேர்ந்தெடுக்கப்பட்ட குறிச்சொற்கள்",
     "entry.add_media": "Add Media",
     "entry.add_prompt": "Add Prompt",
     "entry.edit.button": "EDIT ENTRY",

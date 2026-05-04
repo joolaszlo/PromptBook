@@ -130,6 +130,7 @@
     "tag_manager.title": "Biblioteksetiketter",
     "entry.add": "Add Entry",
     "entry.add.window_title": "Add New Entry",
+    "entry.add.selected_tags": "Valda taggar",
     "entry.add_media": "Add Media",
     "entry.add_prompt": "Add Prompt",
     "entry.edit.button": "EDIT ENTRY",

@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
 from tagstudio.core.library.alchemy.enums import BrowsingState
 from tagstudio.core.library.alchemy.fields import FieldID, TextField
-from tagstudio.core.library.alchemy.models import Entry
+from tagstudio.core.library.alchemy.models import Entry, Tag
 from tagstudio.core.utils.types import unwrap
 from tagstudio.qt.mixed.add_entry_modal import AddEntryModal
 from tagstudio.qt.mixed.tag_widget import TagWidget
@@ -272,7 +272,7 @@ def test_refresh_tag_filter_controls_stable_labels_and_highlights(qtbot, qt_driv
 
 
 def test_add_entry_pinned_tags_disable_context_menu(qtbot, qt_driver: QtDriver):
-    modal = AddEntryModal(lambda file_path, prompt, tags: True, qt_driver.lib)
+    modal = AddEntryModal(lambda file_path, title, prompt, tags: True, qt_driver.lib)
     qtbot.addWidget(modal)
 
     foo = unwrap(qt_driver.lib.get_tag_by_name("foo"))
@@ -283,3 +283,89 @@ def test_add_entry_pinned_tags_disable_context_menu(qtbot, qt_driver: QtDriver):
     assert isinstance(chip, TagWidget)
     assert chip.bg_button.contextMenuPolicy() == Qt.ContextMenuPolicy.NoContextMenu
     assert chip.bg_button.actions() == []
+
+
+def test_add_entry_pinned_tags_toggle_shared_selected_tags(qtbot, qt_driver: QtDriver):
+    modal = AddEntryModal(lambda file_path, title, prompt, tags: True, qt_driver.lib)
+    qtbot.addWidget(modal)
+
+    foo = unwrap(qt_driver.lib.get_tag_by_name("foo"))
+    foo.pinned = True
+    modal.set_pinned_tags([foo])
+
+    pinned_chip = modal.pinned_tags_layout.itemAt(0).widget()
+    assert isinstance(pinned_chip, TagWidget)
+
+    qtbot.mouseClick(pinned_chip.bg_button, Qt.MouseButton.LeftButton)
+
+    assert modal._selected_tag_ids == {foo.id}
+    assert pinned_chip._selected
+    assert modal.selected_tags_layout.count() == 1
+    selected_chip = modal.selected_tags_layout.itemAt(0).widget()
+    assert isinstance(selected_chip, TagWidget)
+    assert selected_chip.tag and selected_chip.tag.id == foo.id
+
+    qtbot.mouseClick(selected_chip.bg_button, Qt.MouseButton.LeftButton)
+
+    assert not modal._selected_tag_ids
+    assert not pinned_chip._selected
+    assert modal.selected_tags_layout.count() == 0
+
+
+def test_add_entry_search_tags_multi_select_and_submit(qtbot, qt_driver: QtDriver):
+    alpha = Tag(name="alpha", color_namespace="tagstudio-standard", color_slug="red")
+    alpine = Tag(name="alpine", color_namespace="tagstudio-standard", color_slug="blue")
+    assert qt_driver.lib.add_tag(alpha)
+    assert qt_driver.lib.add_tag(alpine)
+    alpha = unwrap(qt_driver.lib.get_tag_by_name("alpha"))
+    alpine = unwrap(qt_driver.lib.get_tag_by_name("alpine"))
+
+    existing_entry_ids = {entry.id for entry in qt_driver.lib.all_entries()}
+    submitted_tags: list[list[int]] = []
+    qt_driver.refresh_tag_filter_controls = Mock()
+
+    def submit(file_path, title, prompt, tags):
+        submitted_tags.append(tags)
+        return qt_driver.add_entry_from_path(file_path, title, prompt, tags)
+
+    modal = AddEntryModal(submit, qt_driver.lib)
+    qtbot.addWidget(modal)
+
+    modal.tag_search_field.setText("al")
+    modal._render_search_results("al")
+
+    assert not modal.search_results_scroll_area.isHidden()
+    assert alpha.id in modal._search_result_tag_widgets
+    assert alpine.id in modal._search_result_tag_widgets
+
+    alpha_chip = modal._search_result_tag_widgets[alpha.id]
+    alpine_chip = modal._search_result_tag_widgets[alpine.id]
+    qtbot.mouseClick(alpha_chip.bg_button, Qt.MouseButton.LeftButton)
+    qtbot.mouseClick(alpine_chip.bg_button, Qt.MouseButton.LeftButton)
+
+    assert modal._selected_tag_ids == {alpha.id, alpine.id}
+    assert alpha_chip._selected
+    assert alpine_chip._selected
+    assert modal.tag_search_field.text() == "al"
+    assert modal.selected_tags_layout.count() == 2
+
+    qtbot.mouseClick(alpha_chip.bg_button, Qt.MouseButton.LeftButton)
+
+    assert modal._selected_tag_ids == {alpine.id}
+    assert not alpha_chip._selected
+    assert alpine_chip._selected
+    assert modal.selected_tags_layout.count() == 1
+
+    qtbot.mouseClick(alpha_chip.bg_button, Qt.MouseButton.LeftButton)
+    modal.title_field.setText("Text-only entry")
+    modal._submit()
+
+    assert submitted_tags == [[alpha.id, alpine.id]]
+    created_entries = [
+        entry
+        for entry in qt_driver.lib.all_entries(with_joins=True)
+        if entry.id not in existing_entry_ids
+    ]
+    assert len(created_entries) == 1
+    entry = unwrap(qt_driver.lib.get_entry_full(created_entries[0].id))
+    assert {tag.id for tag in entry.tags} == {alpha.id, alpine.id}

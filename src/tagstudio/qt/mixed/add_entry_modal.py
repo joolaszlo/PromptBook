@@ -12,11 +12,13 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPlainTextEdit,
     QPushButton,
+    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
@@ -126,7 +128,9 @@ class AddEntryModal(QDialog):
         self._selected_file: Path | None = None
         self._pinned_tags: list[Tag] = []
         self._selected_tag_ids: set[int] = set()
-        self._tag_widgets: dict[int, TagWidget] = {}
+        self._pinned_tag_widgets: dict[int, TagWidget] = {}
+        self._search_result_tag_widgets: dict[int, TagWidget] = {}
+        self._selected_tag_widgets: dict[int, TagWidget] = {}
 
         self.setWindowFlag(Qt.WindowType.Dialog, True)
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
@@ -183,6 +187,42 @@ class AddEntryModal(QDialog):
         self.pinned_tags_layout.setSpacing(6)
         self.pinned_tags_container.setLayout(self.pinned_tags_layout)
         self.root_layout.addWidget(self.pinned_tags_container)
+
+        self.search_tags_title = QLabel(Translations["home.search_tags"])
+        self.search_tags_title.setStyleSheet("font-weight:bold;font-size:14px;")
+        self.root_layout.addWidget(self.search_tags_title)
+
+        self.tag_search_field = QLineEdit()
+        self.tag_search_field.setMinimumSize(QtCore.QSize(0, 32))
+        self.tag_search_field.setPlaceholderText(Translations["home.search_tags"])
+        self.tag_search_field.textEdited.connect(self._render_search_results)
+        self.root_layout.addWidget(self.tag_search_field)
+
+        self.search_results_scroll_area = QScrollArea()
+        self.search_results_scroll_area.setWidgetResizable(True)
+        self.search_results_scroll_area.setFrameShadow(QFrame.Shadow.Plain)
+        self.search_results_scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.search_results_scroll_area.setMaximumHeight(86)
+        self.search_results_scroll_area.setVisible(False)
+
+        self.search_results_container = FlowWidget()
+        self.search_results_layout = FlowLayout(self.search_results_container)
+        self.search_results_layout.setContentsMargins(0, 0, 0, 0)
+        self.search_results_layout.setSpacing(6)
+        self.search_results_container.setLayout(self.search_results_layout)
+        self.search_results_scroll_area.setWidget(self.search_results_container)
+        self.root_layout.addWidget(self.search_results_scroll_area)
+
+        self.selected_tags_title = QLabel(Translations["entry.add.selected_tags"])
+        self.selected_tags_title.setStyleSheet("font-weight:bold;font-size:14px;")
+        self.root_layout.addWidget(self.selected_tags_title)
+
+        self.selected_tags_container = FlowWidget()
+        self.selected_tags_layout = FlowLayout(self.selected_tags_container)
+        self.selected_tags_layout.setContentsMargins(0, 0, 0, 0)
+        self.selected_tags_layout.setSpacing(6)
+        self.selected_tags_container.setLayout(self.selected_tags_layout)
+        self.root_layout.addWidget(self.selected_tags_container)
 
         self.error_label = QLabel()
         self.error_label.setWordWrap(True)
@@ -245,7 +285,10 @@ class AddEntryModal(QDialog):
         self.title_field.clear()
         self.prompt_field.clear()
         self._selected_tag_ids.clear()
+        self.tag_search_field.clear()
         self._render_pinned_tags()
+        self._render_search_results()
+        self._render_selected_tags()
         self._set_error("")
 
     def set_pinned_tags(self, tags: list[Tag]) -> None:
@@ -257,7 +300,7 @@ class AddEntryModal(QDialog):
         self.error_label.setVisible(bool(text))
 
     def _render_pinned_tags(self) -> None:
-        self._tag_widgets.clear()
+        self._pinned_tag_widgets.clear()
 
         while self.pinned_tags_layout.count():
             item = self.pinned_tags_layout.takeAt(0)
@@ -281,31 +324,117 @@ class AddEntryModal(QDialog):
             tag_widget.search_for_tag_action.setVisible(False)
             tag_widget.pinned_action.setVisible(False)
             tag_widget.favorite_action.setVisible(False)
-            tag_widget.on_click.connect(lambda t=tag: self._add_tag(t))
-            self._tag_widgets[tag.id] = tag_widget
+            tag_widget.on_click.connect(lambda t=tag: self._toggle_tag(t))
+            self._pinned_tag_widgets[tag.id] = tag_widget
             self.pinned_tags_layout.addWidget(tag_widget)
             self._update_tag_widget_state(tag)
 
         self.pinned_tags_container.updateGeometry()
 
-    def _add_tag(self, tag: Tag) -> None:
-        self._selected_tag_ids.add(tag.id)
-        self._update_tag_widget_state(tag)
+    def _render_search_results(self, query: str | None = None) -> None:
+        self._search_result_tag_widgets.clear()
 
-    def _update_tag_widget_state(self, tag: Tag) -> None:
-        tag_widget = self._tag_widgets.get(tag.id)
-        if tag_widget is None:
+        while self.search_results_layout.count():
+            item = self.search_results_layout.takeAt(0)
+            if item and item.widget():
+                item.widget().deleteLater()
+
+        query = self.tag_search_field.text() if query is None else query
+        if not query.strip():
+            self.search_results_scroll_area.setVisible(False)
             return
 
-        tag_widget.set_tag(tag)
-        if tag.id in self._selected_tag_ids:
-            display_name = self.lib.tag_display_name(tag)
-            tag_widget.bg_button.setText(
-                Translations.format("entry.tag_added", tag_name=display_name)
+        self.search_results_scroll_area.setVisible(True)
+        for tag in self._search_tags(query):
+            tag_widget = TagWidget(
+                tag,
+                has_edit=False,
+                has_remove=False,
+                library=self.lib,
+                enable_context_menu=False,
             )
-            tag_widget.bg_button.setToolTip(Translations["entry.tag_will_be_added"])
+            tag_widget.search_for_tag_action.setVisible(False)
+            tag_widget.pinned_action.setVisible(False)
+            tag_widget.favorite_action.setVisible(False)
+            tag_widget.on_click.connect(lambda t=tag: self._toggle_tag(t))
+            self._search_result_tag_widgets[tag.id] = tag_widget
+            self.search_results_layout.addWidget(tag_widget)
+            self._update_tag_widget_state(tag)
+
+        self.search_results_container.updateGeometry()
+
+    def _render_selected_tags(self) -> None:
+        self._selected_tag_widgets.clear()
+
+        while self.selected_tags_layout.count():
+            item = self.selected_tags_layout.takeAt(0)
+            if item and item.widget():
+                item.widget().deleteLater()
+
+        for tag in self._selected_tags():
+            tag_widget = TagWidget(
+                tag,
+                has_edit=False,
+                has_remove=True,
+                library=self.lib,
+                enable_context_menu=False,
+            )
+            tag_widget.search_for_tag_action.setVisible(False)
+            tag_widget.pinned_action.setVisible(False)
+            tag_widget.favorite_action.setVisible(False)
+            tag_widget.on_click.connect(lambda t=tag: self._toggle_tag(t))
+            tag_widget.on_remove.connect(lambda t=tag: self._toggle_tag(t))
+            tag_widget.set_selected(True)
+            self._selected_tag_widgets[tag.id] = tag_widget
+            self.selected_tags_layout.addWidget(tag_widget)
+
+        self.selected_tags_container.updateGeometry()
+
+    def _search_tags(self, query: str) -> list[Tag]:
+        tag_results = self.lib.search_tags(name=query, limit=25)
+        results_0 = sorted(tag_results[0], key=lambda tag: tag.name.lower())
+        results_1 = sorted(tag_results[1], key=lambda tag: tag.name.lower())
+        raw_results = results_0 + [tag for tag in results_1 if tag not in tag_results[0]]
+
+        query_lower = query.lower()
+        priority_results = [tag for tag in raw_results if tag.name.lower().startswith(query_lower)]
+        remaining_results = [tag for tag in raw_results if tag not in priority_results]
+        return sorted(priority_results, key=lambda tag: len(tag.name)) + remaining_results
+
+    def _selected_tags(self) -> list[Tag]:
+        selected_tags = [tag for tag in self.lib.tags if tag.id in self._selected_tag_ids]
+        return sorted(selected_tags, key=lambda tag: self.lib.tag_display_name(tag).lower())
+
+    def _toggle_tag(self, tag: Tag) -> None:
+        if tag.id in self._selected_tag_ids:
+            self._selected_tag_ids.remove(tag.id)
         else:
-            tag_widget.bg_button.setToolTip("")
+            self._selected_tag_ids.add(tag.id)
+        self._sync_tag_selection_views()
+
+    def _sync_tag_selection_views(self) -> None:
+        for tag in self._pinned_tags:
+            self._update_tag_widget_state(tag)
+        for tag_id, tag_widget in self._search_result_tag_widgets.items():
+            if tag_widget.tag and tag_widget.tag.id == tag_id:
+                self._update_tag_widget_state(tag_widget.tag)
+        self._render_selected_tags()
+
+    def _update_tag_widget_state(self, tag: Tag) -> None:
+        for tag_widget in (
+            self._pinned_tag_widgets.get(tag.id),
+            self._search_result_tag_widgets.get(tag.id),
+        ):
+            if tag_widget is None:
+                continue
+
+            tag_widget.set_tag(tag)
+            tag_widget.set_selected(tag.id in self._selected_tag_ids)
+            tag_widget.bg_button.setToolTip(
+                Translations["entry.tag_will_be_added"]
+                if tag.id in self._selected_tag_ids
+                else ""
+            )
 
     @override
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:  # noqa N802

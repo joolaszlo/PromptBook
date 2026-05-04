@@ -365,6 +365,7 @@
     "window.title.open_create_library": "Apri/Crea Biblioteca",
     "entry.add": "Aggiungi voce",
     "entry.add.window_title": "Aggiungi nuova voce",
+    "entry.add.selected_tags": "Tag selezionati",
     "entry.add_media": "Aggiungi media",
     "entry.add_prompt": "Aggiungi prompt",
     "entry.edit.button": "MODIFICA VOCE",

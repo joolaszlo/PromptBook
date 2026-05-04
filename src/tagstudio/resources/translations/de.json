@@ -362,6 +362,7 @@
     "window.title.open_create_library": "Bibliothek öffnen/erstellen",
     "entry.add": "Eintrag hinzuf?gen",
     "entry.add.window_title": "Neuen Eintrag hinzuf?gen",
+    "entry.add.selected_tags": "Ausgewählte Tags",
     "entry.add_media": "Medien hinzuf?gen",
     "entry.add_prompt": "Prompt hinzuf?gen",
     "entry.edit.button": "EINTRAG BEARBEITEN",

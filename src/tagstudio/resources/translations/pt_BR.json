@@ -352,6 +352,7 @@
     "window.title.open_create_library": "Abrir/Criar Bilbioteca",
     "entry.add": "Add Entry",
     "entry.add.window_title": "Add New Entry",
+    "entry.add.selected_tags": "Etiquetas selecionadas",
     "entry.add_media": "Add Media",
     "entry.add_prompt": "Add Prompt",
     "entry.edit.button": "EDIT ENTRY",

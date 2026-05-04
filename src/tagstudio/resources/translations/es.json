@@ -365,6 +365,7 @@
     "window.title.open_create_library": "Abrir/Crear biblioteca",
     "entry.add": "A?adir entrada",
     "entry.add.window_title": "A?adir nueva entrada",
+    "entry.add.selected_tags": "Etiquetas seleccionadas",
     "entry.add_media": "A?adir medios",
     "entry.add_prompt": "A?adir prompt",
     "entry.edit.button": "EDITAR ENTRADA",
