@@ -1491,6 +1491,33 @@ class Library:
                 return True
         return self.add_field_to_entry(entry_id, field_id=field_key, value=value)
 
+    def set_entry_title(
+        self,
+        entry_id: int,
+        title: str | None,
+        entry: Entry | None = None,
+    ) -> bool:
+        """Set an entry Title, or remove it when the normalized title is empty."""
+        title_text = (title or "").strip()
+        full_entry = entry or self.get_entry_full(entry_id)
+        existing_fields: list[BaseField] = []
+        if full_entry:
+            existing_fields = [
+                field for field in full_entry.fields if field.type.key == FieldID.TITLE.name
+            ]
+
+        if title_text:
+            if existing_fields:
+                self.update_entry_field(entry_id, existing_fields[0], title_text)
+                for extra_field in existing_fields[1:]:
+                    self.remove_entry_field(extra_field, [entry_id])
+                return True
+            return self.add_field_to_entry(entry_id, field_id=FieldID.TITLE, value=title_text)
+
+        for existing_field in existing_fields:
+            self.remove_entry_field(existing_field, [entry_id])
+        return True
+
     @property
     def field_types(self) -> dict[str, ValueType]:
         with Session(self.engine) as session:

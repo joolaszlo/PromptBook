@@ -117,7 +117,10 @@ class FieldContainers(QWidget):
         self, entry_tags: set[Tag], entry_fields: list[BaseField], update_badges: bool = True
     ):
         """Individually update elements of the item preview."""
-        container_len: int = len(entry_fields)
+        visible_fields = [
+            field for field in entry_fields if self._field_has_preview_content(field)
+        ]
+        container_len: int = len(visible_fields)
         container_index = 0
         # Write tag container(s)
         if entry_tags:
@@ -132,7 +135,7 @@ class FieldContainers(QWidget):
             self.driver.emit_badge_signals({t.id for t in entry_tags})
 
         # Write field container(s)
-        for index, field in enumerate(entry_fields, start=container_index):
+        for index, field in enumerate(visible_fields, start=container_index):
             self.write_container(index, field, is_mixed=False)
 
         # Hide leftover container(s)
@@ -204,6 +207,12 @@ class FieldContainers(QWidget):
 
         return dict((c, d) for c, d in categories.items() if len(d) > 0)
 
+    def _field_has_preview_content(self, field: BaseField) -> bool:
+        if field.type.key != FieldID.TITLE.name:
+            return True
+        if not isinstance(field.value, str):
+            return False
+        return bool(field.value.strip())
 
     def field_display_name(self, field: BaseField) -> str:
         return get_field_display_name(field.type.name, field.type.key)

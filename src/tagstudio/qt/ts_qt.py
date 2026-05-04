@@ -1370,7 +1370,15 @@ class QtDriver(DriverMixin, QObject):
         if self.lib.library_dir is None:
             return False
 
+        title_text = title.strip()
         if source_path is None:
+            if not title_text:
+                self.show_error_message(
+                    Translations["entry.error.not_saved"],
+                    Translations["entry.error.title_required_no_media"],
+                )
+                return False
+
             entry = Entry(
                 path=None,
                 folder=self.lib.folder,
@@ -1381,7 +1389,7 @@ class QtDriver(DriverMixin, QObject):
             if not ids:
                 return False
             entry_id = ids[0]
-            self.lib.upsert_entry_field(entry_id, FieldID.TITLE, title.strip())
+            self.lib.set_entry_title(entry_id, title_text)
             prompt_text = prompt.strip()
             if prompt_text:
                 self.lib.upsert_entry_field(entry_id, FieldID.DESCRIPTION, prompt_text)
@@ -1394,7 +1402,7 @@ class QtDriver(DriverMixin, QObject):
             self.select_entry(entry_id)
             self.update_browsing_state()
             self.main_window.preview_panel.set_selection(self.selected)
-            self.main_window.status_bar.showMessage(f'Added entry "{title.strip()}"')
+            self.main_window.status_bar.showMessage(f'Added entry "{title_text}"')
             return True
 
         target_name = self.resolve_add_entry_filename(source_path.name)
@@ -1411,9 +1419,7 @@ class QtDriver(DriverMixin, QObject):
                 return
 
             prompt_text = prompt.strip()
-            title_text = title.strip()
-            if title_text:
-                self.lib.upsert_entry_field(entry.id, FieldID.TITLE, title_text)
+            self.lib.set_entry_title(entry.id, title_text, entry)
             if prompt_text:
                 self.lib.upsert_entry_field(entry.id, FieldID.DESCRIPTION, prompt_text)
 
@@ -1490,13 +1496,14 @@ class QtDriver(DriverMixin, QObject):
                 )
                 return False
 
-        if not (entry.has_media or source_path is not None) and not title.strip():
+        title_text = title.strip()
+        if not (entry.has_media or source_path is not None) and not title_text:
             self.show_error_message(
                 Translations["entry.error.not_saved"],
                 Translations["entry.error.title_required_no_media"],
             )
             return False
-        self.lib.upsert_entry_field(entry_id, FieldID.TITLE, title.strip())
+        self.lib.set_entry_title(entry_id, title_text)
         self.lib.upsert_entry_field(entry_id, FieldID.DESCRIPTION, prompt.strip())
         self.main_window.thumb_layout.invalidate_entry(entry_id)
         self.main_window.preview_panel.set_selection(self.selected)

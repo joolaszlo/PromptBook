@@ -400,6 +400,22 @@ def test_update_entry_field(library: Library, entry_full: Entry):
     assert entry.text_fields[0].value == "new value"
 
 
+def test_set_entry_title_trims_and_removes_empty_values(library: Library, entry_full: Entry):
+    assert library.add_field_to_entry(entry_full.id, field_id=FieldID.TITLE, value="Duplicate")
+    assert library.set_entry_title(entry_full.id, "  New Title  ")
+    entry = unwrap(library.get_entry_full(entry_full.id))
+    title_fields = [field for field in entry.fields if field.type.key == FieldID.TITLE.name]
+    assert [field.value for field in title_fields] == ["New Title"]
+
+    assert library.set_entry_title(entry_full.id, "   ")
+    entry = unwrap(library.get_entry_full(entry_full.id))
+    assert not any(field.type.key == FieldID.TITLE.name for field in entry.fields)
+
+    assert library.set_entry_title(entry_full.id, "")
+    entry = unwrap(library.get_entry_full(entry_full.id))
+    assert not any(field.type.key == FieldID.TITLE.name for field in entry.fields)
+
+
 def test_update_entry_with_multiple_identical_fields(library: Library, entry_full: Entry):
     # Given
     title_field = entry_full.text_fields[0]

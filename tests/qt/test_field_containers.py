@@ -3,6 +3,7 @@
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
 
+from tagstudio.core.library.alchemy.fields import FieldID
 from tagstudio.core.library.alchemy.library import Library
 from tagstudio.core.library.alchemy.models import Entry, Tag
 from tagstudio.core.utils.types import unwrap
@@ -33,6 +34,32 @@ def test_update_selection_single(qt_driver: QtDriver, library: Library, entry_fu
     # FieldContainer should show all applicable tags and field containers
     for container in panel.field_containers_widget.containers:
         assert not container.isHidden()
+
+
+def test_title_container_requires_meaningful_content(
+    qt_driver: QtDriver, library: Library, entry_full: Entry
+):
+    panel = PreviewPanel(library, qt_driver)
+
+    library.upsert_entry_field(entry_full.id, FieldID.TITLE, "   ")
+    panel.set_selection([entry_full.id])
+
+    visible_titles = [
+        container.title
+        for container in panel.field_containers_widget.containers
+        if not container.isHidden()
+    ]
+    assert "<h4>Title</h4>" not in visible_titles
+
+    library.set_entry_title(entry_full.id, "  Visible Title  ")
+    panel.set_selection([entry_full.id])
+
+    visible_titles = [
+        container.title
+        for container in panel.field_containers_widget.containers
+        if not container.isHidden()
+    ]
+    assert "<h4>Title</h4>" in visible_titles
 
 
 def test_update_selection_multiple(qt_driver: QtDriver, library: Library):

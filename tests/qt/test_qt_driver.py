@@ -10,6 +10,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
 from tagstudio.core.library.alchemy.enums import BrowsingState
+from tagstudio.core.library.alchemy.fields import FieldID, TextField
 from tagstudio.core.library.alchemy.models import Entry
 from tagstudio.core.utils.types import unwrap
 from tagstudio.qt.mixed.add_entry_modal import AddEntryModal
@@ -91,6 +92,52 @@ def test_browsing_state_update_multi_tag_and(qt_driver: QtDriver):
 
     assert qt_driver.active_tag_filter_ids == {foo.id, bar.id}
     assert qt_driver.frame_content == [entry.id]
+
+
+def test_edit_media_entry_normalizes_title(qt_driver: QtDriver):
+    qt_driver.lib.set_entry_title(1, "Original Title")
+
+    assert qt_driver.edit_entry(1, source_path=None, title="  Trimmed Title  ", prompt="")
+    entry = unwrap(qt_driver.lib.get_entry_full(1))
+    assert qt_driver.lib.get_entry_field_value(entry, FieldID.TITLE) == "Trimmed Title"
+
+    assert qt_driver.edit_entry(1, source_path=None, title="   ", prompt="")
+    entry = unwrap(qt_driver.lib.get_entry_full(1))
+    assert not any(field.type.key == FieldID.TITLE.name for field in entry.fields)
+
+
+def test_edit_text_only_entry_still_requires_title(qt_driver: QtDriver):
+    entry = Entry(
+        id=101,
+        folder=unwrap(qt_driver.lib.folder),
+        path=None,
+        fields=[
+            TextField(
+                type_key=FieldID.TITLE.name,
+                value="Existing Title",
+                position=0,
+            )
+        ],
+    )
+    assert qt_driver.lib.add_entries([entry])
+    qt_driver.show_error_message = Mock()
+
+    assert not qt_driver.edit_entry(101, source_path=None, title="   ", prompt="")
+    qt_driver.show_error_message.assert_called_once()
+
+    entry = unwrap(qt_driver.lib.get_entry_full(101))
+    assert qt_driver.lib.get_entry_field_value(entry, FieldID.TITLE) == "Existing Title"
+
+
+def test_add_text_only_entry_requires_title(qt_driver: QtDriver):
+    qt_driver.show_error_message = Mock()
+    existing_ids = {entry.id for entry in qt_driver.lib.all_entries()}
+
+    assert not qt_driver.add_entry_from_path(
+        source_path=None, title="   ", prompt="", tag_ids=[]
+    )
+    qt_driver.show_error_message.assert_called_once()
+    assert {entry.id for entry in qt_driver.lib.all_entries()} == existing_ids
 
 
 def test_apply_tag_filter_toggles_shared_tag_selection(qt_driver: QtDriver):
