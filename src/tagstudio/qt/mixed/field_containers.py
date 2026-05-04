@@ -262,6 +262,9 @@ class FieldContainers(QWidget):
         entry = self.cached_entries[0]
         field = next((f for f in entry.fields if f.type.key == field_id.name), None)
         if field is None:
+            if field_id == FieldID.TITLE:
+                self.open_title_editor("")
+                return
             self.lib.add_field_to_entry(entry.id, field_id=field_id)
             self.update_from_entry(entry.id)
             entry = self.cached_entries[0]
@@ -269,6 +272,22 @@ class FieldContainers(QWidget):
 
         if field is not None:
             self.open_field_editor(field)
+
+    def open_title_editor(self, initial_value: str) -> None:
+        display_name = get_field_display_name(FieldID.TITLE.value.name, FieldID.TITLE.name)
+        modal = PanelModal(
+            EditTextLine(initial_value),
+            title=f"{display_name} ({FieldTypeEnum.TEXT_LINE.value})",
+            window_title=f"Edit {FieldTypeEnum.TEXT_LINE.value}",
+            save_callback=(
+                lambda content: (
+                    self.update_title(content),
+                    self.update_from_entry(self.cached_entries[0].id),
+                )
+            ),
+        )
+        self._active_modal = modal
+        modal.show()
 
     def open_field_editor(self, field: BaseField) -> None:
         if field.type.type == FieldTypeEnum.TEXT_LINE:
@@ -497,6 +516,11 @@ class FieldContainers(QWidget):
             field=field,
             selected=[x.path for x in self.cached_entries],
         )
+        if field.type.key == FieldID.TITLE.name:
+            if not self._set_cached_entry_titles(""):
+                self._show_title_required_error()
+            return
+
         entry_ids = [e.id for e in self.cached_entries]
         self.lib.remove_entry_field(field, entry_ids)
 
@@ -510,10 +534,34 @@ class FieldContainers(QWidget):
         entry_ids = [e.id for e in self.cached_entries]
 
         assert entry_ids, "No entries selected"
+        if field.type.key == FieldID.TITLE.name:
+            if not self._set_cached_entry_titles(content):
+                self._show_title_required_error()
+            return
+
         self.lib.update_entry_field(
             entry_ids,
             field,
             content,
+        )
+
+    def update_title(self, content: str) -> None:
+        if not self._set_cached_entry_titles(content):
+            self._show_title_required_error()
+
+    def _set_cached_entry_titles(self, content: str) -> bool:
+        if not content.strip() and any(not entry.has_media for entry in self.cached_entries):
+            return False
+
+        for entry in self.cached_entries:
+            if not self.lib.set_entry_title(entry.id, content, entry):
+                return False
+        return True
+
+    def _show_title_required_error(self) -> None:
+        self.driver.show_error_message(
+            Translations["entry.error.not_saved"],
+            Translations["entry.error.title_required_no_media"],
         )
 
     def remove_message_box(self, prompt: str, callback: Callable) -> None:

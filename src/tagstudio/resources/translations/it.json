@@ -374,7 +374,7 @@
     "entry.error.filename_required": "Il nome file ? obbligatorio.",
     "entry.error.media_path_in_use": "Una voce punta gi? a quel percorso media.",
     "entry.error.not_saved": "Voce non salvata",
-    "entry.error.title_required_no_media": "Il titolo ? obbligatorio quando non ? selezionato alcun media.",
+    "entry.error.title_required_no_media": "Il titolo è obbligatorio per le voci di solo testo.",
     "entry.filename_conflict.description": "Un file con questo nome esiste gi? nella directory corrente della libreria.",
     "entry.filename_conflict.title": "Conflitto nome file",
     "entry.media": "Media",

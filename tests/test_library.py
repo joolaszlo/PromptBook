@@ -416,6 +416,30 @@ def test_set_entry_title_trims_and_removes_empty_values(library: Library, entry_
     assert not any(field.type.key == FieldID.TITLE.name for field in entry.fields)
 
 
+def test_set_entry_title_rejects_empty_text_only_title(library: Library):
+    entry = Entry(
+        id=101,
+        folder=unwrap(library.folder),
+        path=None,
+        fields=[
+            TextField(
+                type_key=FieldID.TITLE.name,
+                value="Required Title",
+                position=0,
+            )
+        ],
+    )
+    assert library.add_entries([entry])
+
+    assert not library.set_entry_title(entry.id, "   ")
+    entry = unwrap(library.get_entry_full(entry.id))
+    assert library.get_entry_field_value(entry, FieldID.TITLE) == "Required Title"
+
+    assert library.set_entry_title(entry.id, "  Updated Title  ")
+    entry = unwrap(library.get_entry_full(entry.id))
+    assert library.get_entry_field_value(entry, FieldID.TITLE) == "Updated Title"
+
+
 def test_update_entry_with_multiple_identical_fields(library: Library, entry_full: Entry):
     # Given
     title_field = entry_full.text_fields[0]

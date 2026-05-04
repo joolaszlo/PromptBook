@@ -348,7 +348,7 @@
     "entry.error.filename_required": "Filename is required.",
     "entry.error.media_path_in_use": "An entry already points to that media path.",
     "entry.error.not_saved": "Entry Not Saved",
-    "entry.error.title_required_no_media": "Title is required when no media is selected.",
+    "entry.error.title_required_no_media": "纯文本条目需要标题。",
     "entry.filename_conflict.description": "A file with this name already exists in the current library directory.",
     "entry.filename_conflict.title": "Filename Conflict",
     "entry.media": "Media",

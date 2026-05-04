@@ -1500,11 +1500,13 @@ class Library:
         """Set an entry Title, or remove it when the normalized title is empty."""
         title_text = (title or "").strip()
         full_entry = entry or self.get_entry_full(entry_id)
+        if full_entry is None:
+            return False
+
         existing_fields: list[BaseField] = []
-        if full_entry:
-            existing_fields = [
-                field for field in full_entry.fields if field.type.key == FieldID.TITLE.name
-            ]
+        existing_fields = [
+            field for field in full_entry.fields if field.type.key == FieldID.TITLE.name
+        ]
 
         if title_text:
             if existing_fields:
@@ -1513,6 +1515,9 @@ class Library:
                     self.remove_entry_field(extra_field, [entry_id])
                 return True
             return self.add_field_to_entry(entry_id, field_id=FieldID.TITLE, value=title_text)
+
+        if not full_entry.has_media:
+            return False
 
         for existing_field in existing_fields:
             self.remove_entry_field(existing_field, [entry_id])

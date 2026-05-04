@@ -3,6 +3,8 @@
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
 
+from unittest.mock import Mock
+
 from tagstudio.core.library.alchemy.fields import FieldID
 from tagstudio.core.library.alchemy.library import Library
 from tagstudio.core.library.alchemy.models import Entry, Tag
@@ -60,6 +62,70 @@ def test_title_container_requires_meaningful_content(
         if not container.isHidden()
     ]
     assert "<h4>Title</h4>" in visible_titles
+
+
+def test_text_only_title_cannot_be_cleared_from_field_container(
+    qt_driver: QtDriver, library: Library
+):
+    panel = PreviewPanel(library, qt_driver)
+    entry = Entry(
+        id=101,
+        folder=unwrap(library.folder),
+        path=None,
+        fields=[],
+    )
+    assert library.add_entries([entry])
+    assert library.set_entry_title(entry.id, "Required Title")
+    qt_driver.show_error_message = Mock()
+
+    panel.set_selection([entry.id])
+    title_field = next(
+        field
+        for field in panel.field_containers_widget.cached_entries[0].fields
+        if field.type.key == FieldID.TITLE.name
+    )
+
+    panel.field_containers_widget.update_field(title_field, "   ")
+    entry = unwrap(library.get_entry_full(entry.id))
+    assert library.get_entry_field_value(entry, FieldID.TITLE) == "Required Title"
+    qt_driver.show_error_message.assert_called_once()
+
+    qt_driver.show_error_message.reset_mock()
+    panel.field_containers_widget.remove_field(title_field)
+    entry = unwrap(library.get_entry_full(entry.id))
+    assert library.get_entry_field_value(entry, FieldID.TITLE) == "Required Title"
+    qt_driver.show_error_message.assert_called_once()
+
+
+def test_media_title_can_be_cleared_from_field_container(
+    qt_driver: QtDriver, library: Library, entry_full: Entry
+):
+    panel = PreviewPanel(library, qt_driver)
+    assert library.set_entry_title(entry_full.id, "Optional Title")
+
+    panel.set_selection([entry_full.id])
+    title_field = next(
+        field
+        for field in panel.field_containers_widget.cached_entries[0].fields
+        if field.type.key == FieldID.TITLE.name
+    )
+
+    panel.field_containers_widget.update_field(title_field, "   ")
+    entry = unwrap(library.get_entry_full(entry_full.id))
+    assert not any(field.type.key == FieldID.TITLE.name for field in entry.fields)
+
+
+def test_add_missing_title_from_field_container_does_not_store_empty_title(
+    qt_driver: QtDriver, library: Library, entry_full: Entry
+):
+    panel = PreviewPanel(library, qt_driver)
+    assert library.set_entry_title(entry_full.id, "")
+
+    panel.set_selection([entry_full.id])
+    panel.field_containers_widget.edit_or_add_field_to_selected(FieldID.TITLE)
+
+    entry = unwrap(library.get_entry_full(entry_full.id))
+    assert not any(field.type.key == FieldID.TITLE.name for field in entry.fields)
 
 
 def test_update_selection_multiple(qt_driver: QtDriver, library: Library):

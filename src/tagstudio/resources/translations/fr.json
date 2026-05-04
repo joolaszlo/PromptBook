@@ -374,7 +374,7 @@
     "entry.error.filename_required": "Le nom de fichier est requis.",
     "entry.error.media_path_in_use": "Une entr?e pointe d?j? vers ce chemin de m?dia.",
     "entry.error.not_saved": "Entr?e non enregistr?e",
-    "entry.error.title_required_no_media": "Un titre est requis lorsqu?aucun m?dia n?est s?lectionn?.",
+    "entry.error.title_required_no_media": "Un titre est requis pour les entrées uniquement textuelles.",
     "entry.filename_conflict.description": "Un fichier portant ce nom existe d?j? dans le dossier actuel de la biblioth?que.",
     "entry.filename_conflict.title": "Conflit de nom de fichier",
     "entry.media": "M?dia",

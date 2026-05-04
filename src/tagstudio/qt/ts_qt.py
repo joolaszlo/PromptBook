@@ -1389,7 +1389,12 @@ class QtDriver(DriverMixin, QObject):
             if not ids:
                 return False
             entry_id = ids[0]
-            self.lib.set_entry_title(entry_id, title_text)
+            if not self.lib.set_entry_title(entry_id, title_text):
+                self.show_error_message(
+                    Translations["entry.error.not_saved"],
+                    Translations["entry.error.title_required_no_media"],
+                )
+                return False
             prompt_text = prompt.strip()
             if prompt_text:
                 self.lib.upsert_entry_field(entry_id, FieldID.DESCRIPTION, prompt_text)
@@ -1419,7 +1424,12 @@ class QtDriver(DriverMixin, QObject):
                 return
 
             prompt_text = prompt.strip()
-            self.lib.set_entry_title(entry.id, title_text, entry)
+            if not self.lib.set_entry_title(entry.id, title_text, entry):
+                self.show_error_message(
+                    Translations["entry.error.not_saved"],
+                    Translations["entry.error.title_required_no_media"],
+                )
+                return
             if prompt_text:
                 self.lib.upsert_entry_field(entry.id, FieldID.DESCRIPTION, prompt_text)
 
@@ -1503,7 +1513,12 @@ class QtDriver(DriverMixin, QObject):
                 Translations["entry.error.title_required_no_media"],
             )
             return False
-        self.lib.set_entry_title(entry_id, title_text)
+        if not self.lib.set_entry_title(entry_id, title_text):
+            self.show_error_message(
+                Translations["entry.error.not_saved"],
+                Translations["entry.error.title_required_no_media"],
+            )
+            return False
         self.lib.upsert_entry_field(entry_id, FieldID.DESCRIPTION, prompt.strip())
         self.main_window.thumb_layout.invalidate_entry(entry_id)
         self.main_window.preview_panel.set_selection(self.selected)

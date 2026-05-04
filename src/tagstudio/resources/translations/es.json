@@ -374,7 +374,7 @@
     "entry.error.filename_required": "El nombre de archivo es obligatorio.",
     "entry.error.media_path_in_use": "Una entrada ya apunta a esa ruta de medios.",
     "entry.error.not_saved": "Entrada no guardada",
-    "entry.error.title_required_no_media": "Se requiere un t?tulo cuando no hay medios seleccionados.",
+    "entry.error.title_required_no_media": "El título es obligatorio para las entradas solo de texto.",
     "entry.filename_conflict.description": "Ya existe un archivo con este nombre en el directorio actual de la biblioteca.",
     "entry.filename_conflict.title": "Conflicto de nombre de archivo",
     "entry.media": "Medios",

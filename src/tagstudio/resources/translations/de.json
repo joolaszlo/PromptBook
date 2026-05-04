@@ -371,7 +371,7 @@
     "entry.error.filename_required": "Dateiname ist erforderlich.",
     "entry.error.media_path_in_use": "Ein Eintrag verweist bereits auf diesen Medienpfad.",
     "entry.error.not_saved": "Eintrag nicht gespeichert",
-    "entry.error.title_required_no_media": "Ein Titel ist erforderlich, wenn keine Medien ausgew?hlt sind.",
+    "entry.error.title_required_no_media": "Für reine Texteinträge ist ein Titel erforderlich.",
     "entry.filename_conflict.description": "Eine Datei mit diesem Namen existiert bereits im aktuellen Bibliotheksverzeichnis.",
     "entry.filename_conflict.title": "Dateinamenskonflikt",
     "entry.media": "Medien",

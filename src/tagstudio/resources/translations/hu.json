@@ -374,7 +374,7 @@
     "entry.error.filename_required": "A f?jln?v k?telez?.",
     "entry.error.media_path_in_use": "Egy bejegyz?s m?r erre a m?dia?tvonalra mutat.",
     "entry.error.not_saved": "A bejegyz?s nem lett mentve",
-    "entry.error.title_required_no_media": "C?m sz?ks?ges, ha nincs kiv?lasztva m?dia.",
+    "entry.error.title_required_no_media": "A csak szöveges bejegyzésekhez cím szükséges.",
     "entry.filename_conflict.description": "Ezzel a n?vvel m?r l?tezik f?jl az aktu?lis k?nyvt?rmapp?ban.",
     "entry.filename_conflict.title": "F?jln?v?tk?z?s",
     "entry.media": "M?dia",
