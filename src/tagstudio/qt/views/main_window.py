@@ -511,6 +511,8 @@ class MainWindow(QMainWindow):
         # initialized in setup_preview_panel
         self.preview_panel: PreviewPanel
         # endregion
+        self._category_sidebar_splitter_sync_pending = False
+        self._category_sidebar_splitter_sync_needed = False
 
         if not self.objectName():
             self.setObjectName("MainWindow")
@@ -537,10 +539,48 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event: QResizeEvent) -> None:
         super().resizeEvent(event)
         self._update_top_toolbar_widths()
+        if self._category_sidebar_splitter_sync_needed:
+            self._schedule_category_sidebar_splitter_sync()
 
     def showEvent(self, event: QShowEvent) -> None:
         super().showEvent(event)
         QtCore.QTimer.singleShot(0, self._update_top_toolbar_widths)
+        self._schedule_category_sidebar_splitter_sync()
+
+    def _schedule_category_sidebar_splitter_sync(self) -> None:
+        if not hasattr(self, "content_splitter") or not hasattr(self, "category_sidebar"):
+            return
+
+        self._category_sidebar_splitter_sync_needed = True
+        if self._category_sidebar_splitter_sync_pending:
+            return
+
+        self._category_sidebar_splitter_sync_pending = True
+        QtCore.QTimer.singleShot(0, self._sync_category_sidebar_splitter)
+
+    def _sync_category_sidebar_splitter(self) -> None:
+        self._category_sidebar_splitter_sync_pending = False
+
+        if not self._category_sidebar_splitter_sync_needed:
+            return
+        if not self.isVisible() or self.content_splitter.width() <= 0:
+            return
+
+        sizes = self.content_splitter.sizes()
+        if len(sizes) < 3 or sum(sizes) <= 0:
+            return
+
+        target_sidebar_width = self.category_sidebar.target_width()
+        if sizes[0] == target_sidebar_width:
+            self._category_sidebar_splitter_sync_needed = False
+            return
+
+        total_width = sum(sizes)
+        remaining_width = max(0, total_width - target_sidebar_width)
+        preview_width = min(sizes[2], remaining_width)
+        entry_width = max(0, remaining_width - preview_width)
+        self.content_splitter.setSizes([target_sidebar_width, entry_width, preview_width])
+        self._category_sidebar_splitter_sync_needed = False
 
     def _update_top_toolbar_widths(self) -> None:
         if not hasattr(self, "search_field"):
@@ -894,6 +934,9 @@ class MainWindow(QMainWindow):
 
     def setup_category_sidebar(self, driver: "QtDriver"):
         self.category_sidebar = CategorySidebarWidget(driver)
+        self.category_sidebar.layout_state_changed.connect(
+            self._schedule_category_sidebar_splitter_sync
+        )
         self.content_splitter.addWidget(self.category_sidebar)
 
     def setup_entry_list(self, driver: "QtDriver"):

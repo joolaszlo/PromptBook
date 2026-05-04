@@ -139,8 +139,9 @@ class CategorySidebarItemWidget(QPushButton):
 
 
 class CategorySidebarWidget(QFrame):
-    EXPANDED_WIDTH = 220
+    EXPANDED_WIDTH = 200
     COLLAPSED_WIDTH = 52
+    layout_state_changed = Signal()
 
     def __init__(self, driver: "QtDriver") -> None:
         super().__init__()
@@ -192,7 +193,7 @@ class CategorySidebarWidget(QFrame):
 
         self.setStyleSheet(
             "QFrame#category_sidebar {"
-            "background: rgba(26, 29, 34, 180);"
+            "background: rgba(0, 0, 0, 0);"
             "border-right: 1px solid rgba(120, 128, 140, 70);"
             "}"
             "QLabel#category_sidebar_group_header {"
@@ -253,7 +254,7 @@ class CategorySidebarWidget(QFrame):
                 widget.deleteLater()
 
         collapsed = self.settings.collapsed
-        self.setFixedWidth(self.COLLAPSED_WIDTH if collapsed else self.EXPANDED_WIDTH)
+        self.setFixedWidth(self.target_width())
         self.collapse_button.setText(">" if collapsed else "<")
         self.collapse_button.setToolTip(
             "Expand category sidebar" if collapsed else "Collapse category sidebar"
@@ -275,6 +276,11 @@ class CategorySidebarWidget(QFrame):
 
         if not groups_with_items and collapsed:
             self.content_layout.addStretch(1)
+
+        self.layout_state_changed.emit()
+
+    def target_width(self) -> int:
+        return self.COLLAPSED_WIDTH if self.settings.collapsed else self.EXPANDED_WIDTH
 
     def _add_empty_state(self) -> None:
         title = QLabel("No category groups yet")
