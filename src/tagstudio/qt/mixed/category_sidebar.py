@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, override
 
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QColor, QMouseEvent
+from PySide6.QtGui import QColor, QGuiApplication, QMouseEvent, QPalette
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -33,6 +33,30 @@ from tagstudio.qt.mixed.tag_widget import (
 
 if TYPE_CHECKING:
     from tagstudio.qt.ts_qt import QtDriver
+
+
+def _theme_color(widget: QWidget, role: QPalette.ColorRole) -> QColor:
+    color = QColor(widget.palette().color(role))
+    background_role = (
+        QPalette.ColorRole.Button
+        if role is QPalette.ColorRole.ButtonText
+        else QPalette.ColorRole.Window
+    )
+    background_color = QColor(widget.palette().color(background_role))
+    color_scheme = QGuiApplication.styleHints().colorScheme()
+    dark_background = background_color.lightness() < 128
+
+    if (color_scheme is Qt.ColorScheme.Dark or dark_background) and color.lightness() < 128:
+        return QColor("#d8dde6")
+    if (color_scheme is Qt.ColorScheme.Light or not dark_background) and color.lightness() > 128:
+        return QColor("#202124")
+    return color
+
+
+def _with_alpha(color: QColor, alpha: int) -> QColor:
+    resolved = QColor(color)
+    resolved.setAlpha(alpha)
+    return resolved
 
 
 class CategorySidebarItemWidget(QPushButton):
@@ -89,7 +113,7 @@ class CategorySidebarItemWidget(QPushButton):
         super().mouseReleaseEvent(event)
 
     def _apply_style(self) -> None:
-        text_color = QColor("#d8dde6")
+        text_color = _theme_color(self, QPalette.ColorRole.ButtonText)
         border_color = QColor(120, 128, 140, 0)
         hover_border_color = QColor(120, 128, 140, 80)
         background_color = QColor(0, 0, 0, 0)
@@ -191,24 +215,37 @@ class CategorySidebarWidget(QFrame):
         self.footer_layout.addWidget(self.collapse_button)
         self.root_layout.addWidget(self.footer)
 
+        self._apply_style()
+        self.set_settings(self.settings)
+
+    def _apply_style(self) -> None:
+        text_color = _theme_color(self, QPalette.ColorRole.WindowText)
+        button_text_color = _theme_color(self.settings_button, QPalette.ColorRole.ButtonText)
+        group_header_color = _with_alpha(text_color, 165)
+        empty_title_color = _with_alpha(text_color, 220)
+        empty_hint_color = _with_alpha(text_color, 150)
+
+        self.settings_button.setIcon(
+            category_sidebar_icon("settings", color=button_text_color, size=18)
+        )
         self.setStyleSheet(
             "QFrame#category_sidebar {"
             "background: rgba(0, 0, 0, 0);"
             "border-right: 1px solid rgba(120, 128, 140, 70);"
             "}"
             "QLabel#category_sidebar_group_header {"
-            "color: #9aa3ad;"
+            f"color: rgba{group_header_color.toTuple()};"
             "font-size: 11px;"
             "font-weight: 700;"
             "padding: 6px 6px 2px 6px;"
             "}"
             "QLabel#category_sidebar_empty_title {"
-            "color: #cfd5df;"
+            f"color: rgba{empty_title_color.toTuple()};"
             "font-weight: 700;"
             "padding: 8px 4px 0 4px;"
             "}"
             "QLabel#category_sidebar_empty_hint {"
-            "color: #8f98a6;"
+            f"color: rgba{empty_hint_color.toTuple()};"
             "padding: 0 4px;"
             "}"
             "QFrame#category_sidebar_separator {"
@@ -218,7 +255,7 @@ class CategorySidebarWidget(QFrame):
             "QPushButton#category_sidebar_settings_button,"
             "QPushButton#category_sidebar_collapse_button {"
             "background: transparent;"
-            "color: #d8dde6;"
+            f"color: rgba{button_text_color.toTuple()};"
             "border: 1px solid rgba(120, 128, 140, 65);"
             "border-radius: 6px;"
             "min-height: 30px;"
@@ -229,7 +266,6 @@ class CategorySidebarWidget(QFrame):
             "border-color: rgba(120, 128, 140, 110);"
             "}"
         )
-        self.set_settings(self.settings)
 
     def set_settings(self, settings: CategorySidebarSettings) -> None:
         self.settings = settings.normalized()

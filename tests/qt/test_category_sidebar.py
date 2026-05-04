@@ -5,8 +5,8 @@
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QLabel
+from PySide6.QtGui import QColor, QPalette
+from PySide6.QtWidgets import QApplication, QLabel
 from pytestqt.qtbot import QtBot
 
 from tagstudio.core.library.alchemy.enums import BrowsingState
@@ -141,6 +141,47 @@ def test_category_sidebar_renders_items_and_collapses(qtbot: QtBot):
     assert driver.lib.saved_settings is not None
     assert driver.lib.saved_settings.collapsed is True
     assert sidebar.findChild(CategorySidebarItemWidget).text() == ""
+
+
+def test_category_sidebar_uses_restart_palette_text_colors(qtbot: QtBot):
+    app = QApplication.instance()
+    assert app is not None
+    original_palette = QPalette(app.palette())
+
+    def render_with_text_color(color: QColor, background_color: QColor) -> tuple[str, str]:
+        palette = QPalette(original_palette)
+        palette.setColor(QPalette.ColorRole.Window, background_color)
+        palette.setColor(QPalette.ColorRole.Button, background_color)
+        palette.setColor(QPalette.ColorRole.WindowText, color)
+        palette.setColor(QPalette.ColorRole.ButtonText, color)
+        app.setPalette(palette)
+
+        sidebar = CategorySidebarWidget(DummyDriver())
+        qtbot.addWidget(sidebar)
+        sidebar.set_settings(make_settings())
+        item = sidebar.findChild(CategorySidebarItemWidget)
+        assert item is not None
+        return sidebar.styleSheet(), item.styleSheet()
+
+    try:
+        dark_sidebar_style, dark_item_style = render_with_text_color(
+            QColor("#d8dde6"), QColor("#1e1e1e")
+        )
+        light_sidebar_style, light_item_style = render_with_text_color(
+            QColor("#202124"), QColor("#ffffff")
+        )
+        restored_dark_sidebar_style, restored_dark_item_style = render_with_text_color(
+            QColor("#d8dde6"), QColor("#1e1e1e")
+        )
+    finally:
+        app.setPalette(original_palette)
+
+    assert "color: rgba(216, 221, 230, 255);" in dark_item_style
+    assert "color: rgba(216, 221, 230, 165);" in dark_sidebar_style
+    assert "color: rgba(32, 33, 36, 255);" in light_item_style
+    assert "color: rgba(32, 33, 36, 165);" in light_sidebar_style
+    assert "color: rgba(216, 221, 230, 255);" in restored_dark_item_style
+    assert "color: rgba(216, 221, 230, 165);" in restored_dark_sidebar_style
 
 
 def test_category_sidebar_item_clicks_use_tag_filter_state(qtbot: QtBot):
