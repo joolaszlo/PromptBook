@@ -190,6 +190,14 @@ class SettingsPanel(PanelWidget):
             Translations["settings.show_filenames_in_grid"], self.show_filenames_checkbox
         )
 
+        # Category sidebar visibility
+        self.show_category_sidebar_checkbox = QCheckBox()
+        self.show_category_sidebar_checkbox.setChecked(self.driver.settings.show_category_sidebar)
+        form_layout.addRow(
+            Translations["settings.show_category_sidebar"],
+            self.show_category_sidebar_checkbox,
+        )
+
         # Title Overlay Font Size
         self.title_overlay_font_size_adjust = QSpinBox()
         self.title_overlay_font_size_adjust.setRange(-8, 16)
@@ -404,6 +412,7 @@ class SettingsPanel(PanelWidget):
             ),
             "autoplay": self.autoplay_checkbox.isChecked(),
             "show_filenames_in_grid": self.show_filenames_checkbox.isChecked(),
+            "show_category_sidebar": self.show_category_sidebar_checkbox.isChecked(),
             "title_overlay_font_size_adjust": self.title_overlay_font_size_adjust.value()
             if hasattr(self, "title_overlay_font_size_adjust")
             else DEFAULT_TITLE_OVERLAY_FONT_SIZE_ADJUST,
@@ -432,6 +441,7 @@ class SettingsPanel(PanelWidget):
         driver.settings.generate_thumbs = settings["generate_thumbs"]
         driver.settings.thumb_cache_size = settings["thumb_cache_size"]
         driver.settings.show_filenames_in_grid = settings["show_filenames_in_grid"]
+        driver.settings.show_category_sidebar = settings["show_category_sidebar"]
         driver.settings.title_overlay_font_size_adjust = settings["title_overlay_font_size_adjust"]
         driver.settings.show_preview_created_date = settings["show_preview_created_date"]
         driver.settings.show_preview_modified_date = settings["show_preview_modified_date"]
@@ -451,6 +461,7 @@ class SettingsPanel(PanelWidget):
         driver.settings.save()
 
         # Apply changes
+        driver.main_window.set_category_sidebar_visible(settings["show_category_sidebar"])
         # Show File Path
         driver.update_recent_lib_menu()
         driver.main_window.preview_panel.set_selection(self.driver.selected)

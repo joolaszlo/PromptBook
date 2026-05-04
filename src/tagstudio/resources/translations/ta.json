@@ -274,6 +274,7 @@
     "settings.page_size": "பக்க அளவு",
     "settings.restart_required": "மாற்றங்கள் நடைமுறைக்கு வருவதற்கு முகவரிச்சீட்டுஅறையை மறுதொடக்கம் செய்.",
     "settings.show_filenames_in_grid": "கட்டத்தில் கோப்பு பெயர்களைக் காட்டு",
+    "settings.show_category_sidebar": "வகைகள் பக்கப்பட்டியைக் காட்டு",
     "settings.show_recent_libraries": "அண்மைக் கால நூலகங்களைக் காட்டு",
     "settings.splash.label": "ச்பிளாச் திரை",
     "settings.splash.option.classic": "கிளாசிக் (9.0)",

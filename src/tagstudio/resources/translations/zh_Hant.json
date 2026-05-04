@@ -273,6 +273,7 @@
     "settings.page_size": "頁面大小",
     "settings.restart_required": "需要重新啟動 PromptBook 才能使變更生效。",
     "settings.show_filenames_in_grid": "在網格中顯示檔案名稱",
+    "settings.show_category_sidebar": "顯示類別側邊欄",
     "settings.show_recent_libraries": "顯示最近使用的文件庫",
     "settings.splash.label": "啟動畫面",
     "settings.splash.option.classic": "經典 (9.0)",

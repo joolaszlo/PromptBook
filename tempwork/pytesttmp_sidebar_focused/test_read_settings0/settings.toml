@@ -1,0 +1,12 @@
+
+            language = "de"
+            open_last_loaded_on_startup = true
+            autoplay = true
+            show_filenames_in_grid = true
+            page_size = 1337
+            show_filepath = 0
+            dark_mode = 2
+            date_format = "%x"
+            hour_format = true
+            zero_padding = true
+        

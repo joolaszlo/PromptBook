@@ -216,6 +216,7 @@
     "settings.open_library_on_start": "Başlangıçta Kütüphaneyi Aç",
     "settings.restart_required": "Değişikliklerin geçerli olması için lütfen PromptBook'yu yeniden başlatın.",
     "settings.show_filenames_in_grid": "Dosya Adlarını Izgarada Göster",
+    "settings.show_category_sidebar": "Kategoriler Kenar Çubuğunu Göster",
     "settings.show_recent_libraries": "Son Kütüphaneleri Göster",
     "settings.title": "Ayarlar",
     "sorting.direction.ascending": "Artan",

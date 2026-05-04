@@ -570,7 +570,9 @@ class MainWindow(QMainWindow):
         if len(sizes) < 3 or sum(sizes) <= 0:
             return
 
-        target_sidebar_width = self.category_sidebar.target_width()
+        target_sidebar_width = self._category_sidebar_target_width()
+        if target_sidebar_width == 0 and self.category_sidebar.width() != 0:
+            self.category_sidebar.setFixedWidth(0)
         if sizes[0] == target_sidebar_width:
             self._category_sidebar_splitter_sync_needed = False
             return
@@ -581,6 +583,30 @@ class MainWindow(QMainWindow):
         entry_width = max(0, remaining_width - preview_width)
         self.content_splitter.setSizes([target_sidebar_width, entry_width, preview_width])
         self._category_sidebar_splitter_sync_needed = False
+
+    def _category_sidebar_target_width(self) -> int:
+        if self.category_sidebar.isHidden():
+            return 0
+        return self.category_sidebar.target_width()
+
+    def set_category_sidebar_visible(self, visible: bool) -> None:
+        if not hasattr(self, "content_splitter") or not hasattr(self, "category_sidebar"):
+            return
+
+        sizes = self.content_splitter.sizes()
+        self.category_sidebar.setVisible(visible)
+        self.category_sidebar.setFixedWidth(self.category_sidebar.target_width() if visible else 0)
+        self.category_sidebar.updateGeometry()
+
+        if len(sizes) >= 3 and sum(sizes) > 0 and not visible:
+            total_width = sum(sizes)
+            preview_width = min(sizes[2], total_width)
+            entry_width = max(0, total_width - preview_width)
+            self.content_splitter.setSizes([0, entry_width, preview_width])
+
+        self.content_splitter.updateGeometry()
+        self.content_splitter.repaint()
+        self._schedule_category_sidebar_splitter_sync()
 
     def _update_top_toolbar_widths(self) -> None:
         if not hasattr(self, "search_field"):
@@ -924,6 +950,7 @@ class MainWindow(QMainWindow):
         self.setup_category_sidebar(driver)
         self.setup_entry_list(driver)
         self.setup_preview_panel(driver)
+        self.set_category_sidebar_visible(driver.settings.show_category_sidebar)
 
         self.content_splitter.setStretchFactor(0, 0)
         self.content_splitter.setStretchFactor(1, 1)

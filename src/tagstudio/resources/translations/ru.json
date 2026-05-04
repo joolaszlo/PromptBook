@@ -239,6 +239,7 @@
     "settings.page_size": "Размер страницы",
     "settings.restart_required": "Пожалуйста, перезапустите PromptBook для применения изменений.",
     "settings.show_filenames_in_grid": "Показывать имена файлов",
+    "settings.show_category_sidebar": "Показывать боковую панель категорий",
     "settings.show_recent_libraries": "Показывать недавние библиотеки",
     "settings.tag_click_action.add_to_search": "Добавить тег в поиск",
     "settings.tag_click_action.label": "Действие по нажатию на тег",

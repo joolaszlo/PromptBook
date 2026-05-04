@@ -52,9 +52,12 @@ class DummyLib:
 
 
 class DummyDriver:
-    def __init__(self):
+    def __init__(self, show_category_sidebar: bool = True):
         self.lib = DummyLib()
-        self.settings = SimpleNamespace(show_filenames_in_grid=True)
+        self.settings = SimpleNamespace(
+            show_filenames_in_grid=True,
+            show_category_sidebar=show_category_sidebar,
+        )
         self.active_tag_filter_ids = set()
         self.excluded_tag_filter_ids = set()
 
@@ -74,7 +77,7 @@ class DummyDriver:
         return None
 
 
-def build_main_window() -> main_window_module.MainWindow:
+def build_main_window(show_category_sidebar: bool = True) -> main_window_module.MainWindow:
     with (
         patch.object(main_window_module, "ThumbGridLayout", DummyThumbGridLayout),
         patch.object(main_window_module, "PreviewPanel", DummyPreviewPanel),
@@ -82,12 +85,21 @@ def build_main_window() -> main_window_module.MainWindow:
         patch.object(main_window_module, "Pagination", DummyPagination),
         patch.object(main_window_module, "ResourceManager", DummyResourceManager),
     ):
-        return main_window_module.MainWindow(DummyDriver())
+        return main_window_module.MainWindow(DummyDriver(show_category_sidebar))
 
 
 def wait_for_sidebar_splitter_sync(qtbot: QtBot, window: main_window_module.MainWindow) -> None:
     qtbot.waitUntil(
         lambda: window.content_splitter.sizes()[0] == window.category_sidebar.target_width(),
+        timeout=1000,
+    )
+
+
+def wait_for_hidden_sidebar_splitter_sync(
+    qtbot: QtBot, window: main_window_module.MainWindow
+) -> None:
+    qtbot.waitUntil(
+        lambda: window.content_splitter.sizes()[0] == 0,
         timeout=1000,
     )
 
@@ -157,3 +169,39 @@ def test_category_sidebar_search_refresh_repairs_stale_collapsed_splitter_size(q
     window.category_sidebar.set_settings(window.category_sidebar.settings)
 
     wait_for_sidebar_splitter_sync(qtbot, window)
+
+
+def test_category_sidebar_hidden_setting_applies_at_startup(qtbot: QtBot):
+    window = build_main_window(show_category_sidebar=False)
+    qtbot.addWidget(window)
+    window.resize(1800, 1000)
+    window.show()
+
+    wait_for_hidden_sidebar_splitter_sync(qtbot, window)
+
+    assert window.category_sidebar.isHidden()
+    assert window.category_sidebar.width() == 0
+    assert window.entry_list_container.width() > 0
+    assert window.preview_panel.width() >= 400
+
+
+def test_category_sidebar_runtime_show_hide_preserves_preview_width(qtbot: QtBot):
+    window = build_main_window()
+    qtbot.addWidget(window)
+    window.resize(1800, 1000)
+    window.show()
+    wait_for_sidebar_splitter_sync(qtbot, window)
+
+    window.content_splitter.setSizes([window.category_sidebar.target_width(), 900, 600])
+    qtbot.wait(0)
+    preview_width = window.content_splitter.sizes()[2]
+
+    window.set_category_sidebar_visible(False)
+    wait_for_hidden_sidebar_splitter_sync(qtbot, window)
+    assert window.category_sidebar.isHidden()
+    assert window.content_splitter.sizes()[2] == preview_width
+
+    window.set_category_sidebar_visible(True)
+    wait_for_sidebar_splitter_sync(qtbot, window)
+    assert not window.category_sidebar.isHidden()
+    assert window.content_splitter.sizes()[2] == preview_width

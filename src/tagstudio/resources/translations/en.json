@@ -281,6 +281,7 @@
     "settings.restart_required": "Please restart PromptBook for changes to take effect.",
     "settings.selected_tag_highlight_color": "Selected Tag Highlight",
     "settings.show_filenames_in_grid": "Show Filenames in Grid",
+    "settings.show_category_sidebar": "Show Categories Sidebar",
     "settings.show_preview_created_date": "Show Created Date",
     "settings.show_preview_filename": "Show Filename",
     "settings.show_preview_media_info": "Show Media Info",

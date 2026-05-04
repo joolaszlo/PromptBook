@@ -274,6 +274,7 @@
     "settings.page_size": "Tamanho da Página",
     "settings.restart_required": "Por favor reinicie o PromptBook para que as mudanças façam efeito.",
     "settings.show_filenames_in_grid": "Exibir nome dos arquivos",
+    "settings.show_category_sidebar": "Mostrar barra lateral de categorias",
     "settings.show_recent_libraries": "Mostrar Bibliotecas Recentes",
     "settings.splash.label": "Tela Inicial",
     "settings.splash.option.classic": "Clássico (9.0)",

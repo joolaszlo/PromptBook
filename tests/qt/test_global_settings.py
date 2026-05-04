@@ -33,6 +33,7 @@ def test_read_settings(tmp_path: Path):
     assert settings.open_last_loaded_on_startup
     assert settings.autoplay
     assert settings.show_filenames_in_grid
+    assert settings.show_category_sidebar
     assert settings.page_size == 1337
     assert settings.show_filepath == 0
     assert settings.theme == Theme.SYSTEM
@@ -72,3 +73,14 @@ def test_selected_tag_highlight_color_persists(tmp_path: Path):
 
     saved_settings = GlobalSettings.read_settings(settings_path)
     assert saved_settings.selected_tag_highlight_color == "#12ab34"
+
+
+def test_show_category_sidebar_persists(tmp_path: Path):
+    settings_path = tmp_path / "settings.toml"
+    settings = GlobalSettings(loaded_from=settings_path)
+    settings.show_category_sidebar = False
+
+    settings.save()
+
+    saved_settings = GlobalSettings.read_settings(settings_path)
+    assert not saved_settings.show_category_sidebar

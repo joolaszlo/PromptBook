@@ -68,6 +68,7 @@ class GlobalSettings(BaseModel):
     autoplay: bool = Field(default=True)
     loop: bool = Field(default=True)
     show_filenames_in_grid: bool = Field(default=True)
+    show_category_sidebar: bool = Field(default=True)
     show_preview_created_date: bool = Field(default=False)
     show_preview_modified_date: bool = Field(default=False)
     show_preview_filename: bool = Field(default=False)

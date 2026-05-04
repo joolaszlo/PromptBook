@@ -274,6 +274,7 @@
     "settings.page_size": "Elemente pro Seite",
     "settings.restart_required": "Bitte PromptBook neustarten, um Änderungen anzuwenden.",
     "settings.show_filenames_in_grid": "Dateinamen in Raster darstellen",
+    "settings.show_category_sidebar": "Kategorien-Seitenleiste anzeigen",
     "settings.show_recent_libraries": "Zuletzt verwendete Bibliotheken anzeigen",
     "settings.splash.label": "Start Bildschrim",
     "settings.splash.option.classic": "Klassisch (9.0)",

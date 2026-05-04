@@ -261,6 +261,7 @@
     "settings.page_size": "每页显示个数",
     "settings.restart_required": "请重启 PromptBook 以应用修改。",
     "settings.show_filenames_in_grid": "在网格中显示文件名",
+    "settings.show_category_sidebar": "显示类别侧边栏",
     "settings.show_recent_libraries": "显示最近使用过的仓库",
     "settings.tag_click_action.add_to_search": "在搜索中添加标签",
     "settings.tag_click_action.label": "标签点击操作",

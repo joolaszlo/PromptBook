@@ -274,6 +274,7 @@
     "settings.page_size": "Entités par page",
     "settings.restart_required": "Veuillez redémarré PromptBook pour que les changements prenne effet.",
     "settings.show_filenames_in_grid": "Afficher les Noms de Fichiers en Grille",
+    "settings.show_category_sidebar": "Afficher la barre latérale des catégories",
     "settings.show_recent_libraries": "Afficher les Bibliothèques Récentes",
     "settings.splash.label": "Page de guarde",
     "settings.splash.option.classic": "Classique (9.0)",

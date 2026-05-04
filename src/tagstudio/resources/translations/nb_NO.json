@@ -245,6 +245,7 @@
     "settings.page_size": "Sidestørrelse",
     "settings.restart_required": "Vennligst start PromptBook på nytt for at endringene skal trå i kraft.",
     "settings.show_filenames_in_grid": "Vis Filnavn i Rutenett",
+    "settings.show_category_sidebar": "Vis kategorisidefelt",
     "settings.show_recent_libraries": "Vis Nylige Bibliotek",
     "settings.tag_click_action.add_to_search": "Legg til Etikett til Søk",
     "settings.tag_click_action.label": "Handling ved trykk på Etikett",

@@ -154,17 +154,20 @@ def test_settings_panel_preview_metadata_controls(qtbot: QtBot, qt_driver: QtDri
     assert not settings_panel.show_preview_modified_date_checkbox.isChecked()
     assert not settings_panel.show_preview_filename_checkbox.isChecked()
     assert not settings_panel.show_preview_media_info_checkbox.isChecked()
+    assert settings_panel.show_category_sidebar_checkbox.isChecked()
 
     settings_panel.show_preview_created_date_checkbox.setChecked(True)
     settings_panel.show_preview_modified_date_checkbox.setChecked(True)
     settings_panel.show_preview_filename_checkbox.setChecked(True)
     settings_panel.show_preview_media_info_checkbox.setChecked(True)
+    settings_panel.show_category_sidebar_checkbox.setChecked(False)
 
     settings = settings_panel.get_settings()
     assert settings["show_preview_created_date"]
     assert settings["show_preview_modified_date"]
     assert settings["show_preview_filename"]
     assert settings["show_preview_media_info"]
+    assert not settings["show_category_sidebar"]
 
 
 def test_preview_metadata_settings_hide_sections_independently(

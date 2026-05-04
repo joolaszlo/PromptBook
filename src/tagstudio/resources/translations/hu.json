@@ -274,6 +274,7 @@
     "settings.page_size": "&Oldalméret",
     "settings.restart_required": "A módosítások érvénybeléptetéséhez<br>újra kell indítani a TagStudiót.",
     "settings.show_filenames_in_grid": "&Fájlnevek megjelenítése rácsnézetben",
+    "settings.show_category_sidebar": "Kategóriák oldalsáv megjelenítése",
     "settings.show_recent_libraries": "&Legutóbbi könyvtárak megjelenítése",
     "settings.splash.label": "Indítókép",
     "settings.splash.option.classic": "Klasszikus (9.0)",

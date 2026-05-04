@@ -274,6 +274,7 @@
     "settings.page_size": "ページサイズ",
     "settings.restart_required": "変更を反映するには、PromptBook を再起動してください。",
     "settings.show_filenames_in_grid": "グリッドにファイル名を表示",
+    "settings.show_category_sidebar": "カテゴリサイドバーを表示",
     "settings.show_recent_libraries": "最近使用したライブラリを表示",
     "settings.splash.label": "スプラッシュ スクリーン",
     "settings.splash.option.classic": "クラシック (9.0)",

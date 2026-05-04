@@ -236,6 +236,7 @@
     "settings.page_size": "Laki ng Pahina",
     "settings.restart_required": "Paki-restart ang PromptBook para magkabisa ang mga pagbabago.",
     "settings.show_filenames_in_grid": "Ipakita ang pangalan ng file sa Grid",
+    "settings.show_category_sidebar": "Ipakita ang Sidebar ng Mga Kategorya",
     "settings.show_recent_libraries": "Ipakita ang Mga Kamakailang Library",
     "settings.tag_click_action.add_to_search": "Idagdag ang Tag sa Paghahanap",
     "settings.tag_click_action.label": "Aksyon sa Pag-click ng Tag",

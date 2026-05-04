@@ -158,5 +158,6 @@
     "generic.untitled": "Untitled",
     "home.search_in": "Search in:",
     "preview.copy_prompt": "COPY PROMPT",
-    "settings.title_overlay_font_size_adjust": "Title overlay font size adjustment"
+    "settings.title_overlay_font_size_adjust": "Title overlay font size adjustment",
+    "settings.show_category_sidebar": "Visa kategorisidofält"
 }

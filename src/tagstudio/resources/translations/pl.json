@@ -225,6 +225,7 @@
     "settings.page_size": "Wielkość Strony",
     "settings.restart_required": "Zrestartuj PromptBook żeby zmiany zaczęły obowiązywać.",
     "settings.show_filenames_in_grid": "Pokazuj nazwy plików w siatce",
+    "settings.show_category_sidebar": "Pokaż pasek boczny kategorii",
     "settings.show_recent_libraries": "Pokazuj ostatnie biblioteki",
     "settings.tag_click_action.add_to_search": "Dodaj Tag do Wyszukania",
     "settings.tag_click_action.open_edit": "Edytuj Tag",
