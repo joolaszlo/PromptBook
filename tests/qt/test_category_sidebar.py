@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
-from PySide6.QtWidgets import QApplication, QLabel
+from PySide6.QtWidgets import QApplication, QLabel, QSizePolicy
 from pytestqt.qtbot import QtBot
 
 from tagstudio.core.library.alchemy.enums import BrowsingState
@@ -129,18 +129,27 @@ def test_category_sidebar_renders_items_and_collapses(qtbot: QtBot):
     sidebar = CategorySidebarWidget(driver)
     qtbot.addWidget(sidebar)
 
-    sidebar.set_settings(make_settings())
+    settings = make_settings()
+    settings.groups[0].items[0].background_color = "#123456"
+    sidebar.set_settings(settings)
 
     item = sidebar.findChild(CategorySidebarItemWidget)
     assert item is not None
     assert item.contextMenuPolicy() == Qt.ContextMenuPolicy.NoContextMenu
     assert item.text() == "Item"
+    assert "background: rgba(18, 52, 86, 255);" in item.styleSheet()
 
     sidebar.toggle_collapsed()
 
     assert driver.lib.saved_settings is not None
     assert driver.lib.saved_settings.collapsed is True
-    assert sidebar.findChild(CategorySidebarItemWidget).text() == ""
+    collapsed_item = sidebar.findChild(CategorySidebarItemWidget)
+    assert collapsed_item.text() == ""
+    assert collapsed_item.width() == CategorySidebarItemWidget.COLLAPSED_SIZE
+    assert collapsed_item.height() == CategorySidebarItemWidget.COLLAPSED_SIZE
+    assert collapsed_item.sizePolicy().horizontalPolicy() == QSizePolicy.Policy.Fixed
+    assert "background: rgba(18, 52, 86, 255);" in collapsed_item.styleSheet()
+    assert "text-align: center;" in collapsed_item.styleSheet()
 
 
 def test_category_sidebar_uses_restart_palette_text_colors(qtbot: QtBot):
@@ -206,6 +215,36 @@ def test_category_sidebar_item_clicks_use_tag_filter_state(qtbot: QtBot):
     assert driver.excluded_tag_ids == set()
 
 
+def test_category_sidebar_excluded_state_has_visible_border_with_background(qtbot: QtBot):
+    driver = DummyDriver()
+    settings = make_settings()
+    settings.groups[0].items[0].background_color = "#123456"
+    sidebar = CategorySidebarWidget(driver)
+    qtbot.addWidget(sidebar)
+    sidebar.set_settings(settings)
+
+    item = sidebar.findChild(CategorySidebarItemWidget)
+    assert item is not None
+    item.set_filter_state(False, True, QColor("#4da3ff"))
+
+    assert "background: rgba(18, 52, 86, 255);" in item.styleSheet()
+    assert "border-color: rgba(229, 57, 70, 255);" in item.styleSheet()
+    assert "border-width: 2px;" in item.styleSheet()
+    assert "text-decoration: line-through;" in item.styleSheet()
+
+    settings.collapsed = True
+    sidebar.set_settings(settings)
+    collapsed_item = sidebar.findChild(CategorySidebarItemWidget)
+    assert collapsed_item is not None
+    collapsed_item.set_filter_state(False, True, QColor("#4da3ff"))
+
+    assert collapsed_item.width() == CategorySidebarItemWidget.COLLAPSED_SIZE
+    assert collapsed_item.height() == CategorySidebarItemWidget.COLLAPSED_SIZE
+    assert "background: rgba(18, 52, 86, 255);" in collapsed_item.styleSheet()
+    assert "border-color: rgba(229, 57, 70, 255);" in collapsed_item.styleSheet()
+    assert "border-width: 2px;" in collapsed_item.styleSheet()
+
+
 def test_category_sidebar_item_click_applies_advanced_filter_query(qtbot: QtBot):
     driver = DummyDriver()
     sidebar = CategorySidebarWidget(driver)
@@ -251,6 +290,7 @@ def test_category_sidebar_settings_adds_group_and_item(qtbot: QtBot):
     panel._on_group_name_changed("")
     panel.item_name_edit.clear()
     panel._on_item_name_changed("")
+    panel._set_item_background_color("#445566")
     panel.select_icon("camera")
     panel.single_tag_combobox.setCurrentIndex(panel.single_tag_combobox.findData(1000))
     panel.apply_settings()
@@ -260,6 +300,7 @@ def test_category_sidebar_settings_adds_group_and_item(qtbot: QtBot):
     assert [group.name for group in settings.groups] == ["New Group"]
     assert [item.name for item in settings.groups[0].items] == ["New Category"]
     assert settings.groups[0].items[0].icon == "camera"
+    assert settings.groups[0].items[0].background_color == "#445566"
     assert settings.groups[0].items[0].filter_rules[0].tag_id == 1000
 
 
@@ -319,9 +360,21 @@ def test_category_sidebar_settings_icon_picker_search_and_fallback(qtbot: QtBot)
 
     assert "camera" in panel._icon_buttons
     assert "tag" not in panel._icon_buttons
+    assert panel.icon_scroll_area.minimumHeight() == 220
+    assert panel.icon_scroll_area.maximumHeight() == 260
+    assert panel._icon_buttons["camera"].iconSize().width() == 28
 
     panel.select_icon("missing-icon")
     assert panel.current_item().icon == "tag"
+
+
+def test_category_sidebar_settings_layout_has_more_room(qtbot: QtBot):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    assert panel.minimumHeight() >= 640
+    assert panel.multiple_tags_list.maximumHeight() == 150
 
 
 def test_category_sidebar_settings_persists_order(qtbot: QtBot):

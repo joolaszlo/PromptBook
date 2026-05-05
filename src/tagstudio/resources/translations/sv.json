@@ -9,6 +9,7 @@
     "app.git": "Git Commit",
     "app.pre_release": "Förhandsutgåva",
     "app.title": "{base_title} - Bibliotek '{library_dir}'",
+    "category_sidebar.background_color": "Bakgrundsfärg",
     "color.color_border": "Använd Sekundär Färg för Kant",
     "color.confirm_delete": "Är du säker på att du vill ta bort färgen \"{color_name}\"?",
     "color.delete": "Radera Etikett",

@@ -9,6 +9,7 @@
     "app.git": "Коммит Git",
     "app.pre_release": "Пре-релиз",
     "app.title": "{base_title} - Библиотека '{library_dir}'",
+    "category_sidebar.background_color": "Цвет фона",
     "color.color_border": "Окрасить границы во вторичный цвет",
     "color.confirm_delete": "Вы уверены, что хотите удалить цвет \"{color_name}\"?",
     "color.delete": "Удалить тег",

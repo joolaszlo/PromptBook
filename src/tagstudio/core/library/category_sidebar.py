@@ -46,6 +46,25 @@ def _as_bool(value: Any, fallback: bool = True) -> bool:
     return bool(value)
 
 
+def normalize_hex_color(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+
+    color = value.strip()
+    if not color:
+        return None
+    if color.startswith("#"):
+        color = color[1:]
+
+    if len(color) == 3 and all(char in "0123456789abcdefABCDEF" for char in color):
+        return "#" + "".join(char * 2 for char in color).upper()
+
+    if len(color) == 6 and all(char in "0123456789abcdefABCDEF" for char in color):
+        return f"#{color.upper()}"
+
+    return None
+
+
 def _as_int_list(value: Any) -> list[int]:
     if not isinstance(value, list):
         return []
@@ -166,6 +185,7 @@ class CategoryItem:
     id: str = field(default_factory=_make_id)
     name: str = ""
     icon: str = ""
+    background_color: str | None = None
     order: int = 0
     filter_rules: list[CategoryFilterRule] = field(default_factory=list)
 
@@ -179,6 +199,7 @@ class CategoryItem:
             id=str(data.get("id") or _make_id()),
             name=str(data.get("name") or ""),
             icon=str(data.get("icon") or ""),
+            background_color=normalize_hex_color(data.get("background_color")),
             order=_as_int(data.get("order"), fallback_order),
             filter_rules=[
                 CategoryFilterRule.from_mapping(rule)
@@ -192,6 +213,7 @@ class CategoryItem:
             "id": self.id,
             "name": self.name,
             "icon": self.icon,
+            "background_color": normalize_hex_color(self.background_color),
             "order": self.order,
             "filter_rules": [rule.to_dict() for rule in self.filter_rules],
         }
@@ -283,6 +305,7 @@ class CategorySidebarSettings:
                 item.name = _normalized_name(item.name, "New Category", used_item_names)
                 used_item_names.add(item.name)
                 item.icon = item.icon or ""
+                item.background_color = normalize_hex_color(item.background_color)
 
         self.groups = groups
         return self

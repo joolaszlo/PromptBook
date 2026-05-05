@@ -9,6 +9,7 @@
     "app.git": "Git-véglegesítés",
     "app.pre_release": "Kísérleti verzió",
     "app.title": "{base_title} – Könyvtár: „{library_dir}”",
+    "category_sidebar.background_color": "Háttérszín",
     "color.color_border": "Másodlagos szín használata keretszínként",
     "color.confirm_delete": "Biztosan törölni akarja a(z) „{color_name}”-színt?",
     "color.delete": "Címke törlése",

@@ -9,6 +9,7 @@
     "app.git": "Git Commit",
     "app.pre_release": "nanpa pi pakala mute",
     "app.title": "{base_title} - tomo '{library_dir}'",
+    "category_sidebar.background_color": "kule monsi",
     "color.color_border": "o kepeken kule nanpa tu lon selo",
     "color.confirm_delete": "sina wile ala wile weka e kule \"{color_name}\"?",
     "color.delete": "o weka e poki",

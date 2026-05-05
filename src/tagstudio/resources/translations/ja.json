@@ -9,6 +9,7 @@
     "app.git": "Git コミット",
     "app.pre_release": "公開前",
     "app.title": "{base_title} - ライブラリ '{library_dir}'",
+    "category_sidebar.background_color": "背景色",
     "color.color_border": "境界線にアクセントカラーを使う",
     "color.confirm_delete": "色「{color_name}」を削除してもよろしいですか?",
     "color.delete": "タグを削除",

@@ -325,6 +325,7 @@ def test_category_sidebar_settings_round_trip_and_normalizes_names(library: Libr
                             id="item-2",
                             name="",
                             icon="star",
+                            background_color="#345ABC",
                             order=2,
                             filter_rules=[
                                 CategoryFilterRule(
@@ -358,8 +359,33 @@ def test_category_sidebar_settings_round_trip_and_normalizes_names(library: Libr
     ]
     assert [item.order for item in settings.groups[0].items] == [0, 1]
     assert settings.groups[0].items[1].icon == "star"
+    assert settings.groups[0].items[1].background_color == "#345ABC"
     assert settings.groups[0].items[1].filter_rules[0].type == "tag"
     assert settings.groups[0].items[1].filter_rules[0].tag_id == 1000
+
+
+def test_category_sidebar_settings_ignores_invalid_item_background_color():
+    settings = CategorySidebarSettings.from_mapping(
+        {
+            "groups": [
+                {
+                    "items": [
+                        {
+                            "name": "Category",
+                            "background_color": "not-a-color",
+                        },
+                        {
+                            "name": "Short Hex",
+                            "background_color": "#abc",
+                        },
+                    ]
+                }
+            ]
+        }
+    )
+
+    assert settings.groups[0].items[0].background_color is None
+    assert settings.groups[0].items[1].background_color == "#AABBCC"
 
 
 def test_remove_entry_field(library: Library, entry_full: Entry):

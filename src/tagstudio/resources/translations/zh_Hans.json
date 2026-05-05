@@ -9,6 +9,7 @@
     "app.git": "Git 提交更新",
     "app.pre_release": "预发布版本",
     "app.title": "{base_title} - 仓库 '{library_dir}'",
+    "category_sidebar.background_color": "背景颜色",
     "color.color_border": "边框使用次要颜色",
     "color.confirm_delete": "您确定要删除颜色\"{color_name}\"吗?",
     "color.delete": "删除标签",

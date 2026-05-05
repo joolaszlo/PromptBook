@@ -9,6 +9,7 @@
     "app.git": "அறிவிலி கமிட்",
     "app.pre_release": "முன் வெளியீடு",
     "app.title": "{base_title} - நூலகம் '{library_dir}'",
+    "category_sidebar.background_color": "பின்னணி நிறம்",
     "color.color_border": "எல்லைக்கு இரண்டாம் நிலை வண்ணத்தைப் பயன்படுத்தவும்",
     "color.confirm_delete": "\"{color_name}\" என்ற வண்ணத்தை நீக்க விரும்புகிறீர்களா?",
     "color.delete": "குறிச்சொல்லை நீக்கு",

@@ -9,6 +9,7 @@
     "app.git": "Git Kaydet",
     "app.pre_release": "Test-Sürümü",
     "app.title": "{base_title} - Kütüphane '{library_dir}'",
+    "category_sidebar.background_color": "Arka plan rengi",
     "color.color_border": "Kenarlar için İkincil Rengi Kullan",
     "color.confirm_delete": "\"{color_name}\" rengini silmek istediğinden emin misin?",
     "color.delete": "Etiketi Sil",

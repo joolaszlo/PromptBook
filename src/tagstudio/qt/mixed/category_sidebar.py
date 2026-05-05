@@ -27,8 +27,10 @@ from tagstudio.core.library.category_sidebar import (
 from tagstudio.qt.category_sidebar_icons import category_sidebar_icon
 from tagstudio.qt.mixed.category_sidebar_settings import CategorySidebarSettingsPanel
 from tagstudio.qt.mixed.tag_widget import (
+    get_highlight_color,
     get_selection_fill_color,
     get_selection_hover_color,
+    get_text_color,
 )
 
 if TYPE_CHECKING:
@@ -59,7 +61,40 @@ def _with_alpha(color: QColor, alpha: int) -> QColor:
     return resolved
 
 
+def _item_background_color(item: CategoryItem) -> QColor | None:
+    color = QColor(item.background_color or "")
+    if not color.isValid():
+        return None
+    color.setAlpha(255)
+    return color
+
+
+def _category_text_color(background_color: QColor) -> QColor:
+    return get_text_color(background_color, get_highlight_color(background_color))
+
+
+def _category_border_color(background_color: QColor, alpha: int = 165) -> QColor:
+    border_color = (
+        background_color.darker(135)
+        if background_color.lightness() > 150
+        else background_color.lighter(135)
+    )
+    border_color.setAlpha(alpha)
+    return border_color
+
+
+def _category_hover_color(background_color: QColor) -> QColor:
+    hover_color = (
+        background_color.darker(108)
+        if background_color.lightness() > 150
+        else background_color.lighter(116)
+    )
+    hover_color.setAlpha(255)
+    return hover_color
+
+
 class CategorySidebarItemWidget(QPushButton):
+    COLLAPSED_SIZE = 36
     right_clicked = Signal()
 
     def __init__(self, item: CategoryItem, collapsed: bool) -> None:
@@ -76,13 +111,19 @@ class CategorySidebarItemWidget(QPushButton):
         self.setMinimumHeight(32)
         self.setIcon(category_sidebar_icon(item.icon, size=18))
         self.setIconSize(QSize(18, 18))
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.set_collapsed(collapsed)
 
     def set_collapsed(self, collapsed: bool) -> None:
         self._collapsed = collapsed
         self.setText("" if collapsed else self.item.name)
         self.setToolTip(self.item.name)
+        if collapsed:
+            self.setFixedSize(self.COLLAPSED_SIZE, self.COLLAPSED_SIZE)
+            self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        else:
+            self.setMinimumSize(0, 32)
+            self.setMaximumSize(16777215, 16777215)
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._apply_style()
 
     def set_filter_state(
@@ -118,36 +159,55 @@ class CategorySidebarItemWidget(QPushButton):
         hover_border_color = QColor(120, 128, 140, 80)
         background_color = QColor(0, 0, 0, 0)
         hover_background_color = QColor(120, 128, 140, 45)
+        pressed_background_color = QColor(77, 163, 255, 60)
+        pressed_border_color = QColor(77, 163, 255, 120)
+        border_width = 1
         text_decoration = "none"
         icon_color = text_color
+        category_background_color = _item_background_color(self.item)
+
+        if category_background_color is not None:
+            text_color = _category_text_color(category_background_color)
+            icon_color = text_color
+            border_color = _category_border_color(category_background_color)
+            hover_border_color = _category_border_color(category_background_color, 230)
+            background_color = category_background_color
+            hover_background_color = _category_hover_color(category_background_color)
+            pressed_background_color = _category_hover_color(hover_background_color)
+            pressed_border_color = hover_border_color
 
         if self._included and not self._excluded:
             border_color = QColor(self._highlight_color)
             hover_border_color = get_selection_hover_color(border_color)
-            background_color = get_selection_fill_color(border_color)
-            hover_background_color = get_selection_fill_color(border_color, 68)
-            icon_color = border_color
+            if category_background_color is None:
+                background_color = get_selection_fill_color(border_color)
+                hover_background_color = get_selection_fill_color(border_color, 68)
+                icon_color = border_color
         elif self._excluded:
-            text_color = QColor("#d94b5b")
-            icon_color = text_color
-            border_color = QColor("#7a4b51")
-            hover_border_color = QColor("#d94b5b")
-            background_color = QColor("#6b6f76")
-            hover_background_color = background_color.lighter(110)
+            border_color = QColor("#e53946")
+            hover_border_color = QColor("#ff5c66")
+            pressed_border_color = hover_border_color
+            border_width = 2
+            if category_background_color is None:
+                text_color = QColor("#d94b5b")
+                icon_color = text_color
+                background_color = QColor("#6b6f76")
+                hover_background_color = background_color.lighter(110)
             text_decoration = "line-through"
 
         self.setIcon(category_sidebar_icon(self.item.icon, color=icon_color, size=18))
         horizontal_padding = 0 if self._collapsed else 8
+        text_alignment = "center" if self._collapsed else "left"
         self.setStyleSheet(
             "QPushButton#category_sidebar_item {"
             f"background: rgba{background_color.toTuple()};"
             f"color: rgba{text_color.toTuple()};"
             f"border-color: rgba{border_color.toTuple()};"
             "border-style: solid;"
-            "border-width: 1px;"
+            f"border-width: {border_width}px;"
             "border-radius: 6px;"
             f"padding: 5px {horizontal_padding}px;"
-            "text-align: left;"
+            f"text-align: {text_alignment};"
             "font-weight: 600;"
             f"text-decoration: {text_decoration};"
             "}"
@@ -156,8 +216,8 @@ class CategorySidebarItemWidget(QPushButton):
             f"border-color: rgba{hover_border_color.toTuple()};"
             "}"
             "QPushButton#category_sidebar_item:pressed {"
-            "background: rgba(77, 163, 255, 60);"
-            "border-color: rgba(77, 163, 255, 120);"
+            f"background: rgba{pressed_background_color.toTuple()};"
+            f"border-color: rgba{pressed_border_color.toTuple()};"
             "}"
         )
 

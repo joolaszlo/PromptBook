@@ -37,5 +37,6 @@
     "home.search_in": "Search in:",
     "preview.copy_prompt": "COPY PROMPT",
     "settings.title_overlay_font_size_adjust": "Title overlay font size adjustment",
-    "settings.show_category_sidebar": "แสดงแถบด้านข้างหมวดหมู่"
+    "settings.show_category_sidebar": "แสดงแถบด้านข้างหมวดหมู่",
+    "category_sidebar.background_color": "สีพื้นหลัง"
 }

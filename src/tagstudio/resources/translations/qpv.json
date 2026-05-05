@@ -9,6 +9,7 @@
     "app.git": "Git Commit",
     "app.pre_release": "De-Gvir",
     "app.title": "{base_title} - Mlafuhuomi '{library_dir}'",
+    "category_sidebar.background_color": "Kolor de fundo",
     "color.color_border": "Bruk minusvikti varge per flanka",
     "color.confirm_delete": "Du kestetsa varge \"{color_name}\"?",
     "color.delete": "Keste festaretol",

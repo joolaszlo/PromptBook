@@ -9,6 +9,7 @@
     "app.git": "Git Commit",
     "app.pre_release": "Pre-Release",
     "app.title": "{base_title} - Library '{library_dir}'",
+    "category_sidebar.background_color": "Kulay ng background",
     "color.color_border": "Gumamit ng Pangalawang Kulay para sa Border",
     "color.confirm_delete": "Sigurado ka ba gusto mong burahin ang kulay na \"{color_name}\"?",
     "color.delete": "Burahin ang Tag",

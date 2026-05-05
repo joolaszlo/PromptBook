@@ -9,6 +9,7 @@
     "app.git": "Git Commit",
     "app.pre_release": "Beta verze",
     "app.title": "{base_title} - Knihovna '{library_dir}'",
+    "category_sidebar.background_color": "Barva pozadí",
     "color.color_border": "Použít Sekundární Barvu pro Okraj",
     "color.confirm_delete": "Opravdu chcete odstranit barvu „{color_name}“?",
     "color.delete": "Odstranit Tag",

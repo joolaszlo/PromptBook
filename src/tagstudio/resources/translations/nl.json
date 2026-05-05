@@ -7,6 +7,7 @@
     "about.website": "Website",
     "app.git": "Git Commit",
     "app.pre_release": "Pre-Release",
+    "category_sidebar.background_color": "Achtergrondkleur",
     "color.color_border": "Gebruik Secundaire Kleur voor Rand",
     "color.confirm_delete": "Weet u zeker dat u de kleur \"{color_name}\" wilt verwijderen?",
     "color.delete": "Verwijder Label",

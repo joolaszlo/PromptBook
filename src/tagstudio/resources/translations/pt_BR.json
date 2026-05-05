@@ -9,6 +9,7 @@
     "app.git": "Confirmação do Git",
     "app.pre_release": "Pré-Lançamento",
     "app.title": "{base_title} - Biblioteca '{library_dir}'",
+    "category_sidebar.background_color": "Cor de fundo",
     "color.color_border": "Usar Cores Secundárias nas Bordas",
     "color.confirm_delete": "Tem certeza que você quer deletar a cor \"{color_name}\"?",
     "color.delete": "Deletar Tag",

@@ -9,6 +9,7 @@
     "app.git": "Angajare Git",
     "app.pre_release": "Pre-Lansare",
     "app.title": "{base_title} - Colecție '{library_dir}'",
+    "category_sidebar.background_color": "Culoare de fundal",
     "color.color_border": "Folosește Culoarea Secundară pentru Bordură",
     "color.confirm_delete": "Sigur vrei să ștergi culoarea \"{color_name}\"?",
     "color.delete": "Șterge Eticheta",

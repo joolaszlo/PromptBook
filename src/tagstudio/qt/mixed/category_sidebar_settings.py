@@ -6,10 +6,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QSignalBlocker, Qt
-from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+from PySide6.QtCore import QSize, QSignalBlocker, Qt
+from PySide6.QtGui import QColor, QDragEnterEvent, QDragMoveEvent, QDropEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QColorDialog,
     QComboBox,
     QFormLayout,
     QFrame,
@@ -35,6 +36,7 @@ from tagstudio.core.library.category_sidebar import (
     FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY,
     FILTER_RULE_TYPE_TAG,
     FILTER_RULE_TYPE_TAG_PREFIX,
+    normalize_hex_color,
 )
 from tagstudio.qt.category_sidebar_icons import (
     DEFAULT_CATEGORY_SIDEBAR_ICON,
@@ -42,11 +44,19 @@ from tagstudio.qt.category_sidebar_icons import (
     category_sidebar_icon_names,
     resolve_category_sidebar_icon_name,
 )
+from tagstudio.qt.translations import Translations
 from tagstudio.qt.views.panel_modal import PanelModal, PanelWidget
 
 if TYPE_CHECKING:
     from tagstudio.core.library.alchemy.models import Tag
     from tagstudio.qt.ts_qt import QtDriver
+
+
+ICON_PICKER_BUTTON_SIZE = 44
+ICON_PICKER_ICON_SIZE = 28
+ICON_PICKER_AREA_MIN_HEIGHT = 220
+ICON_PICKER_AREA_MAX_HEIGHT = 260
+MULTIPLE_TAGS_LIST_MAX_HEIGHT = 150
 
 
 class CategorySidebarListWidget(QListWidget):
@@ -126,7 +136,7 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self._icon_buttons: dict[str, QPushButton] = {}
         self._selected_icon_name = DEFAULT_CATEGORY_SIDEBAR_ICON
 
-        self.setMinimumSize(780, 500)
+        self.setMinimumSize(820, 640)
         self.root_layout = QVBoxLayout(self)
         self.root_layout.setContentsMargins(0, 6, 0, 0)
         self.root_layout.setSpacing(8)
@@ -276,6 +286,26 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self.item_name_edit.textEdited.connect(self._on_item_name_changed)
         item_form.addRow("Category Name", self.item_name_edit)
 
+        self.item_background_color_widget = QWidget()
+        item_background_color_layout = QHBoxLayout(self.item_background_color_widget)
+        item_background_color_layout.setContentsMargins(0, 0, 0, 0)
+        item_background_color_layout.setSpacing(6)
+        self.item_background_color_dialog = QColorDialog(self)
+        self.item_background_color_button = QPushButton()
+        self.item_background_color_button.setObjectName("category_sidebar_background_color_button")
+        self.item_background_color_button.clicked.connect(self._select_item_background_color)
+        item_background_color_layout.addWidget(self.item_background_color_button)
+        self.item_background_color_reset_button = QPushButton(Translations["generic.reset"])
+        self.item_background_color_reset_button.clicked.connect(
+            self._reset_item_background_color
+        )
+        item_background_color_layout.addWidget(self.item_background_color_reset_button)
+        item_background_color_layout.addStretch(1)
+        item_form.addRow(
+            Translations["category_sidebar.background_color"],
+            self.item_background_color_widget,
+        )
+
         self.rule_type_combobox = QComboBox()
         self.rule_type_combobox.setObjectName("category_sidebar_rule_type_combobox")
         self.rule_type_combobox.addItem("Single tag", FILTER_RULE_TYPE_TAG)
@@ -307,7 +337,8 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self.icon_scroll_area.setFrameShape(QFrame.Shape.NoFrame)
         self.icon_scroll_area.setWidgetResizable(True)
         self.icon_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.icon_scroll_area.setMaximumHeight(150)
+        self.icon_scroll_area.setMinimumHeight(ICON_PICKER_AREA_MIN_HEIGHT)
+        self.icon_scroll_area.setMaximumHeight(ICON_PICKER_AREA_MAX_HEIGHT)
 
         self.icon_grid_widget = QWidget()
         self.icon_grid_widget.setObjectName("category_sidebar_icon_grid_widget")
@@ -347,7 +378,7 @@ class CategorySidebarSettingsPanel(PanelWidget):
 
         self.multiple_tags_list = QListWidget()
         self.multiple_tags_list.setObjectName("category_sidebar_multiple_tags_list")
-        self.multiple_tags_list.setMaximumHeight(120)
+        self.multiple_tags_list.setMaximumHeight(MULTIPLE_TAGS_LIST_MAX_HEIGHT)
         for tag in self._sorted_tags():
             tag_item = QListWidgetItem(self._tag_label(tag))
             tag_item.setData(Qt.ItemDataRole.UserRole, tag.id)
@@ -431,10 +462,10 @@ class CategorySidebarSettingsPanel(PanelWidget):
             "background: #171a1f;"
             "}"
             "QPushButton#category_sidebar_icon_button {"
-            "min-width: 30px;"
-            "max-width: 30px;"
-            "min-height: 30px;"
-            "max-height: 30px;"
+            f"min-width: {ICON_PICKER_BUTTON_SIZE}px;"
+            f"max-width: {ICON_PICKER_BUTTON_SIZE}px;"
+            f"min-height: {ICON_PICKER_BUTTON_SIZE}px;"
+            f"max-height: {ICON_PICKER_BUTTON_SIZE}px;"
             "padding: 0;"
             "}"
             "QPushButton#category_sidebar_icon_button:checked {"
@@ -528,6 +559,7 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self.item_details_widget.setVisible(item is not None)
         self.empty_details_label.setVisible(group is None)
         self.item_name_edit.setText(item.name if item else "")
+        self._set_item_background_color(item.background_color if item else None, update_item=False)
 
         icon_name = resolve_category_sidebar_icon_name(item.icon if item else None)
         if item:
@@ -661,6 +693,61 @@ class CategorySidebarSettingsPanel(PanelWidget):
         if current:
             current.setText(text)
 
+    def _set_item_background_color(
+        self,
+        color_value: str | QColor | None,
+        *,
+        update_item: bool = True,
+    ) -> None:
+        color_hex = normalize_hex_color(
+            color_value.name() if isinstance(color_value, QColor) else color_value
+        )
+        if update_item and not self._loading_details:
+            item = self.current_item()
+            if item:
+                item.background_color = color_hex
+
+        if color_hex is None:
+            self.item_background_color_button.setText(Translations["color.title.no_color"])
+            self.item_background_color_button.setStyleSheet(
+                "QPushButton#category_sidebar_background_color_button {"
+                "background: #242a32;"
+                "color: #d8dde6;"
+                "border: 1px solid rgba(120, 128, 140, 85);"
+                "border-radius: 6px;"
+                "padding: 5px 10px;"
+                "font-weight: 600;"
+                "}"
+            )
+            return
+
+        color = QColor(color_hex)
+        text_color = QColor("#101010") if color.lightness() > 150 else QColor("#f7f7f7")
+        self.item_background_color_button.setText(color_hex)
+        self.item_background_color_button.setStyleSheet(
+            "QPushButton#category_sidebar_background_color_button {"
+            f"background: rgba{color.toTuple()};"
+            f"color: rgba{text_color.toTuple()};"
+            f"border: 1px solid rgba{color.toTuple()};"
+            "border-radius: 6px;"
+            "padding: 5px 10px;"
+            "font-weight: 600;"
+            "}"
+        )
+
+    def _select_item_background_color(self) -> None:
+        if self._loading_details or not self.current_item():
+            return
+        initial = QColor(self.current_item().background_color or "#4DA3FF")
+        color = self.item_background_color_dialog.getColor(initial=initial)
+        if color.isValid():
+            self._set_item_background_color(color)
+
+    def _reset_item_background_color(self) -> None:
+        if self._loading_details or not self.current_item():
+            return
+        self._set_item_background_color(None)
+
     def _refresh_icon_grid(self) -> None:
         while self.icon_grid_layout.count():
             item = self.icon_grid_layout.takeAt(0)
@@ -681,7 +768,8 @@ class CategorySidebarSettingsPanel(PanelWidget):
             button.setObjectName("category_sidebar_icon_button")
             button.setCheckable(True)
             button.setToolTip(icon_name)
-            button.setIcon(category_sidebar_icon(icon_name, size=18))
+            button.setIcon(category_sidebar_icon(icon_name, size=ICON_PICKER_ICON_SIZE))
+            button.setIconSize(QSize(ICON_PICKER_ICON_SIZE, ICON_PICKER_ICON_SIZE))
             button.clicked.connect(lambda checked=False, name=icon_name: self.select_icon(name))
             self._icon_buttons[icon_name] = button
             self.icon_grid_layout.addWidget(button, index // 7, index % 7)

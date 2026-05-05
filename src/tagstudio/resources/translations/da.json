@@ -1,6 +1,7 @@
 {
     "app.pre_release": "Forududgivelse",
     "app.title": "{base_title} - Bibliotek '{library_dir}'",
+    "category_sidebar.background_color": "Baggrundsfarve",
     "color.title.no_color": "Ingen Farve",
     "drop_import.description": "De følgende filer har allerede eksisterende stier i biblioteket",
     "drop_import.duplicates_choice.plural": "Følgende {count} filer passer allerede til stier der eksistere i biblioteket.",

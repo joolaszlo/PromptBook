@@ -10,6 +10,7 @@
     "app.pre_release": "Pre-Release",
     "app.title": "{base_title} - Library '{library_dir}'",
     "color_manager.title": "Manage Tag Colors",
+    "category_sidebar.background_color": "Background Color",
     "color.color_border": "Use Secondary Color for Border",
     "color.confirm_delete": "Are you sure you want to delete the color \"{color_name}\"?",
     "color.delete": "Delete Tag",

@@ -9,6 +9,7 @@
     "app.git": "Git Commit",
     "app.pre_release": "Pre-Release",
     "app.title": "{base_title} - Bibliothek '{library_dir}'",
+    "category_sidebar.background_color": "Hintergrundfarbe",
     "color.color_border": "Benutze Sekundärfarbe für die Umrandung",
     "color.confirm_delete": "Soll die Farbe \"{color_name}\" wirklich gelöscht werden?",
     "color.delete": "Tag löschen",
