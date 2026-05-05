@@ -4,9 +4,12 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterable
+from functools import lru_cache
+from pathlib import Path
 
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtCore import QByteArray, QPointF, QRectF, Qt
 from PySide6.QtGui import (
     QColor,
     QIcon,
@@ -16,56 +19,63 @@ from PySide6.QtGui import (
     QPixmap,
     QPolygonF,
 )
+from PySide6.QtSvg import QSvgRenderer
 
 DEFAULT_CATEGORY_SIDEBAR_ICON = "tag"
+LUCIDE_ICON_DATA_PATH = (
+    Path(__file__).parents[1] / "resources" / "lucide" / "icons.json"
+)
 
 CATEGORY_SIDEBAR_ICONS: tuple[str, ...] = (
-    "user",
-    "users",
-    "map-pin",
-    "shirt",
-    "activity",
-    "book-open",
-    "palette",
-    "camera",
-    "accessibility",
-    "sparkles",
-    "wand",
-    "image",
-    "images",
-    "video",
-    "film",
-    "tag",
-    "tags",
-    "heart",
-    "star",
-    "folder",
-    "archive",
-    "search",
-    "sliders-horizontal",
-    "settings",
-    "brain",
-    "bot",
-    "message-circle",
-    "scan-face",
-    "smile",
-    "eye",
-    "hand",
-    "footprints",
-    "badge",
-    "box",
-    "layers",
-    "layout-grid",
-    "clock",
-    "calendar",
-    "globe",
-    "home",
-    "car",
-    "music",
-    "gamepad-2",
-    "zap",
-    "ban",
-    "circle-slash",
+"accessibility",
+"activity",
+"archive",
+"badge",
+"ban",
+"book-open",
+"bot",
+"box",
+"brain",
+"calendar",
+"camera",
+"car",
+"circle-slash",
+"clock",
+"drama",
+"eye",
+"film",
+"folder",
+"footprints",
+"gamepad-2",
+"globe",
+"hand",
+"heart",
+"home",
+"image",
+"images",
+"layers",
+"layout-grid",
+"map-pin",
+"message-circle",
+"music",
+"palette",
+"scan-face",
+"search",
+"settings",
+"shelving-unit",
+"shirt",
+"sliders-horizontal",
+"smile",
+"sparkles",
+"star",
+"tag",
+"tags",
+"user",
+"users",
+"utensils",
+"video",
+"wand",
+"zap",
 )
 
 _ICON_SET = set(CATEGORY_SIDEBAR_ICONS)
@@ -75,9 +85,13 @@ def category_sidebar_icon_names() -> tuple[str, ...]:
     return CATEGORY_SIDEBAR_ICONS
 
 
+def category_sidebar_search_icon_names() -> tuple[str, ...]:
+    return _lucide_icon_names()
+
+
 def resolve_category_sidebar_icon_name(icon_name: str | None) -> str:
     normalized = (icon_name or "").strip().lower()
-    if normalized in _ICON_SET:
+    if normalized in _lucide_icon_name_set():
         return normalized
     return DEFAULT_CATEGORY_SIDEBAR_ICON
 
@@ -104,13 +118,14 @@ def category_sidebar_icon_pixmap(
 
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    pen = QPen(icon_color, max(1.6, icon_size / 11))
-    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-    pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
-    painter.setPen(pen)
-    painter.setBrush(Qt.BrushStyle.NoBrush)
 
-    _draw_icon(painter, resolved_name, float(icon_size))
+    if not _render_lucide_icon(pixmap, painter, resolved_name, icon_color, icon_size):
+        pen = QPen(icon_color, max(1.6, icon_size / 11))
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        _draw_icon(painter, resolved_name, float(icon_size))
     painter.end()
     return pixmap
 
@@ -123,6 +138,74 @@ def _resolve_color(color: QColor | str | None) -> QColor:
         if resolved.isValid():
             return resolved
     return QColor("#d8dde6")
+
+
+@lru_cache(maxsize=1)
+def _lucide_icon_data() -> dict[str, dict[str, object]]:
+    with LUCIDE_ICON_DATA_PATH.open(encoding="utf-8") as file:
+        data = json.load(file)
+
+    icons = data.get("icons")
+    aliases = data.get("aliases", {})
+    if not isinstance(icons, dict):
+        return {}
+    if not isinstance(aliases, dict):
+        aliases = {}
+
+    resolved_icons: dict[str, dict[str, object]] = {
+        str(name): icon_data
+        for name, icon_data in icons.items()
+        if isinstance(icon_data, dict)
+    }
+    for alias_name, alias_data in aliases.items():
+        if not isinstance(alias_data, dict):
+            continue
+        parent = alias_data.get("parent")
+        if isinstance(parent, str) and parent in resolved_icons:
+            resolved_icons[str(alias_name)] = resolved_icons[parent]
+
+    return resolved_icons
+
+
+@lru_cache(maxsize=1)
+def _lucide_icon_names() -> tuple[str, ...]:
+    return tuple(sorted(_ICON_SET.union(_lucide_icon_data())))
+
+
+@lru_cache(maxsize=1)
+def _lucide_icon_name_set() -> frozenset[str]:
+    return frozenset(_lucide_icon_names())
+
+
+def _lucide_icon_body(icon_name: str) -> str | None:
+    icon_data = _lucide_icon_data().get(icon_name)
+    body = icon_data.get("body") if icon_data else None
+    return body if isinstance(body, str) else None
+
+
+def _render_lucide_icon(
+    pixmap: QPixmap,
+    painter: QPainter,
+    icon_name: str,
+    icon_color: QColor,
+    icon_size: int,
+) -> bool:
+    body = _lucide_icon_body(icon_name)
+    if body is None:
+        return False
+
+    body = body.replace("currentColor", icon_color.name(QColor.NameFormat.HexRgb))
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" '
+        f'width="{icon_size}" height="{icon_size}" viewBox="0 0 24 24">'
+        f"{body}</svg>"
+    )
+    renderer = QSvgRenderer(QByteArray(svg.encode("utf-8")))
+    if not renderer.isValid():
+        return False
+
+    renderer.render(painter, QRectF(pixmap.rect()))
+    return True
 
 
 def _p(size: float, x: float, y: float) -> QPointF:

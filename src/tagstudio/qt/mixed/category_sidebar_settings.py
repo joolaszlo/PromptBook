@@ -42,6 +42,7 @@ from tagstudio.qt.category_sidebar_icons import (
     DEFAULT_CATEGORY_SIDEBAR_ICON,
     category_sidebar_icon,
     category_sidebar_icon_names,
+    category_sidebar_search_icon_names,
     resolve_category_sidebar_icon_name,
 )
 from tagstudio.qt.translations import Translations
@@ -136,7 +137,7 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self._icon_buttons: dict[str, QPushButton] = {}
         self._selected_icon_name = DEFAULT_CATEGORY_SIDEBAR_ICON
 
-        self.setMinimumSize(820, 640)
+        self.setMinimumSize(900, 640)
         self.root_layout = QVBoxLayout(self)
         self.root_layout.setContentsMargins(0, 6, 0, 0)
         self.root_layout.setSpacing(8)
@@ -165,6 +166,7 @@ class CategorySidebarSettingsPanel(PanelWidget):
 
     def _build_group_panel(self) -> None:
         panel = QWidget()
+        panel.setMaximumWidth(200)
         panel.setObjectName("category_sidebar_settings_panel")
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(6, 6, 6, 6)
@@ -203,6 +205,7 @@ class CategorySidebarSettingsPanel(PanelWidget):
 
     def _build_item_panel(self) -> None:
         panel = QWidget()
+        panel.setMaximumWidth(200)
         panel.setObjectName("category_sidebar_settings_panel")
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(6, 6, 6, 6)
@@ -757,9 +760,10 @@ class CategorySidebarSettingsPanel(PanelWidget):
                 widget.deleteLater()
 
         query = self.icon_search_edit.text().strip().casefold()
+        icon_names = category_sidebar_search_icon_names() if query else category_sidebar_icon_names()
         matching_icon_names = [
             icon_name
-            for icon_name in category_sidebar_icon_names()
+            for icon_name in icon_names
             if not query or query in icon_name.casefold()
         ]
         self._icon_buttons = {}

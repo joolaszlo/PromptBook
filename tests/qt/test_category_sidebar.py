@@ -407,6 +407,10 @@ def test_category_sidebar_settings_icon_picker_search_and_fallback(qtbot: QtBot)
 
     panel.add_group()
     panel.add_item()
+
+    assert "tag" in panel._icon_buttons
+    assert "alarm-clock" not in panel._icon_buttons
+
     panel.icon_search_edit.setText("cam")
 
     assert "camera" in panel._icon_buttons
@@ -414,6 +418,17 @@ def test_category_sidebar_settings_icon_picker_search_and_fallback(qtbot: QtBot)
     assert panel.icon_scroll_area.minimumHeight() == 220
     assert panel.icon_scroll_area.maximumHeight() == 260
     assert panel._icon_buttons["camera"].iconSize().width() == 28
+
+    panel.icon_search_edit.setText("alarm-clock")
+    assert "alarm-clock" in panel._icon_buttons
+    panel.select_icon("alarm-clock")
+    assert panel.current_item().icon == "alarm-clock"
+    panel.apply_settings()
+
+    reopened_panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(reopened_panel)
+    assert reopened_panel.current_item().icon == "alarm-clock"
+    assert reopened_panel._selected_icon_name == "alarm-clock"
 
     panel.select_icon("missing-icon")
     assert panel.current_item().icon == "tag"

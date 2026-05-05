@@ -11,6 +11,7 @@ from tagstudio.qt.category_sidebar_icons import (
     category_sidebar_icon,
     category_sidebar_icon_names,
     category_sidebar_icon_pixmap,
+    category_sidebar_search_icon_names,
     resolve_category_sidebar_icon_name,
 )
 
@@ -22,9 +23,18 @@ def test_category_sidebar_icon_registry_contains_expected_names():
     assert category_sidebar_icon_names() == CATEGORY_SIDEBAR_ICONS
 
 
+def test_category_sidebar_search_registry_includes_full_lucide_names():
+    searchable_names = category_sidebar_search_icon_names()
+
+    assert len(searchable_names) > len(CATEGORY_SIDEBAR_ICONS)
+    assert "alarm-clock" in searchable_names
+    assert "alarm-clock" not in CATEGORY_SIDEBAR_ICONS
+
+
 def test_resolve_category_sidebar_icon_name_falls_back_to_tag():
     assert resolve_category_sidebar_icon_name("camera") == "camera"
     assert resolve_category_sidebar_icon_name(" CAMERA ") == "camera"
+    assert resolve_category_sidebar_icon_name(" ALARM-CLOCK ") == "alarm-clock"
     assert resolve_category_sidebar_icon_name("missing-icon") == DEFAULT_CATEGORY_SIDEBAR_ICON
     assert resolve_category_sidebar_icon_name(None) == DEFAULT_CATEGORY_SIDEBAR_ICON
 
@@ -35,6 +45,14 @@ def test_category_sidebar_icon_helper_returns_renderable_icon(qtbot: QtBot):
 
     assert isinstance(icon, QIcon)
     assert not icon.isNull()
+    assert not pixmap.isNull()
+    assert pixmap.width() == 24
+    assert pixmap.height() == 24
+
+
+def test_category_sidebar_icon_helper_renders_full_lucide_icon(qtbot: QtBot):
+    pixmap = category_sidebar_icon_pixmap("alarm-clock", color="#ffffff", size=24)
+
     assert not pixmap.isNull()
     assert pixmap.width() == 24
     assert pixmap.height() == 24
