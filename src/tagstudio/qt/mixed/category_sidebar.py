@@ -161,7 +161,7 @@ class CategorySidebarItemWidget(QPushButton):
         hover_background_color = QColor(120, 128, 140, 45)
         pressed_background_color = QColor(77, 163, 255, 60)
         pressed_border_color = QColor(77, 163, 255, 120)
-        border_width = 1
+        border_width = 2
         text_decoration = "none"
         icon_color = text_color
         category_background_color = _item_background_color(self.item)
@@ -404,7 +404,9 @@ class CategorySidebarWidget(QFrame):
             tag_id = item.primary_tag_id()
             if tag_id is not None:
                 item_widget.clicked.connect(
-                    lambda checked=False, tag_id=tag_id: self.driver.apply_tag_filter(tag_id)
+                    lambda checked=False, tag_id=tag_id: (
+                        self.driver.apply_category_sidebar_tag_filter(tag_id)
+                    )
                 )
                 item_widget.right_clicked.connect(
                     lambda tag_id=tag_id: self.driver.apply_excluded_tag_filter(tag_id)

@@ -349,6 +349,19 @@ class QtDriver(DriverMixin, QObject):
         )
         self.update_browsing_state(next_state)
 
+    def apply_category_sidebar_tag_filter(self, tag_id: int):
+        """Toggle one active category sidebar tag filter at a time."""
+        if tag_id in self.active_tag_filter_ids:
+            self.active_tag_filter_ids.clear()
+        else:
+            self.active_tag_filter_ids = {tag_id}
+            self.excluded_tag_filter_ids.discard(tag_id)
+
+        next_state = self.browsing_history.current.with_tag_filters(
+            self.active_tag_filter_ids, self.excluded_tag_filter_ids
+        )
+        self.update_browsing_state(next_state)
+
     def apply_excluded_tag_filter(self, tag_id: int):
         """Toggle a tag inside the shared excluded tag filter state."""
         if tag_id in self.excluded_tag_filter_ids:

@@ -72,6 +72,13 @@ class DummyDriver:
             self.excluded_tag_ids.discard(tag_id)
             self.included_tag_ids.add(tag_id)
 
+    def apply_category_sidebar_tag_filter(self, tag_id: int) -> None:
+        if tag_id in self.included_tag_ids:
+            self.included_tag_ids.clear()
+        else:
+            self.included_tag_ids = {tag_id}
+            self.excluded_tag_ids.discard(tag_id)
+
     def apply_excluded_tag_filter(self, tag_id: int) -> None:
         if tag_id in self.excluded_tag_ids:
             self.excluded_tag_ids.remove(tag_id)
@@ -114,6 +121,20 @@ def make_settings() -> CategorySidebarSettings:
             )
         ]
     )
+
+
+def make_two_category_settings() -> CategorySidebarSettings:
+    settings = make_settings()
+    settings.groups[0].items.append(
+        CategoryItem(
+            id="item-2",
+            name="Item 2",
+            icon="tag",
+            order=1,
+            filter_rules=[CategoryFilterRule(type="tag", tag_id=1001)],
+        )
+    )
+    return settings
 
 
 def test_category_sidebar_empty_state(qtbot: QtBot):
@@ -213,6 +234,36 @@ def test_category_sidebar_item_clicks_use_tag_filter_state(qtbot: QtBot):
     qtbot.mouseClick(item, Qt.MouseButton.RightButton)
     assert driver.included_tag_ids == set()
     assert driver.excluded_tag_ids == set()
+
+
+def test_category_sidebar_include_is_single_select_and_exclude_stays_multi(qtbot: QtBot):
+    driver = DummyDriver()
+    sidebar = CategorySidebarWidget(driver)
+    qtbot.addWidget(sidebar)
+    sidebar.set_settings(make_two_category_settings())
+    items = sidebar.findChildren(CategorySidebarItemWidget)
+    assert len(items) == 2
+
+    qtbot.mouseClick(items[0], Qt.MouseButton.LeftButton)
+    assert driver.included_tag_ids == {1000}
+    assert driver.excluded_tag_ids == set()
+
+    qtbot.mouseClick(items[1], Qt.MouseButton.LeftButton)
+    assert driver.included_tag_ids == {1001}
+    assert driver.excluded_tag_ids == set()
+
+    qtbot.mouseClick(items[1], Qt.MouseButton.LeftButton)
+    assert driver.included_tag_ids == set()
+    assert driver.excluded_tag_ids == set()
+
+    qtbot.mouseClick(items[0], Qt.MouseButton.RightButton)
+    qtbot.mouseClick(items[1], Qt.MouseButton.RightButton)
+    assert driver.included_tag_ids == set()
+    assert driver.excluded_tag_ids == {1000, 1001}
+
+    qtbot.mouseClick(items[0], Qt.MouseButton.LeftButton)
+    assert driver.included_tag_ids == {1000}
+    assert driver.excluded_tag_ids == {1001}
 
 
 def test_category_sidebar_excluded_state_has_visible_border_with_background(qtbot: QtBot):
