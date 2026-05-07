@@ -171,8 +171,7 @@
     "json_migration.heading.parent_tags": "Parent Tags:",
     "json_migration.heading.paths": "Paths:",
     "json_migration.heading.shorthands": "Shorthands:",
-    "json_migration.info.description": "Library save files created with PromptBook versions <b>9.4 and below</b> will need to be migrated to the new <b>v9.5+</b> format.<br><h2>What you need to know:</h2><ul><li>Your existing library save file will <b><i>NOT</i></b> be deleted</li><li>Your personal files will <b><i>NOT</i></b> be deleted, moved, or modified</li><li>The new v9.5+ save format can not be opened in earlier versions of PromptBook</li></ul><h3>What's changed:</h3><ul><li>\"Tag Fields\" have been replaced by \"Tag Categories\". Instead of adding tags to fields first, tags now get added directly to file entries. They're then automatically organized into categories based on parent tags marked with the new \"Is Category\" property in the tag editing menu. Any tag can be marked as a category, and child tags will sort themselves underneath parent tags marked as categories. The \"Favorite\" and \"Archived\" tags now inherit from a new \"Meta Tags\" tag which is marked as a category by default.</li><li>Tag colors have been tweaked and expanded upon. Some colors have been renamed or consolidated, however all tag colors will still convert to exact or close matches in v9.5.</li></ul><ul>",
-    "json_migration.migrating_files_entries": "Migrating {entries:,d} File Entries...",
+"json_migration.info.description": "Library save files created with older TagStudio versions may need to be migrated before they can be opened in PromptBook.<br><h2>What you need to know:</h2><ul><li>Your existing library save file will <b><i>NOT</i></b> be deleted</li><li>Your personal files will <b><i>NOT</i></b> be deleted, moved, or modified</li><li>After migration, the updated library may not be compatible with older TagStudio versions</li></ul>"    "json_migration.migrating_files_entries": "Migrating {entries:,d} File Entries...",
     "json_migration.migration_complete_with_discrepancies": "Migration Complete, Discrepancies Found",
     "json_migration.migration_complete": "Migration Complete!",
     "json_migration.start_and_preview": "Start and Preview",
@@ -379,8 +378,8 @@
     "entry.add.window_title": "Add New Entry",
     "entry.add.selected_tags": "Selected Tags",
     "entry.add_media": "Add Media",
-    "entry.add_prompt": "Add Prompt",
-    "entry.edit.button": "EDIT ENTRY",
+    "entry.add_prompt": "Add New Entry",
+    "entry.edit.button": "Edit Entry",
     "entry.edit.window_title": "Edit Entry",
     "entry.error.copy_failed": "Could Not Copy File",
     "entry.error.file_not_found": "The selected file could not be found.",
@@ -405,6 +404,6 @@
     "generic.browse": "Browse...",
     "generic.untitled": "Untitled",
     "home.search_in": "Search in:",
-    "preview.copy_prompt": "COPY PROMPT",
+    "preview.copy_prompt": "Copy Prompt",
     "settings.title_overlay_font_size_adjust": "Title overlay font size adjustment"
 }

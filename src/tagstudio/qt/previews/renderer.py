@@ -1629,7 +1629,10 @@ class ThumbRenderer(QObject):
         def render_text_entry(size: tuple[int, int], pixel_ratio: float) -> Image.Image:
             is_light = QGuiApplication.styleHints().colorScheme() == Qt.ColorScheme.Light
             bg = (42, 45, 50, 255) if is_light else (238, 239, 241, 255)
-            im = Image.new("RGBA", size, bg)
+            im = Image.new("RGBA", size, (0, 0, 0, 0))
+            bg_im = Image.new("RGBA", size, bg)
+            mask = self._get_mask(size, pixel_ratio)
+            im.paste(bg_im, mask=mask.getchannel(0))
             edge: tuple[Image.Image, Image.Image] = self._get_edge(size, pixel_ratio)
             return self._apply_edge(im, edge)
 
