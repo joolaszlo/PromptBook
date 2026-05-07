@@ -146,14 +146,12 @@ class AboutModal(QWidget):
         self.system_info_layout.addRow(ffprobe_path_title, ffprobe_path_content)
 
         # Links ----------------------------------------------------------------
-        repo_link = "https://github.com/TagStudioDev/TagStudio"
+        repo_link = "https://github.com/joolaszlo/PromptBook"
         docs_link = "https://docs.tagstud.io"
-        discord_link = "https://discord.com/invite/hRNnVKhF2G"
 
         self.links_label = QLabel(
             f'<p><a href="{repo_link}">GitHub</a> | '
-            f'<a href="{docs_link}">{Translations["about.documentation"]}</a> | '
-            f'<a href="{discord_link}">Discord</a></p>'
+            f'<a href="{docs_link}">{Translations["about.documentation"]}</a></p>'
         )
         self.links_label.setWordWrap(True)
         self.links_label.setOpenExternalLinks(True)
