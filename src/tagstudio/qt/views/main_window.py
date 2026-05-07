@@ -463,6 +463,8 @@ class MainWindow(QMainWindow):
 
         # region Type declarations for variables that will be initialized in methods
         # initialized in setup_search_bar
+        self.library_toolbar_layout: QGridLayout
+        self.search_cluster_container: QWidget
         self.search_bar_layout: QHBoxLayout
         self.back_button: QPushButton
         self.forward_button: QPushButton
@@ -474,7 +476,6 @@ class MainWindow(QMainWindow):
 
         # initialized in setup_tag_filter_bar
         self.tag_filter_layout: QVBoxLayout
-        self.tag_filter_row_layout: QHBoxLayout
         self.tag_filter_selector_container: QWidget
         self.tag_filter_selector_layout: QHBoxLayout
         self.tags_button: QPushButton
@@ -619,23 +620,28 @@ class MainWindow(QMainWindow):
                 min(self.SEARCH_FIELD_MAX_WIDTH_CAP, responsive_width),
             )
         )
-        if hasattr(self, "tag_filter_selector_container") and hasattr(self, "search_button"):
+        if hasattr(self, "tag_filter_selector_container") and hasattr(
+            self, "search_cluster_container"
+        ):
+            self.library_toolbar_layout.activate()
             self.search_bar_layout.activate()
             self.tag_filter_selector_layout.activate()
-            self.tag_filter_row_layout.activate()
 
-            search_button_right = self.search_button.mapTo(
-                self.central_widget, QtCore.QPoint(self.search_button.width(), 0)
-            ).x()
+            search_cluster_spacing = self.search_bar_layout.spacing()
+            search_cluster_width = (
+                self.back_button.sizeHint().width()
+                + self.forward_button.sizeHint().width()
+                + self.search_field.maximumWidth()
+                + (search_cluster_spacing * 2)
+            )
+            self.search_cluster_container.setMaximumWidth(search_cluster_width)
+
             min_selector_width = self.tag_filter_selector_container.minimumSizeHint().width()
-            if search_button_right > 0:
-                self.tag_filter_selector_container.setMaximumWidth(
-                    max(min_selector_width, search_button_right)
-                )
-            else:
-                self.tag_filter_selector_container.setMaximumWidth(16777215)
+            self.tag_filter_selector_container.setMaximumWidth(
+                max(min_selector_width, search_cluster_width)
+            )
             self.tag_filter_selector_container.updateGeometry()
-            self.tag_filter_layout.invalidate()
+            self.library_toolbar_layout.invalidate()
             self.central_layout.invalidate()
             self.central_layout.activate()
 
@@ -669,8 +675,26 @@ class MainWindow(QMainWindow):
 
     def setup_search_bar(self):
         """Sets up Nav Buttons, Search Field, Search Button."""
-        self.search_bar_layout = QHBoxLayout()
+        self.library_toolbar_layout = QGridLayout()
+        self.library_toolbar_layout.setObjectName("library_toolbar_layout")
+        self.library_toolbar_layout.setContentsMargins(0, 0, 0, 0)
+        self.library_toolbar_layout.setHorizontalSpacing(6)
+        self.library_toolbar_layout.setVerticalSpacing(6)
+        self.library_toolbar_layout.setColumnStretch(0, 3)
+        self.library_toolbar_layout.setColumnStretch(1, 0)
+        self.library_toolbar_layout.setColumnStretch(2, 1)
+        self.library_toolbar_layout.setColumnStretch(3, 0)
+
+        self.search_cluster_container = QWidget(self.central_widget)
+        self.search_cluster_container.setObjectName("search_cluster_container")
+        self.search_cluster_container.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+
+        self.search_bar_layout = QHBoxLayout(self.search_cluster_container)
         self.search_bar_layout.setObjectName("search_bar_layout")
+        self.search_bar_layout.setContentsMargins(0, 0, 0, 0)
+        self.search_bar_layout.setSpacing(6)
         self.search_bar_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
 
         self.back_button = QPushButton(self.central_widget)
@@ -706,15 +730,12 @@ class MainWindow(QMainWindow):
         )
         self.search_field_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.search_field.setCompleter(self.search_field_completer)
-        self.search_bar_layout.addWidget(self.search_field, 3)
+        self.search_bar_layout.addWidget(self.search_field, 1)
 
         self.search_button = QPushButton(Translations["home.search"], self.central_widget)
         self.search_button.setObjectName("search_button")
         self.search_button.setMinimumSize(QSize(0, 32))
         self.search_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.search_bar_layout.addWidget(self.search_button)
-
-        self.search_bar_layout.addStretch(1)
 
         self.add_entry_button = QPushButton(Translations["entry.add_prompt"], self.central_widget)
         self.add_entry_button.setObjectName("add_entry_button")
@@ -749,20 +770,18 @@ class MainWindow(QMainWindow):
             f"}}"
         )
         self.add_entry_button.setMaximumWidth(self.add_entry_button.sizeHint().width())
-        self.search_bar_layout.addWidget(self.add_entry_button)
+        self.library_toolbar_layout.addWidget(self.search_cluster_container, 0, 0)
+        self.library_toolbar_layout.addWidget(self.search_button, 0, 1)
+        self.library_toolbar_layout.addWidget(self.add_entry_button, 0, 3)
         self._update_top_toolbar_widths()
 
-        self.central_layout.addLayout(self.search_bar_layout, 3, 0, 1, 1)
+        self.central_layout.addLayout(self.library_toolbar_layout, 3, 0, 1, 1)
 
     def setup_tag_filter_bar(self):
         self.tag_filter_layout = QVBoxLayout()
         self.tag_filter_layout.setObjectName("tag_filter_layout")
         self.tag_filter_layout.setContentsMargins(0, 0, 0, 0)
         self.tag_filter_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-
-        self.tag_filter_row_layout = QHBoxLayout()
-        self.tag_filter_row_layout.setObjectName("tag_filter_row_layout")
-        self.tag_filter_row_layout.setContentsMargins(0, 0, 0, 0)
 
         self.tag_filter_selector_container = QWidget(self.central_widget)
         self.tag_filter_selector_container.setObjectName("tag_filter_selector_container")
@@ -817,9 +836,7 @@ class MainWindow(QMainWindow):
 
         self.tag_filter_selector_layout.addLayout(self.search_scope_layout)
 
-        self.tag_filter_row_layout.addWidget(self.tag_filter_selector_container)
-        self.tag_filter_row_layout.addStretch(1)
-        self.tag_filter_layout.addLayout(self.tag_filter_row_layout)
+        self.library_toolbar_layout.addWidget(self.tag_filter_selector_container, 1, 0)
 
         self.pinned_tags_title = QLabel(Translations["home.pinned_tags"])
         self.pinned_tags_title.setSizePolicy(

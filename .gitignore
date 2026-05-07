@@ -268,3 +268,21 @@ TagStudio.ini
 
 result
 result-*
+tempwork/pytest-of-gebana/pytest-current
+tempwork/pytest-of-gebana/pytest-0/.lock
+tempwork/pytest-of-gebana/pytest-0/test_preview_metadata_settingscurrent
+tempwork/pytest-of-gebana/pytest-0/test_read_settingscurrent
+tempwork/pytest-of-gebana/pytest-0/test_selected_tag_highlight_cocurrent
+tempwork/pytest-of-gebana/pytest-0/test_show_category_sidebar_percurrent
+tempwork/pytest-of-gebana/pytest-0/test_preview_metadata_settings0/settings.toml
+tempwork/pytest-of-gebana/pytest-0/test_read_settings0/settings.toml
+tempwork/pytest-of-gebana/pytest-0/test_selected_tag_highlight_co0/settings.toml
+tempwork/pytest-of-gebana/pytest-0/test_show_category_sidebar_per0/settings.toml
+tempwork/pytest-of-gebana/pytest-1/test_preview_metadata_settingscurrent
+tempwork/pytest-of-gebana/pytest-1/test_read_settingscurrent
+tempwork/pytest-of-gebana/pytest-1/test_selected_tag_highlight_cocurrent
+tempwork/pytest-of-gebana/pytest-1/test_show_category_sidebar_percurrent
+tempwork/pytest-of-gebana/pytest-1/test_preview_metadata_settings0/settings.toml
+tempwork/pytest-of-gebana/pytest-1/test_read_settings0/settings.toml
+tempwork/pytest-of-gebana/pytest-1/test_selected_tag_highlight_co0/settings.toml
+tempwork/pytest-of-gebana/pytest-1/test_show_category_sidebar_per0/settings.toml

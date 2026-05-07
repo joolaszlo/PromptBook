@@ -2,6 +2,7 @@
 # Licensed under the GPL-3.0 License.
 # Created for TagStudio: https://github.com/CyanVoxel/TagStudio
 
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from PySide6.QtWidgets import QApplication, QLabel, QSizePolicy, QVBoxLayout, QWidget
@@ -47,6 +48,7 @@ class DummyResourceManager:
 
 class DummyDriver:
     lib = object()
+    settings = SimpleNamespace(show_category_sidebar=False)
 
 
 def build_main_window():
@@ -74,6 +76,12 @@ def set_pinned_tags(window: main_window_module.MainWindow, count: int) -> None:
 
     window.pinned_tags_container.updateGeometry()
     window.central_layout.activate()
+    QApplication.processEvents()
+
+
+def sync_toolbar_layout(window: main_window_module.MainWindow) -> None:
+    QApplication.processEvents()
+    window._update_top_toolbar_widths()
     QApplication.processEvents()
 
 
@@ -132,24 +140,27 @@ def test_top_search_row_keeps_bounded_search_pair_and_edge_action(qtbot: QtBot):
 
     window.resize(1316, 740)
     window.show()
-    qtbot.wait(0)
+    sync_toolbar_layout(window)
 
-    search_items = [
-        window.search_bar_layout.itemAt(index)
-        for index in range(window.search_bar_layout.count())
-    ]
     search_widgets = [
-        item.widget() for item in search_items if item.widget() is not None
+        window.search_bar_layout.itemAt(index).widget()
+        for index in range(window.search_bar_layout.count())
     ]
 
     assert search_widgets == [
         window.back_button,
         window.forward_button,
         window.search_field,
-        window.search_button,
-        window.add_entry_button,
     ]
-    assert search_items[4].spacerItem() is not None
+    assert window.library_toolbar_layout.itemAtPosition(0, 0).widget() == (
+        window.search_cluster_container
+    )
+    assert window.library_toolbar_layout.itemAtPosition(0, 1).widget() == window.search_button
+    assert window.library_toolbar_layout.itemAtPosition(0, 3).widget() == window.add_entry_button
+    assert window.library_toolbar_layout.itemAtPosition(1, 0).widget() == (
+        window.tag_filter_selector_container
+    )
+    assert window.library_toolbar_layout.columnStretch(2) == 1
     assert window.search_field.geometry().right() < window.search_button.geometry().left()
     assert window.search_button.geometry().right() < window.add_entry_button.geometry().left()
     assert window.add_entry_button.text() == Translations["entry.add_prompt"]
@@ -158,18 +169,61 @@ def test_top_search_row_keeps_bounded_search_pair_and_edge_action(qtbot: QtBot):
     assert window.search_field.maximumWidth() <= int(
         window.central_widget.width() * window.SEARCH_FIELD_MAX_WIDTH_RATIO
     )
-    assert window.search_field.width() == window.search_field.maximumWidth()
+    assert window.search_field.width() <= window.search_field.maximumWidth()
     assert window.add_entry_button.maximumWidth() == window.add_entry_button.sizeHint().width()
     assert window.search_field.maximumWidth() > int(window.central_widget.width() * 0.46)
 
     window.resize(2200, 900)
-    qtbot.wait(0)
+    sync_toolbar_layout(window)
     assert window.search_field.maximumWidth() == window.SEARCH_FIELD_MAX_WIDTH_CAP
     assert window.add_entry_button.geometry().right() <= window.central_widget.geometry().right()
 
     window.resize(520, 740)
-    qtbot.wait(0)
+    sync_toolbar_layout(window)
     assert window.search_field.minimumWidth() == 0
     assert window.search_field.maximumWidth() >= window.SEARCH_FIELD_MIN_MAX_WIDTH
     assert window.search_field.geometry().right() < window.search_button.geometry().left()
     assert window.search_button.geometry().right() < window.add_entry_button.geometry().left()
+
+
+def test_search_scope_controls_align_to_search_field_end_when_space_allows(qtbot: QtBot):
+    window = build_main_window()
+    qtbot.addWidget(window)
+
+    def central_left(widget: QWidget) -> int:
+        return widget.mapTo(window.central_widget, widget.rect().topLeft()).x()
+
+    def central_right(widget: QWidget) -> int:
+        return widget.mapTo(window.central_widget, widget.rect().topRight()).x()
+
+    for width in (1316, 2200):
+        window.resize(width, 740)
+        window.show()
+        sync_toolbar_layout(window)
+
+        field_right = central_right(window.search_field)
+        scope_left = central_left(window.search_scope_label)
+        scope_right = central_right(window.search_scope_prompt_checkbox)
+        reset_right = central_right(window.reset_tag_selection_button)
+        selector_right = central_right(window.tag_filter_selector_container)
+
+        if (
+            window.tag_filter_selector_container.minimumSizeHint().width()
+            <= window.search_cluster_container.maximumWidth()
+        ):
+            assert abs(scope_right - field_right) <= 1
+            assert scope_left - reset_right > 200
+        else:
+            assert scope_right <= selector_right
+            assert scope_right > field_right
+        assert reset_right < scope_left < scope_right
+
+    window.resize(520, 740)
+    sync_toolbar_layout(window)
+
+    assert central_right(window.reset_tag_selection_button) < central_left(
+        window.search_scope_label
+    )
+    assert central_right(window.search_scope_prompt_checkbox) < central_left(
+        window.search_button
+    )
