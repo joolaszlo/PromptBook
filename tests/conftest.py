@@ -157,7 +157,7 @@ def entry_full(library: Library):
 def qt_driver(library: Library, library_dir: Path):
     class Args:
         settings_file = library_dir / "settings.toml"
-        cache_file = library_dir / "tagstudio.ini"
+        cache_file = library_dir / "promptbook.ini"
         open = library_dir
         ci = True
 

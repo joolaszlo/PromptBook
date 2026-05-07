@@ -7,7 +7,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, QSignalBlocker, Qt
-from PySide6.QtGui import QColor, QDragEnterEvent, QDragMoveEvent, QDropEvent
+from PySide6.QtGui import (
+    QColor,
+    QDragEnterEvent,
+    QDragMoveEvent,
+    QDropEvent,
+    QGuiApplication,
+    QPalette,
+)
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QColorDialog,
@@ -58,6 +65,48 @@ ICON_PICKER_ICON_SIZE = 28
 ICON_PICKER_AREA_MIN_HEIGHT = 220
 ICON_PICKER_AREA_MAX_HEIGHT = 260
 MULTIPLE_TAGS_LIST_MAX_HEIGHT = 150
+
+
+def _theme_color(widget: QWidget, role: QPalette.ColorRole) -> QColor:
+    color = QColor(widget.palette().color(role))
+    background_role = (
+        QPalette.ColorRole.Button
+        if role is QPalette.ColorRole.ButtonText
+        else QPalette.ColorRole.Window
+    )
+    background_color = QColor(widget.palette().color(background_role))
+    color_scheme = QGuiApplication.styleHints().colorScheme()
+    dark_background = background_color.lightness() < 128
+
+    if (
+        color_scheme is Qt.ColorScheme.Dark or dark_background
+    ) and color.lightness() < 128:
+        return QColor("#d8dde6")
+    if (
+        color_scheme is Qt.ColorScheme.Light or not dark_background
+    ) and color.lightness() > 128:
+        return QColor("#202124")
+    return color
+
+
+def _with_alpha(color: QColor, alpha: int) -> QColor:
+    resolved = QColor(color)
+    resolved.setAlpha(alpha)
+    return resolved
+
+
+def _hover_color(color: QColor) -> QColor:
+    resolved = QColor(color)
+    return resolved.lighter(118) if resolved.lightness() < 128 else resolved.darker(105)
+
+
+def _pressed_color(color: QColor) -> QColor:
+    resolved = QColor(color)
+    return resolved.lighter(130) if resolved.lightness() < 128 else resolved.darker(112)
+
+
+def _rgba(color: QColor) -> str:
+    return f"rgba{color.toTuple()}"
 
 
 class CategorySidebarListWidget(QListWidget):
@@ -402,27 +451,52 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self.splitter.setSizes([180, 240, 360])
 
     def _apply_style(self) -> None:
+        panel_background = self.palette().color(QPalette.ColorRole.Window)
+        control_background = self.palette().color(QPalette.ColorRole.Base)
+        button_background = self.palette().color(QPalette.ColorRole.Button)
+        hover_background = _hover_color(button_background)
+        pressed_background = _pressed_color(button_background)
+        text_color = _theme_color(self, QPalette.ColorRole.WindowText)
+        control_text_color = _theme_color(self, QPalette.ColorRole.Text)
+        button_text_color = _theme_color(self, QPalette.ColorRole.ButtonText)
+        disabled_text_color = self.palette().color(
+            QPalette.ColorGroup.Disabled,
+            QPalette.ColorRole.ButtonText,
+        )
+        if not disabled_text_color.isValid():
+            disabled_text_color = _with_alpha(button_text_color, 105)
+        border_color = _with_alpha(self.palette().color(QPalette.ColorRole.Mid), 150)
+        separator_color = _with_alpha(self.palette().color(QPalette.ColorRole.Mid), 110)
+        subtle_text_color = _with_alpha(text_color, 165)
+        selection_color = self.palette().color(QPalette.ColorRole.Highlight)
+        selected_text_color = self.palette().color(QPalette.ColorRole.HighlightedText)
+        icon_selected_background = _with_alpha(selection_color, 70)
+        icon_selected_border = _with_alpha(selection_color, 190)
+
         self.setStyleSheet(
             "QWidget#category_sidebar_settings_panel {"
-            "background: #1a1d22;"
+            f"background: {_rgba(panel_background)};"
+            "}"
+            "QWidget#category_sidebar_settings_panel QLabel {"
+            f"color: {_rgba(text_color)};"
             "}"
             "QLabel#category_sidebar_settings_header {"
-            "color: #d8dde6;"
+            f"color: {_rgba(text_color)};"
             "font-weight: 700;"
             "font-size: 13px;"
             "padding: 2px 0 4px 0;"
             "}"
             "QLabel#category_sidebar_empty_details {"
-            "color: #8f98a6;"
+            f"color: {_rgba(subtle_text_color)};"
             "}"
             "QFrame#category_sidebar_settings_separator {"
-            "background: rgba(120, 128, 140, 70);"
+            f"background: {_rgba(separator_color)};"
             "max-height: 1px;"
             "}"
             "QListWidget {"
-            "background: #14171c;"
-            "color: #d8dde6;"
-            "border: 1px solid rgba(120, 128, 140, 80);"
+            f"background: {_rgba(control_background)};"
+            f"color: {_rgba(control_text_color)};"
+            f"border: 1px solid {_rgba(border_color)};"
             "border-radius: 6px;"
             "padding: 4px;"
             "}"
@@ -431,38 +505,52 @@ class CategorySidebarSettingsPanel(PanelWidget):
             "border-radius: 4px;"
             "}"
             "QListWidget::item:selected {"
-            "background: rgba(77, 163, 255, 80);"
-            "color: #ffffff;"
+            f"background: {_rgba(selection_color)};"
+            f"color: {_rgba(selected_text_color)};"
             "}"
             "QLineEdit, QComboBox {"
-            "background: #101318;"
-            "color: #d8dde6;"
-            "border: 1px solid rgba(120, 128, 140, 90);"
+            f"background: {_rgba(control_background)};"
+            f"color: {_rgba(control_text_color)};"
+            f"border: 1px solid {_rgba(border_color)};"
             "border-radius: 6px;"
             "padding: 5px;"
             "}"
+            "QLineEdit:disabled, QComboBox:disabled {"
+            f"color: {_rgba(disabled_text_color)};"
+            f"background: {_rgba(panel_background)};"
+            "}"
+            "QComboBox QAbstractItemView {"
+            f"background: {_rgba(control_background)};"
+            f"color: {_rgba(control_text_color)};"
+            f"selection-background-color: {_rgba(selection_color)};"
+            f"selection-color: {_rgba(selected_text_color)};"
+            f"border: 1px solid {_rgba(border_color)};"
+            "}"
             "QScrollArea#category_sidebar_icon_scroll_area {"
-            "background: #101318;"
-            "border: 1px solid rgba(120, 128, 140, 80);"
+            f"background: {_rgba(control_background)};"
+            f"border: 1px solid {_rgba(border_color)};"
             "border-radius: 6px;"
             "}"
             "QWidget#category_sidebar_icon_grid_widget {"
-            "background: #101318;"
+            f"background: {_rgba(control_background)};"
             "}"
             "QPushButton {"
-            "background: #242a32;"
-            "color: #d8dde6;"
-            "border: 1px solid rgba(120, 128, 140, 85);"
+            f"background: {_rgba(button_background)};"
+            f"color: {_rgba(button_text_color)};"
+            f"border: 1px solid {_rgba(border_color)};"
             "border-radius: 6px;"
             "padding: 5px 10px;"
             "}"
             "QPushButton:hover {"
-            "background: #2d3540;"
-            "border-color: rgba(120, 128, 140, 130);"
+            f"background: {_rgba(hover_background)};"
+            f"border-color: {_rgba(_with_alpha(border_color, 210))};"
+            "}"
+            "QPushButton:pressed {"
+            f"background: {_rgba(pressed_background)};"
             "}"
             "QPushButton:disabled {"
-            "color: #626a75;"
-            "background: #171a1f;"
+            f"color: {_rgba(disabled_text_color)};"
+            f"background: {_rgba(panel_background)};"
             "}"
             "QPushButton#category_sidebar_icon_button {"
             f"min-width: {ICON_PICKER_BUTTON_SIZE}px;"
@@ -472,8 +560,8 @@ class CategorySidebarSettingsPanel(PanelWidget):
             "padding: 0;"
             "}"
             "QPushButton#category_sidebar_icon_button:checked {"
-            "background: rgba(77, 163, 255, 80);"
-            "border-color: rgba(77, 163, 255, 170);"
+            f"background: {_rgba(icon_selected_background)};"
+            f"border-color: {_rgba(icon_selected_border)};"
             "}"
         )
 
@@ -482,6 +570,12 @@ class CategorySidebarSettingsPanel(PanelWidget):
 
     def _tag_label(self, tag: "Tag") -> str:
         return self.driver.lib.tag_display_name(tag)
+
+    def _list_icon_color(self) -> QColor:
+        return _theme_color(self.item_list, QPalette.ColorRole.Text)
+
+    def _button_icon_color(self) -> QColor:
+        return _theme_color(self, QPalette.ColorRole.ButtonText)
 
     def _reload_groups(self, selected_group_id: str | None = None) -> None:
         selected_group_id = selected_group_id or self._last_group_id
@@ -506,7 +600,11 @@ class CategorySidebarSettingsPanel(PanelWidget):
             if group:
                 for item_model in group.items:
                     row = QListWidgetItem(
-                        category_sidebar_icon(item_model.icon, size=18),
+                        category_sidebar_icon(
+                            item_model.icon,
+                            color=self._list_icon_color(),
+                            size=18,
+                        ),
                         item_model.name,
                     )
                     row.setData(Qt.ItemDataRole.UserRole, item_model.id)
@@ -712,11 +810,14 @@ class CategorySidebarSettingsPanel(PanelWidget):
 
         if color_hex is None:
             self.item_background_color_button.setText(Translations["color.title.no_color"])
+            button_background = self.palette().color(QPalette.ColorRole.Button)
+            button_text_color = _theme_color(self, QPalette.ColorRole.ButtonText)
+            border_color = _with_alpha(self.palette().color(QPalette.ColorRole.Mid), 150)
             self.item_background_color_button.setStyleSheet(
                 "QPushButton#category_sidebar_background_color_button {"
-                "background: #242a32;"
-                "color: #d8dde6;"
-                "border: 1px solid rgba(120, 128, 140, 85);"
+                f"background: {_rgba(button_background)};"
+                f"color: {_rgba(button_text_color)};"
+                f"border: 1px solid {_rgba(border_color)};"
                 "border-radius: 6px;"
                 "padding: 5px 10px;"
                 "font-weight: 600;"
@@ -772,7 +873,13 @@ class CategorySidebarSettingsPanel(PanelWidget):
             button.setObjectName("category_sidebar_icon_button")
             button.setCheckable(True)
             button.setToolTip(icon_name)
-            button.setIcon(category_sidebar_icon(icon_name, size=ICON_PICKER_ICON_SIZE))
+            button.setIcon(
+                category_sidebar_icon(
+                    icon_name,
+                    color=self._button_icon_color(),
+                    size=ICON_PICKER_ICON_SIZE,
+                )
+            )
             button.setIconSize(QSize(ICON_PICKER_ICON_SIZE, ICON_PICKER_ICON_SIZE))
             button.clicked.connect(lambda checked=False, name=icon_name: self.select_icon(name))
             self._icon_buttons[icon_name] = button
@@ -803,7 +910,9 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self._set_selected_icon(item.icon)
         current = self.item_list.currentItem()
         if current:
-            current.setIcon(category_sidebar_icon(item.icon, size=18))
+            current.setIcon(
+                category_sidebar_icon(item.icon, color=self._list_icon_color(), size=18)
+            )
 
     def _on_rule_type_changed(self, *args) -> None:
         if self._loading_details:

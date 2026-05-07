@@ -183,7 +183,7 @@ class History(Generic[T]):
 
 
 class QtDriver(DriverMixin, QObject):
-    """A Qt GUI frontend driver for TagStudio."""
+    """A Qt GUI frontend driver for PromptBook."""
 
     SIGTERM = Signal()
 
@@ -259,8 +259,8 @@ class QtDriver(DriverMixin, QObject):
             self.cached_values = QSettings(
                 QSettings.Format.IniFormat,
                 QSettings.Scope.UserScope,
-                "TagStudio",
-                "TagStudio",
+                "PromptBook",
+                "PromptBook",
             )
             logger.info(
                 "[Cache] Cache File not specified, using default one",

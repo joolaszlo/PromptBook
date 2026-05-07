@@ -16,9 +16,9 @@ from tagstudio.core.enums import ShowFilepathOption, TagClickActionOption
 logger = structlog.get_logger(__name__)
 
 DEFAULT_GLOBAL_SETTINGS_PATH = (
-    Path.home() / "Appdata" / "Roaming" / "TagStudio" / "settings.toml"
+    Path.home() / "Appdata" / "Roaming" / "PromptBook" / "settings.toml"
     if platform.system() == "Windows"
-    else Path.home() / ".config" / "TagStudio" / "settings.toml"
+    else Path.home() / ".config" / "PromptBook" / "settings.toml"
 )
 
 DEFAULT_THUMB_CACHE_SIZE = 500  # Number in MiB
