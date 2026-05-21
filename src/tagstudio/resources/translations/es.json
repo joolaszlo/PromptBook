@@ -1,6 +1,6 @@
 {
     "about.config_path": "Ruta de Configuración",
-    "about.description": "Este software es una biblioteca multimedia centrada en prompts para gestionar prompts junto con las imágenes y videos que producen. Basado en TagStudio, amplía el concepto original hacia la organización, selección y seguimiento de resultados de prompts para flujos de trabajo creativos y de IA generativa.",
+    "about.description": "Este software es una biblioteca multimedia centrada en prompts para gestionar prompts junto con las imágenes y videos que producen. PromptBook es una bifurcación modificada de TagStudio, amplía el concepto original hacia la organización, selección y seguimiento de resultados de prompts para flujos de trabajo creativos y de IA generativa. \nEste programa viene sin garantía.\nConsulta LICENSE y CHANGES.md para obtener más detalles.",
     "about.documentation": "Documentación",
     "about.license": "Licencia",
     "about.module.found": "Encontrado",

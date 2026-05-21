@@ -1,4 +1,5 @@
 {
+    "about.description": "Kini nga software usa ka prompt-focused nga librarya sa media alang sa pagdumala sa mga prompt kauban ang mga hulagway ug video nga ilang gihimo. Ang PromptBook usa ka giusab nga fork sa TagStudio, nagpalapad kini sa orihinal nga konsepto ngadto sa pag-organisar sa prompt, pagpili, ug pagsubay sa resulta alang sa creative ug generative AI workflows. \nKini nga programa walay garantiya.\nTan-awa ang LICENSE ug CHANGES.md alang sa mga detalye.",
     "about.documentation": "Dokumentasyon",
     "about.license": "Lisensiya",
     "about.module.found": "Makit-i",

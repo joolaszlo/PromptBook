@@ -1,6 +1,6 @@
 {
     "about.config_path": "Yapılandırma yolu",
-    "about.description": "Bu yazılım, istemleri ürettikleri görseller ve videolarla birlikte yönetmek için istem odaklı bir medya kitaplığıdır. TagStudio temel alınarak, özgün kavramı yaratıcı ve üretken yapay zeka iş akışları için istem düzenleme, seçim ve sonuç takibi yönünde genişletir.",
+    "about.description": "Bu yazılım, istemleri ürettikleri görseller ve videolarla birlikte yönetmek için istem odaklı bir medya kitaplığıdır. PromptBook, TagStudio'nun değiştirilmiş bir fork'udur; yaratıcı ve üretken yapay zeka iş akışları için özgün kavramı istem düzenleme, seçim ve sonuç takibi yönünde genişletir. \nBu program hiçbir garanti içermez.\nAyrıntılar için LICENSE ve CHANGES.md dosyalarına bakın.",
     "about.documentation": "Dökümantasyon",
     "about.license": "Lisans",
     "about.module.found": "Bulundu",

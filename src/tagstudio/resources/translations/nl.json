@@ -1,4 +1,5 @@
 {
+    "about.description": "Deze software is een promptgerichte mediabibliotheek om prompts te beheren samen met de afbeeldingen en video's die ze produceren. PromptBook is een aangepaste fork van TagStudio, het breidt het oorspronkelijke concept uit naar promptorganisatie, selectie en het volgen van resultaten voor creatieve en generatieve AI-workflows. \nDit programma wordt geleverd zonder garantie.\nZie LICENSE en CHANGES.md voor details.",
     "about.config_path": "Configuratie Pad",
     "about.documentation": "Documentatie",
     "about.license": "Licentie",

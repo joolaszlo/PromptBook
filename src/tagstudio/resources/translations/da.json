@@ -1,4 +1,5 @@
 {
+    "about.description": "Denne software er et prompt-fokuseret mediebibliotek til at administrere prompts sammen med de billeder og videoer, de producerer. PromptBook er en modificeret fork af TagStudio, den udvider det oprindelige koncept mod prompt-organisering, udvælgelse og resultatsporing til kreative og generative AI-arbejdsgange. \nDette program leveres uden garanti.\nSe LICENSE og CHANGES.md for detaljer.",
     "app.pre_release": "Forududgivelse",
     "app.title": "{base_title} - Bibliotek '{library_dir}'",
     "category_sidebar.background_color": "Baggrundsfarve",

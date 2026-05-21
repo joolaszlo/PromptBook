@@ -1,6 +1,6 @@
 {
     "about.config_path": "Path ng Config",
-    "about.description": "Ang software na ito ay isang prompt-focused na media library para pamahalaan ang mga prompt kasama ng mga larawan at video na nalilikha ng mga ito. Batay sa TagStudio, pinapalawak nito ang orihinal na konsepto tungo sa pagsasaayos, pagpili, at pagsubaybay ng resulta ng mga prompt para sa creative at generative AI workflows.",
+    "about.description": "Ang software na ito ay isang prompt-focused na media library para pamahalaan ang mga prompt kasama ng mga larawan at video na nalilikha ng mga ito. Ang PromptBook ay isang binagong fork ng TagStudio, pinapalawak nito ang orihinal na konsepto tungo sa pagsasaayos, pagpili, at pagsubaybay ng resulta ng mga prompt para sa creative at generative AI workflows. \nWalang kasamang warranty ang programang ito.\nTingnan ang LICENSE at CHANGES.md para sa mga detalye.",
     "about.documentation": "Dokumentasyon",
     "about.license": "Lisensya",
     "about.module.found": "Nahanap",

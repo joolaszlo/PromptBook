@@ -1,6 +1,6 @@
 {
     "about.config_path": "Mlafuplas fu sentakuzma",
-    "about.description": "This software is a prompt-focused media library for managing prompts alongside the images and videos they produce. Based on TagStudio, it extends the original concept toward prompt organization, selection, and result tracking for creative and generative AI workflows.",
+    "about.description": "Afto softwareshi er prompt-fokus mediehuomi per jewalt prompt sama sitelen au video ke prompt gotova. PromptBook er modifisijena fork de TagStudio, ditto ekspandere original konsept tawa prompt-organisasjon, valg au resultat-rakning per kreativ au generativ AI arbeidsflow. \nAfto program koma mit nil garanti.\nLuk LICENSE au CHANGES.md per detalji.",
     "about.documentation": "Mahaklarazma",
     "about.license": "Brukruuru",
     "about.module.found": "Finnajena",

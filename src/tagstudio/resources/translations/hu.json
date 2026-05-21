@@ -1,6 +1,6 @@
 {
     "about.config_path": "Konfigurációs fájl",
-    "about.description": "Ez a szoftver egy promptközpontú médiakönyvtár, amely a promptokat az általuk létrehozott képekkel és videókkal együtt kezeli. A TagStudio alapján készült, és az eredeti koncepciót a promptok rendszerezése, kiválasztása és az eredmények nyomon követése felé bővíti kreatív és generatív MI-munkafolyamatokhoz.",
+    "about.description": "Ez a szoftver egy promptközpontú médiakönyvtár, amely a promptokat az általuk létrehozott képekkel és videókkal együtt kezeli. A PromptBook a TagStudio módosított forkja, és az eredeti koncepciót a promptok rendszerezése, kiválasztása és az eredmények nyomon követése felé bővíti kreatív és generatív MI-munkafolyamatokhoz. \nEz a program garancia nélkül érkezik.\nA részletekért lásd a LICENSE és a CHANGES.md fájlt.",
     "about.documentation": "Dokumentáció",
     "about.license": "Licenc",
     "about.module.found": "Telepítve",

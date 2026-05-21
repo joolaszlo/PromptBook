@@ -1,6 +1,6 @@
 {
     "about.config_path": "Konfigurační cesta",
-    "about.description": "Tento software je mediální knihovna zaměřená na prompty, určená ke správě promptů spolu s obrázky a videi, které vytvářejí. Vychází z TagStudio a rozšiřuje původní koncept směrem k organizaci promptů, jejich výběru a sledování výsledků pro kreativní a generativní AI pracovní postupy.",
+    "about.description": "Tento software je mediální knihovna zaměřená na prompty, určená ke správě promptů spolu s obrázky a videi, které vytvářejí. PromptBook je upravený fork projektu TagStudio, rozšiřuje původní koncept směrem k organizaci promptů, jejich výběru a sledování výsledků pro kreativní a generativní AI pracovní postupy. \nTento program je poskytován bez záruky.\nPodrobnosti najdete v souborech LICENSE a CHANGES.md.",
     "about.documentation": "Dokumentace",
     "about.license": "Licence",
     "about.module.found": "Nalezeno",

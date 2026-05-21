@@ -1,6 +1,6 @@
 {
     "about.config_path": "設定路徑",
-    "about.description": "這個軟體是一個以提示詞為核心的媒體庫，用於管理提示詞以及它們產生的圖片和影片。它以 TagStudio 為基礎，將原始概念延伸到提示詞整理、選擇，以及為創意和生成式 AI 工作流程追蹤結果。",
+    "about.description": "這個軟體是一個以提示詞為核心的媒體庫，用於管理提示詞以及它們產生的圖片和影片。PromptBook 是 TagStudio 的修改版分支，它將原始概念延伸到提示詞整理、選擇，以及為創意和生成式 AI 工作流程追蹤結果。 \n本程式不附帶任何擔保。\n詳情請參閱 LICENSE 和 CHANGES.md。",
     "about.documentation": "說明文件",
     "about.license": "授權條款",
     "about.module.found": "存在",

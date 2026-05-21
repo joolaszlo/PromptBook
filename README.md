@@ -1,234 +1,260 @@
-# TagStudio: A User-Focused Photo & File Management System
+# PromptBook
 
-[![Downloads](https://img.shields.io/github/downloads/TagStudioDev/TagStudio/total.svg?maxAge=2592001)](https://github.com/TagStudioDev/TagStudio/releases)
-[![Translations](https://hosted.weblate.org/widget/tagstudio/strings/svg-badge.svg)](https://hosted.weblate.org/projects/tagstudio/strings/)
-[![PyTest](https://github.com/TagStudioDev/TagStudio/actions/workflows/pytest.yaml/badge.svg)](https://github.com/TagStudioDev/TagStudio/actions/workflows/pytest.yaml)
-[![MyPy](https://github.com/TagStudioDev/TagStudio/actions/workflows/mypy.yaml/badge.svg)](https://github.com/TagStudioDev/TagStudio/actions/workflows/mypy.yaml)
-[![Ruff](https://github.com/TagStudioDev/TagStudio/actions/workflows/ruff.yaml/badge.svg)](https://github.com/TagStudioDev/TagStudio/actions/workflows/ruff.yaml)
+PromptBook is a desktop application for organizing prompts, generated images, videos, text outputs, and related creative assets.
 
-<p align="center">
-  <img width="60%" src="docs/assets/ts-9-3_logo_text.png">
-</p>
+It is a modified fork of [TagStudio](https://github.com/TagStudioDev/TagStudio), adapted for prompt-based workflows and AI-generated media organization.
 
-TagStudio is a photo & file organization application with an underlying tag-based system that focuses on giving freedom and flexibility to the user. No proprietary programs or formats, no sea of sidecar files, and no complete upheaval of your filesystem structure. **Read the documentation and more at [docs.tagstud.io](https://docs.tagstud.io)!**
+![PromptBook screenshot](docs/assets/promptbook-screenshot.png)
 
-<p align="center">
-  <img width="80%" src="docs/assets/screenshot.png" alt="TagStudio Screenshot">
-</p>
-<p align="center">
-  <i>PromptBook v1.0.0 running on macOS Sequoia.</i>
-</p>
+## What is PromptBook?
 
-## Contents
+PromptBook helps you organize prompts and the files connected to them in a local library.
 
--   [Feature Highlights](#feature-highlights)
--   [Basic Usage](#basic-usage)
--   [Installation](#installation)
--   [Goals & Priorities](#goals--priorities)
--   [FAQ](#faq)
+It is designed for workflows where prompts, generated images, videos, notes, text outputs, and related assets belong together. The goal is to make previous prompts and results easier to search, review, compare, reuse, and archive.
 
-Translation hosting generously provided by [Weblate](https://weblate.org/en/). Check out our [project page](https://hosted.weblate.org/projects/tagstudio/) to help translate TagStudio!
+PromptBook is especially useful if you work with AI-generated media and want a structured way to keep track of:
+
+- prompts
+- generated images
+- generated videos
+- text outputs
+- project notes
+- tags and categories
+- related source files
 
 ## Feature Highlights
 
-### Libraries
+### Local Libraries
 
-A TagStudio library contains all of your tags, fields for a set of files based on one of your system directories. Similar to how Obsidian [vaults](https://help.obsidian.md/vault) function, TagStudio libraries act as a layer on top of your existing folders and file structure, and don't require your to move or duplicate files.
+PromptBook uses local libraries to store metadata for your files.
 
-TagStudio places a `.TagStudio` folder in the folder you open as a library. Files included in your library are referred to as "entries", and are kept track of inside of a SQLite database inside the `.TagStudio` folder along with tags and other library data.
+Your files do not need to be moved into a special application folder. PromptBook stores library information separately and links entries to files on your system.
 
-### File Entries
+### Prompt-Focused Entries
 
-All file types are supported in TagStudio libraries, just not all have dedicated preview support. For a full list of filetypes with supported previews, see the "[Supported Previews](https://docs.tagstud.io/preview-support)" page on the documentation site. There's also playback support for videos, audio files, and supported animated image formats.
+Entries can represent prompts, generated images, videos, text outputs, or other related files.
 
-For a generalized list of what's currently supported:
+This makes it possible to keep prompts and their results together in one searchable library.
 
--   **Images**
-    -   Raster Images (JPEG, PNG, etc.)
-    -   Vector (SVG)
-    -   Animated (GIF, WEBP, APNG)
-    -   RAW Formats
--   **Videos**
--   **Plaintext Files**
--   **Documents** _(If supported)_
--   **eBooks** _(If supported)_
--   **Photoshop PSDs**, **Blender Projects**, **Krita Projects**, and more!
+### Tags and Categories
 
-### [Tags](https://docs.tagstud.io/tags) and [Fields](https://docs.tagstud.io/fields)
+Use tags and categories to organize your library by:
 
-Tags represent an object or attribute - this could be a person, place, object, concept, and more. Unlike most tagging systems, TagStudio tags are not solely represented by a line of text or a hashtag. Tags in TagStudio consist of several properties and relationships that give extra customization, searching power, and ease of tagging that cannot be achieved by string-based tags alone. TagStudio tags are designed to be as simple or as complex as you'd like, giving options to users of all skill levels and use cases.
+- subject
+- style
+- model
+- project
+- character
+- location
+- output type
+- workflow stage
+- custom metadata
 
-Tags currently consist of the following attributes:
+### Search and Filtering
 
--   **Name**: The full name for your tag. **_This does NOT have to be unique!_**
--   **Shorthand Name**: The shortest alternate name for your tag, used for abbreviations.
--   **Aliases**: Alternate names your tag goes by.
--   **Color**: The display color of your tag.
--   **Parent Tags**: Other tags in which this tag inherits from. In practice, this means that this tag can be substituted in searches for any listed parent tags.
-    -   Parent tags checked with the "disambiguation" checkbox next to them will be used to help disambiguate tag names that may not be unique.
-    -   For example: If you had a tag for "Freddy Fazbear", you might add "Five Nights at Freddy's" as one of the parent tags. If the disambiguation box is checked next to "Five Nights at Freddy's" parent tag, then the tag "Freddy Fazbear" will display as "Freddy Fazbear (Five Nights at Freddy's)". Furthermore, if the "Five Nights at Freddy's" tag has a shorthand like "FNAF", then the "Freddy Fazbear" tag will display as "Freddy Fazbear (FNAF)".
--   **Is Category**: A property that when checked, treats this tag as a category in the preview panel.
+PromptBook includes search and filtering tools to help you find previous work.
 
-Fields, like tags, are additional pieces of custom metadata that you can add to your file entries. Fields currently have several hardcoded names (e.g. "Title", "Author", "Series") but custom field names are planned for an upcoming update.
+Depending on the available metadata, entries can be searched by:
 
-Field types currently include:
+- tags
+- titles
+- prompt text
+- file information
+- custom metadata
 
--   **Text Lines**: Single lines of text.
--   **Text Boxes**: Multi-line pieces of text.
--   **Datetimes**: Dates and times.
+### Media Preview
 
-### [Search](https://docs.tagstud.io/search)
+PromptBook can preview supported media types directly inside the application.
 
--   Search for file entries based on tags, file path (`path:`), file types (`filetype:`), and even media types! (`mediatype:`). Path searches currently use [glob](<https://en.wikipedia.org/wiki/Glob_(programming)>) syntax, so you may need to wrap your filename or filepath in asterisks while searching. This will not be strictly necessary in future versions of the program.
--   Use and combine boolean operators (`AND`, `OR`, `NOT`) along with parentheses groups, quotation escaping, and underscore substitution to create detailed search queries
--   Use special search conditions (`special:untagged` and `special:empty`) to find file entries without tags or fields, respectively
+This may include images, videos, text files, and other supported file formats, depending on your system and installed dependencies.
+
+### Prompt and Output Organization
+
+PromptBook is intended to help connect creative input and generated output.
+
+Instead of keeping prompts in one place and generated files somewhere else, PromptBook lets you organize them together as part of the same library workflow.
 
 ## Basic Usage
 
-> [!TIP]
-> For more usage instructions, see the [documentation site](https://docs.tagstud.io/libraries)!
+A typical workflow:
 
-### Creating/Opening a Library
-
-With TagStudio opened, start by creating a new library or opening an existing one using File -> Open/Create Library from the menu bar. TagStudio will automatically create a new library from the chosen directory if one does not already exist. Upon creating a new library, TagStudio will automatically scan your folders for files and add those to your library (no files are moved during this process!).
-
-### Refreshing the Library
-
-Libraries under 10,000 files automatically scan for new or modified files when opened. In order to refresh the library manually, select "Refresh Directories" under the File menu or by pressing <kbd>Ctrl</kbd></kbd>+<kbd>R</kbd> (macOS: <kbd>⌘ Command</kbd>+<kbd>R</kbd>).
-
-### Creating Tags
-
-Create a new tag by accessing the "New Tag" option from the Edit menu or by pressing <kbd>Ctrl</kbd>+<kbd>T</kbd> (macOS: <kbd>⌘ Command</kbd>+<kbd>T</kbd>). In the tag creation panel, enter a tag name, optional shorthand name, optional tag aliases, optional parent tags, and an optional color.
-
-#### Tag Manager
-
-You can manage your library of tags from opening the "Tag Manager" panel from Edit -> "Tag Manager" or by pressing <kbd>Ctrl</kbd>+<kbd>M</kbd> (macOS: <kbd>⌘ Command</kbd>+<kbd>M</kbd>). From here you can create, search for, edit, and permanently delete any tags you've created in your library.
-
-### Editing Tags
-
-To edit a tag, click on it inside the preview panel or right-click the tag and select "Edit Tag" from the context menu.
-
-### Adding Tags to File Entries
-
-Access the "Add Tag" search box by either clicking on the "Add Tag" button at the bottom of the right sidebar, accessing the "Add Tags to Selected" option from the File menu, or by pressing <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> (macOS: <kbd>⌘ Command</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd>).
-
-From here you can search for existing tags or create a new one if the one you're looking for doesn't exist. Click the "+" button next to any tags you want to the currently selected file entries. To quickly add the top result, press the <kbd>Enter</kbd>/<kbd>Return</kbd> key to add the top-most tag and reset the tag search. Press <kbd>Enter</kbd>/<kbd>Return</kbd> once more to close the dialog box. By using this method, you can quickly add various tags in quick succession just by using the keyboard!
-
-To remove a tag from a file entry, hover over the tag in the preview panel and click on the "-" icon that appears.
-
-### Adding Fields to File Entries
-
-To add a metadata field to a file entry, start by clicking the "Add Field" button at the bottom of the preview panel. From the dropdown menu, select the type of metadata field you’d like to add to the entry
-
-### Editing Fields
-
-Hover over the field and click the pencil icon. From there, add or edit text in the dialog box popup.
-
-### Relinking Moved Files
-
-Inevitably some of the files inside your library will be renamed, moved, or deleted. If a file has been renamed or moved, TagStudio will display the thumbnail as a red broken chain link. To relink moved files or delete these entries, select the "Manage Unlinked Entries" option under the Tools menu. Click the "Refresh" button to scan your library for unlinked entries. Once complete, you can attempt to "Search & Relink" any unlinked file entries to their respective files, or "Delete Unlinked Entries" in the event the original files have been deleted and you no longer wish to keep their entries inside your library.
-
-> [!WARNING]
-> There is currently no method to relink entries to files that have been renamed - only moved or deleted. This is a high priority for future releases.
-
-> [!WARNING]
-> If multiple matches for a moved file are found (matches are currently defined as files with a matching filename as the original), TagStudio will currently ignore the match groups. Adding a GUI for manual selection, as well as smarter automated relinking, are high priorities for future versions.
-
-See instructions in the "[Creating Development Environment](/CONTRIBUTING.md/#creating-a-development-environment)" section from the [contributing](https://docs.tagstud.io/contributing) page.
+1. Create or open a library.
+2. Add files or scan a folder.
+3. Create tags and categories.
+4. Add titles, prompts, notes, and metadata to entries.
+5. Connect generated media with the prompts or projects they belong to.
+6. Use search and filters to find previous prompts and results.
 
 ## Installation
 
-To download executable builds of TagStudio, visit the [Releases](https://github.com/TagStudioDev/TagStudio/releases) page of the GitHub repository and download the latest release for your system under the "Assets" section at the bottom of the release.
+PromptBook is currently in early development.
 
-TagStudio has builds for **Windows**, **macOS** _(Apple Silicon & Intel)_, and **Linux**. We also offer portable releases for Windows and Linux which are self-contained and easier to move around.
+Executable builds may be provided through GitHub Releases. If executable builds are distributed, the corresponding source code will also be made available under the GPL-3.0-only license.
 
-For detailed instructions, installation help, and instructions for developing for TagStudio, please see the "[Installation](https://docs.tagstud.io/install)" page on our documentation website.
+### From Releases
 
-> [!IMPORTANT]
-> If you're interested in contributing to TagStudio, please take a look at the [contribution guidelines](https://docs.tagstud.io/contributing) for how to get started!
+Download the latest release from the GitHub Releases page, if available.
 
-### Third-Party Dependencies
+The release may include:
 
-For video thumbnails and playback, you'll also need [FFmpeg](https://ffmpeg.org/download.html) installed on your system. If you encounter any issues with this, please reference our [FFmpeg Help](/docs/help/ffmpeg.md) guide. For faster library scanning and refreshing, it's also recommended you install [ripgrep](https://github.com/BurntSushi/ripgrep).
+- executable build
+- source code archive
+- license information
+- change summary
 
-<!-- prettier-ignore -->
-> [!CAUTION]
-> **We do not currently publish TagStudio to any package managers. Any TagStudio distributions outside of the GitHub [Releases](https://github.com/TagStudioDev/TagStudio/releases) page are _unofficial_ and not maintained by us.**
->
-> Installation support will not be given to users installing from unofficial sources. Use these versions at your own risk!
+### From Source
 
-## Goals & Priorities
+PromptBook is based on the TagStudio codebase and currently uses Python.
 
-TagStudio aims to create an **open** and **robust** format for file tagging that isn't burdened by the limitations of traditional tagging and file metadata systems. **TagStudio** is the first proof-of-concept implementation of this system.
+Requirements may change during development.
 
-See the [**Roadmap**](docs/roadmap.md) on the documentation site for a complete list of planned features and estimated timeline.
+```bash
+git clone https://github.com/YOUR_USERNAME/PromptBook.git
+cd PromptBook
+pip install -e ".[dev]"
+python -m tagstudio
+```
 
-### Overall Goals
+Note: the internal Python module name may still be `tagstudio` while the project is being converted to PromptBook. If the module is renamed later, update the launch command accordingly.
 
--   To achieve a portable, private, extensible, open-format, and feature-rich system of organizing and rediscovering files.
--   To provide powerful methods for organization, notably the concept of tag inheritance, or "taggable tags" _(and in the near future, the combination of composition-based tags)._
--   To create an implementation of such a system that is resilient against a user’s actions outside the program (modifying, moving, or renaming files) while also not burdening the user with mandatory sidecar files or requiring them to change their existing file structures and workflows.
--   To support a wide range of users spanning across different platforms, multi-user setups, and those with large (several terabyte) libraries.
--   To make the dang thing look nice, too. It’s 2025, not 1995.
+## Third-Party Dependencies
 
-### Project Priorities
+Some features may require external tools or libraries.
 
-1. **The concept.** Even if TagStudio as an application fails, I’d hope that the idea lives on in a superior project. The goals outlined above don’t reference TagStudio once - _TagStudio_ is what references the _goals._
-2. **The system.** Frontends and implementations can vary, as they should. The core underlying metadata management system is what should be interoperable between different frontends, programs, and operating systems. A standard implementation for this should settle as development continues. This opens up the doors for improved and varied clients, integration with third-party applications, and more.
-3. **The application.** If nothing else, TagStudio the application serves as the first (and so far only) implementation for this system of metadata management. This has the responsibility of doing the idea justice and showing just what’s possible when it comes to user file management.
+Depending on the enabled features, this may include:
+
+- FFmpeg for video thumbnails, video metadata, or playback support
+- FFprobe for media information
+- ripgrep for faster searching or scanning
+- archive extraction tools for supported archive formats
+
+If a feature does not work correctly, check whether the required external dependency is installed and available on your system path.
+
+## Origin and License
+
+PromptBook is a modified fork of TagStudio.
+
+Original project:
+
+- TagStudio
+- Original repository: https://github.com/TagStudioDev/TagStudio
+- Original authors and contributors: TagStudio Contributors
+
+PromptBook is licensed under the GNU General Public License v3.0 only.
+
+This is the same license used by the original project.
+
+See:
+
+- `LICENSE`
+- `CHANGES.md`
+- `LICENSES/`, if present
+- source file SPDX notices, where present
+
+This repository contains modified TagStudio source code. Original copyright and license notices are preserved where applicable.
+
+## Main Differences from TagStudio
+
+PromptBook changes the focus of the original application from general file organization to prompt-based workflows.
+
+Main changes include:
+
+- PromptBook branding
+- prompt-focused application description
+- prompt and generated media focused terminology
+- modified user interface text
+- modified search behavior
+- modified thumbnail overlay behavior
+- modified sidebar behavior
+- modified documentation
+- adjusted workflow for organizing prompts and generated outputs
+
+PromptBook is not intended to replace the original TagStudio project. It is a separate modified fork with a different focus.
+
+## Project Status
+
+PromptBook is currently an early personal fork.
+
+Some features may still behave like the original TagStudio application. Some text, internal names, paths, settings, or documentation may still reference TagStudio while the project is being converted.
+
+Use it with care and keep backups of important libraries.
+
+Known status:
+
+- early development
+- incomplete rebranding may still exist
+- inherited TagStudio behavior may still be present
+- breaking changes are possible
+- library format compatibility may change
+
+## Source Code Availability
+
+PromptBook is free software licensed under GPL-3.0-only.
+
+If executable builds are distributed, the corresponding source code for those builds will be made available under the same license.
+
+This means that users who receive a build should also have access to the matching source code for that version.
 
 ## FAQ
 
-### Will TagStudio move, modify, or mess with my files?
+### Is PromptBook the same project as TagStudio?
 
-**No**, outside of _explicit_ functionality such as "Move File(s) to Trash".
+No.
 
-### Will TagStudio require me to recreate my tags or library in future updates?
+PromptBook is a modified fork of TagStudio with a different focus. TagStudio is the original project. PromptBook is adapted for organizing prompts, generated media, and related creative assets.
 
-**No.** It's our highest priority to ensure that your data safely and smoothly transfers over to newer versions.
+### Is PromptBook affiliated with TagStudio?
 
-### What state is the project currently in?
+No official affiliation is implied unless stated otherwise.
 
-As of writing (Alpha v9.5.5) the project is very usable, however there's still some quirks and missing QoL features. Several additional features and changes are still planned (see: [roadmap](https://docs.tagstud.io/roadmap)) that add even more power and flexibility to the tagging and field systems while making it easier to tag in bulk and perform automated operations. Bugfixes and polishes are constantly trickling in along with the larger feature releases.
+PromptBook is an independent modified fork based on the TagStudio source code.
 
-### What features are you planning on adding?
+### Does PromptBook move or modify my files?
 
-See the [roadmap](https://docs.tagstud.io/roadmap) page for the core features being planned and implemented for TagStudio. For a more up to date look on what's currently being added for upcoming releases, see our GitHub [milestones](https://github.com/TagStudioDev/TagStudio/milestones) for versioned releases.
+PromptBook is designed to manage metadata and library information without requiring you to move or duplicate your files.
 
-The most important remaining features before I consider the program to be "feature complete" are:
+However, some explicit actions inside the application may affect files if you choose to use them. Always keep backups of important files and libraries.
 
--   Custom names for Fields
--   List views for files
--   Multiple root directory support for libraries
--   Improved file entry relinking
--   File entry groups
--   Sorting by file date modified and created
--   Macros
--   Improved search bar with visualized tags and improved autocomplete
--   Side panel for easier tagging (pinned tags, recent tags, tag search, tag palette)
--   Improved tag management interface
--   Improved and finalized Tag Categories
--   Fixed and improved mixed entry data displays (see: [#337](https://github.com/TagStudioDev/TagStudio/issues/337))
--   Sharable tag data
--   Separate core library + API
+### Is PromptBook free?
 
-### What features will NOT be added?
+Yes.
 
--   Native Cloud Integration
-    -   There are plenty of services already (native or third-party) that allow you to mount your cloud drives as virtual drives on your system. Hosting a TagStudio library on one of these mounts should function similarly to what native integration would look like.
-    -   Supporting native cloud integrations such as these would be an unnecessary "reinventing the wheel" burden for us that is outside the scope of this project.
--   Native ChatGPT/Claude/Gemini/_Non-Local_ LLM Integration
-    -   This could mean different things depending on your intentions. Whether it's trying to use an LLM to replace the native search, or to trying to use a model for image recognition, I'm not interested in hooking people's TagStudio libraries into non-local LLMs such as ChatGPT and/or turn the program into a "chatbot" interface (see: [Overall Goals/Privacy](#overall-goals)).
-    -   With that being said, the future TagStudio API should be well-suited to connect to any sort of service you'd like, including machine learning models if so you choose. I just won't _personally_ add any native integrations with online services.
+PromptBook is free software licensed under GPL-3.0-only.
 
-### Is a Rust port coming?
+### Can I modify PromptBook?
 
-Not from us, or at least _not quite_. There are plans to break off the core TagStudio library into its own MIT-licensed module that can be used in other applications and plugins, and ideally this would be written in Rust. While I understand there's a lot of vocal support and volunteers willing to help with this, it's something that's better off coming at my/our own pace in order to ensure it's done correctly to align with the project's intentions and to remain maintainable in the future.
+Yes.
 
-### Windows Defender thinks TagStudio is a virus or a trojan, why?
+You may modify PromptBook under the terms of the GPL-3.0-only license.
 
-Unfortunately, executable Python applications "compiled" with something like PyInstaller are notorious for raising false positives in anti-virus software, most commonly Windows Defender (see: [#276](https://github.com/TagStudioDev/TagStudio/issues/276) and related issues). There's really not much we can do about this on our end, as the malware matches frequently change and sample submissions to Microsoft are slow and often ineffective. If you're effected by this, you may need to allow TagStudio to bypass your anti-virus software.
+### Can I redistribute PromptBook?
 
-### Why is TagStudio already on version 9.x?
+Yes, under the terms of the GPL-3.0-only license.
 
-Over the first few years of private development the project went through several major iterations and rewrites. These major version bumps came quickly, and by the time TagStudio was opened-sourced the version number had already reached v9.0. Instead of resetting to "v0.0" or "v1.0" for this public release I decided to keep my v9.x numbering scheme and reserve v10.0 for when all the core features on the [roadmap](https://docs.tagstud.io/roadmap/) are implemented. I’ve also labeled this version as an "Alpha" and will drop this once either all of the core features are implemented or the project feels stable and feature-rich enough to be considered "Beta" and beyond.
+If you distribute modified versions or executable builds, you must comply with the license terms, including source code availability requirements.
+
+### Where can I find the original project?
+
+The original TagStudio project is available here:
+
+https://github.com/TagStudioDev/TagStudio
+
+## Contributing
+
+PromptBook is currently a personal fork and may not be ready for external contributions.
+
+If contributions are accepted later, contribution guidelines may be added or expanded.
+
+For now, please check the project status and open issues before submitting changes.
+
+## Acknowledgements
+
+PromptBook is based on TagStudio.
+
+Thanks to the TagStudio authors and contributors for creating and maintaining the original project.
+
+## License
+
+PromptBook is licensed under the GNU General Public License v3.0 only.
+
+See `LICENSE` for the full license text.

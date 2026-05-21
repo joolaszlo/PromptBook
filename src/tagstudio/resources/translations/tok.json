@@ -1,6 +1,6 @@
 {
     "about.config_path": "nasin pi ante lawa",
-    "about.description": "This software is a prompt-focused media library for managing prompts alongside the images and videos they produce. Based on TagStudio, it extends the original concept toward prompt organization, selection, and result tracking for creative and generative AI workflows.",
+    "about.description": "ilo ni li tomo lipu pi sitelen tawa en sitelen awen. ona li awen e nimi wile, e sitelen tan nimi wile ni. PromptBook li ilo ante tan ilo TagStudio, li suli e sona open tawa nasin pi pona nimi wile, tawa wile nimi, tawa lukin e kama tan pali musi pi ilo sona. \nilo ni la jan pali li pana ala e toki awen pona.\no lukin e lipu LICENSE e lipu CHANGES.md tawa sona mute.",
     "about.documentation": "lipu sona",
     "about.license": "lipu lawa",
     "about.module.found": "lukin",

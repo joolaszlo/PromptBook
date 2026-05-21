@@ -1,6 +1,6 @@
 {
     "about.config_path": "Loc de configurare",
-    "about.description": "Acest software este o bibliotecă media axată pe prompturi, pentru gestionarea prompturilor împreună cu imaginile și videoclipurile pe care le produc. Bazat pe TagStudio, extinde conceptul original către organizarea, selecția și urmărirea rezultatelor prompturilor pentru fluxuri de lucru creative și de IA generativă.",
+    "about.description": "Acest software este o bibliotecă media axată pe prompturi, pentru gestionarea prompturilor împreună cu imaginile și videoclipurile pe care le produc. PromptBook este un fork modificat al TagStudio, extinde conceptul original către organizarea, selecția și urmărirea rezultatelor prompturilor pentru fluxuri de lucru creative și de IA generativă. \nAcest program vine fără garanție.\nConsultați LICENSE și CHANGES.md pentru detalii.",
     "about.documentation": "Documentaţie",
     "about.license": "Licenţă",
     "about.module.found": "Găsit",

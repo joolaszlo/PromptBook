@@ -1,6 +1,6 @@
 {
     "about.config_path": "Stillingarslóð",
-    "about.description": "Þessi hugbúnaður er miðlasafn með áherslu á kveikjur, ætlað til að halda utan um kveikjur ásamt myndunum og myndböndunum sem þær búa til. Byggt á TagStudio útvíkkar það upprunalegu hugmyndina í átt að skipulagningu kveikja, vali og rakningu niðurstaðna fyrir skapandi og generatíf gervigreindarvinnuflæði.",
+    "about.description": "Þessi hugbúnaður er miðlasafn með áherslu á kveikjur, ætlað til að halda utan um kveikjur ásamt myndunum og myndböndunum sem þær búa til. PromptBook er breytt fork af TagStudio, það útvíkkar upprunalegu hugmyndina í átt að skipulagningu kveikja, vali og rakningu niðurstaðna fyrir skapandi og generatíf gervigreindarvinnuflæði. \nÞetta forrit kemur án ábyrgðar.\nSjá LICENSE og CHANGES.md fyrir nánari upplýsingar.",
     "about.documentation": "Skjölun",
     "about.license": "Leyfi",
     "about.module.found": "Fannst",

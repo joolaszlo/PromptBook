@@ -1,6 +1,6 @@
 {
     "about.config_path": "Ścieżka do pliku konfiguracji",
-    "about.description": "To oprogramowanie jest biblioteką multimediów skoncentrowaną na promptach, służącą do zarządzania promptami razem z obrazami i filmami, które generują. Oparte na TagStudio, rozszerza pierwotną koncepcję o organizowanie promptów, ich wybór oraz śledzenie wyników w kreatywnych i generatywnych przepływach pracy AI.",
+    "about.description": "To oprogramowanie jest biblioteką multimediów skoncentrowaną na promptach, służącą do zarządzania promptami razem z obrazami i filmami, które generują. PromptBook jest zmodyfikowanym forkiem TagStudio, rozszerza pierwotną koncepcję o organizowanie promptów, ich wybór oraz śledzenie wyników w kreatywnych i generatywnych przepływach pracy AI. \nTen program jest dostarczany bez gwarancji.\nSzczegóły znajdują się w LICENSE i CHANGES.md.",
     "about.documentation": "Dokumentacja",
     "about.license": "Licencja",
     "about.module.found": "Znaleziono",
