@@ -45,6 +45,7 @@ from tagstudio.core.library.category_sidebar import (
     FILTER_RULE_TYPE_TAG_PREFIX,
     normalize_hex_color,
 )
+from tagstudio.core.library.alchemy.enums import TagColorEnum
 from tagstudio.qt.category_sidebar_icons import (
     DEFAULT_CATEGORY_SIDEBAR_ICON,
     category_sidebar_icon,
@@ -52,6 +53,7 @@ from tagstudio.qt.category_sidebar_icons import (
     category_sidebar_search_icon_names,
     resolve_category_sidebar_icon_name,
 )
+from tagstudio.qt.models.palette import ColorType, get_tag_color
 from tagstudio.qt.translations import Translations
 from tagstudio.qt.views.panel_modal import PanelModal, PanelWidget
 
@@ -745,6 +747,25 @@ class CategorySidebarSettingsPanel(PanelWidget):
         tag = self.driver.lib.get_tag(tag_id)
         return tag.name if tag else None
 
+    def _tag_primary_color_for_id(self, tag_id: int | None) -> str | None:
+        if tag_id is None:
+            return None
+        tag = self.driver.lib.get_tag(tag_id)
+        if not tag:
+            return None
+        return normalize_hex_color(
+            tag.color.primary
+            if tag.color
+            else get_tag_color(ColorType.PRIMARY, TagColorEnum.DEFAULT)
+        )
+
+    def _set_default_background_color_from_tag(self, tag_id: int | None) -> None:
+        item = self.current_item()
+        if not item or normalize_hex_color(item.background_color) is not None:
+            return
+        if color_hex := self._tag_primary_color_for_id(tag_id):
+            self._set_item_background_color(color_hex)
+
     def _checked_multiple_tag_ids(self) -> list[int]:
         tag_ids: list[int] = []
         for row in range(self.multiple_tags_list.count()):
@@ -950,6 +971,7 @@ class CategorySidebarSettingsPanel(PanelWidget):
             if tag_id is not None
             else None
         )
+        self._set_default_background_color_from_tag(tag_id)
 
     def _on_prefix_changed(self, text: str) -> None:
         if self._loading_details:
@@ -973,6 +995,11 @@ class CategorySidebarSettingsPanel(PanelWidget):
     def _on_multiple_tags_changed(self, *args) -> None:
         if self._loading_details:
             return
+        source_tag_id = None
+        if args and isinstance(args[0], QListWidgetItem):
+            changed_item = args[0]
+            if changed_item.checkState() == Qt.CheckState.Checked:
+                source_tag_id = changed_item.data(Qt.ItemDataRole.UserRole)
         tag_ids = self._checked_multiple_tag_ids()
         self._set_current_rule(
             CategoryFilterRule(
@@ -990,6 +1017,9 @@ class CategorySidebarSettingsPanel(PanelWidget):
             )
             if tag_ids
             else None
+        )
+        self._set_default_background_color_from_tag(
+            source_tag_id if source_tag_id is not None else next(iter(tag_ids), None)
         )
 
     def add_group(self) -> None:

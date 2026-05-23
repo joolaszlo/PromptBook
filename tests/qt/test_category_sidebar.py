@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication, QLabel, QSizePolicy
 from pytestqt.qtbot import QtBot
 
 from tagstudio.core.library.alchemy.enums import BrowsingState
-from tagstudio.core.library.alchemy.models import Tag
+from tagstudio.core.library.alchemy.models import Tag, TagColorGroup
 from tagstudio.core.library.category_sidebar import (
     CategoryFilterRule,
     CategoryGroup,
@@ -28,10 +28,21 @@ class DummyLibrary:
     def __init__(self) -> None:
         self.library_dir = Path(".")
         self.saved_settings = CategorySidebarSettings()
-        self.tags = [
-            Tag(id=1000, name="Person"),
-            Tag(id=1001, name="Place"),
-        ]
+        person = Tag(id=1000, name="Person")
+        person.color = TagColorGroup(
+            slug="person",
+            namespace="promptbook-test",
+            name="Person",
+            primary="#AA5500",
+        )
+        place = Tag(id=1001, name="Place")
+        place.color = TagColorGroup(
+            slug="place",
+            namespace="promptbook-test",
+            name="Place",
+            primary="#3366AA",
+        )
+        self.tags = [person, place]
 
     def get_category_sidebar_settings(self) -> CategorySidebarSettings:
         return CategorySidebarSettings.from_mapping(self.saved_settings.to_dict())
@@ -353,6 +364,65 @@ def test_category_sidebar_settings_adds_group_and_item(qtbot: QtBot):
     assert settings.groups[0].items[0].icon == "camera"
     assert settings.groups[0].items[0].background_color == "#445566"
     assert settings.groups[0].items[0].filter_rules[0].tag_id == 1000
+
+
+def test_category_sidebar_settings_auto_fills_color_from_single_linked_tag(qtbot: QtBot):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    panel.add_group()
+    panel.add_item()
+
+    assert panel.current_item().background_color is None
+
+    panel.single_tag_combobox.setCurrentIndex(panel.single_tag_combobox.findData(1000))
+
+    assert panel.current_item().background_color == "#AA5500"
+    assert panel.item_background_color_button.text() == "#AA5500"
+
+
+def test_category_sidebar_settings_auto_color_uses_first_added_multiple_tag(
+    qtbot: QtBot,
+):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    panel.add_group()
+    panel.add_item()
+    panel.rule_type_combobox.setCurrentIndex(
+        panel.rule_type_combobox.findData(FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY)
+    )
+
+    panel.multiple_tags_list.item(1).setCheckState(Qt.CheckState.Checked)
+    panel.multiple_tags_list.item(0).setCheckState(Qt.CheckState.Checked)
+
+    rule = panel.current_item().filter_rules[0]
+    assert rule.tag_ids == [1000, 1001]
+    assert panel.current_item().background_color == "#3366AA"
+    assert panel.item_background_color_button.text() == "#3366AA"
+
+
+def test_category_sidebar_settings_auto_color_does_not_replace_existing_color(
+    qtbot: QtBot,
+):
+    driver = DummyDriver()
+    panel = CategorySidebarSettingsPanel(driver)
+    qtbot.addWidget(panel)
+
+    panel.add_group()
+    panel.add_item()
+    panel._set_item_background_color("#445566")
+
+    panel.single_tag_combobox.setCurrentIndex(panel.single_tag_combobox.findData(1000))
+    panel.rule_type_combobox.setCurrentIndex(
+        panel.rule_type_combobox.findData(FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY)
+    )
+    panel.multiple_tags_list.item(1).setCheckState(Qt.CheckState.Checked)
+
+    assert panel.current_item().background_color == "#445566"
+    assert panel.item_background_color_button.text() == "#445566"
 
 
 def test_category_sidebar_settings_builds_prefix_rule(qtbot: QtBot):
