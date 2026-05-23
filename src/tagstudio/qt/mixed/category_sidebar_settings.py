@@ -42,7 +42,6 @@ from tagstudio.core.library.category_sidebar import (
     FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL,
     FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY,
     FILTER_RULE_TYPE_TAG,
-    FILTER_RULE_TYPE_TAG_PREFIX,
     normalize_hex_color,
 )
 from tagstudio.core.library.alchemy.enums import TagColorEnum
@@ -363,7 +362,6 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self.rule_type_combobox = QComboBox()
         self.rule_type_combobox.setObjectName("category_sidebar_rule_type_combobox")
         self.rule_type_combobox.addItem("Single tag", FILTER_RULE_TYPE_TAG)
-        self.rule_type_combobox.addItem("Tag prefix", FILTER_RULE_TYPE_TAG_PREFIX)
         self.rule_type_combobox.addItem("Multiple tags", FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY)
         self.rule_type_combobox.currentIndexChanged.connect(self._on_rule_type_changed)
         item_form.addRow("Rule Type", self.rule_type_combobox)
@@ -411,24 +409,18 @@ class CategorySidebarSettingsPanel(PanelWidget):
         self.single_tag_combobox.currentIndexChanged.connect(self._on_single_tag_changed)
         item_form.addRow("Linked Tag", self.single_tag_combobox)
 
-        self.prefix_edit = QLineEdit()
-        self.prefix_edit.setObjectName("category_sidebar_prefix_edit")
-        self.prefix_edit.setPlaceholderText("story_")
-        self.prefix_edit.textEdited.connect(self._on_prefix_changed)
-        item_form.addRow("Tag Prefix", self.prefix_edit)
-
         self.multiple_match_combobox = QComboBox()
         self.multiple_match_combobox.setObjectName("category_sidebar_multiple_match_combobox")
         self.multiple_match_combobox.addItem(
-            "Any selected tag",
+            Translations["category_sidebar.match_any"],
             FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY,
         )
         self.multiple_match_combobox.addItem(
-            "All selected tags",
+            Translations["category_sidebar.match_all"],
             FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL,
         )
         self.multiple_match_combobox.currentIndexChanged.connect(self._on_multiple_match_changed)
-        item_form.addRow("Match", self.multiple_match_combobox)
+        item_form.addRow(Translations["category_sidebar.match"], self.multiple_match_combobox)
 
         self.multiple_tags_list = QListWidget()
         self.multiple_tags_list.setObjectName("category_sidebar_multiple_tags_list")
@@ -672,9 +664,8 @@ class CategorySidebarSettingsPanel(PanelWidget):
         rule = self._current_rule(item)
         rule_type = rule.type if rule else FILTER_RULE_TYPE_TAG
         if rule_type == FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL:
-            rule_type_index = self.rule_type_combobox.findData(FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY)
-        else:
-            rule_type_index = self.rule_type_combobox.findData(rule_type)
+            rule_type = FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY
+        rule_type_index = self.rule_type_combobox.findData(rule_type)
         self.rule_type_combobox.setCurrentIndex(max(0, rule_type_index))
 
         include_index = self.rule_include_combobox.findData(rule.include if rule else True)
@@ -684,13 +675,11 @@ class CategorySidebarSettingsPanel(PanelWidget):
         tag_index = self.single_tag_combobox.findData(tag_id)
         self.single_tag_combobox.setCurrentIndex(tag_index if tag_index >= 0 else 0)
 
-        self.prefix_edit.setText(
-            rule.prefix if rule and rule.type == FILTER_RULE_TYPE_TAG_PREFIX and rule.prefix else ""
-        )
-
         match_type = (
             rule.type
-            if rule and rule.type == FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL
+            if rule
+            and rule.type
+            in {FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY, FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL}
             else FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY
         )
         match_index = self.multiple_match_combobox.findData(match_type)
@@ -778,14 +767,12 @@ class CategorySidebarSettingsPanel(PanelWidget):
 
     def _update_rule_editor_visibility(self, rule_type: str) -> None:
         is_single_tag = rule_type == FILTER_RULE_TYPE_TAG
-        is_prefix = rule_type == FILTER_RULE_TYPE_TAG_PREFIX
         is_multiple = rule_type in {
             FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY,
             FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL,
         }
         for widget, visible in (
             (self.single_tag_combobox, is_single_tag),
-            (self.prefix_edit, is_prefix),
             (self.multiple_match_combobox, is_multiple),
             (self.multiple_tags_list, is_multiple),
         ):
@@ -943,8 +930,6 @@ class CategorySidebarSettingsPanel(PanelWidget):
 
         if rule_type == FILTER_RULE_TYPE_TAG:
             self._on_single_tag_changed()
-        elif rule_type == FILTER_RULE_TYPE_TAG_PREFIX:
-            self._on_prefix_changed(self.prefix_edit.text())
         else:
             self._on_multiple_tags_changed()
 
@@ -972,20 +957,6 @@ class CategorySidebarSettingsPanel(PanelWidget):
             else None
         )
         self._set_default_background_color_from_tag(tag_id)
-
-    def _on_prefix_changed(self, text: str) -> None:
-        if self._loading_details:
-            return
-        prefix = text.strip()
-        self._set_current_rule(
-            CategoryFilterRule(
-                type=FILTER_RULE_TYPE_TAG_PREFIX,
-                prefix=prefix,
-                include=bool(self.rule_include_combobox.currentData()),
-            )
-            if prefix
-            else None
-        )
 
     def _on_multiple_match_changed(self, *args) -> None:
         if self._loading_details:

@@ -212,6 +212,18 @@ def test_library_text_search_scopes_and_tag_filters(library: Library, generate_t
     assert set(combined_results) == {combined_entry.id}
 
 
+def test_library_category_any_tag_filter_uses_or_semantics(library: Library):
+    foo = unwrap(library.get_tag_by_name("foo"))
+    bar = unwrap(library.get_tag_by_name("bar"))
+
+    results = library.search_library(
+        BrowsingState.show_all().with_category_any_tag_filters({foo.id, bar.id}),
+        page_size=500,
+    )
+
+    assert set(results) == {1, 2}
+
+
 def test_tag_search(library: Library):
     tag = library.tags[0]
 
@@ -386,6 +398,56 @@ def test_category_sidebar_settings_ignores_invalid_item_background_color():
 
     assert settings.groups[0].items[0].background_color is None
     assert settings.groups[0].items[1].background_color == "#AABBCC"
+
+
+def test_category_sidebar_settings_preserves_multiple_tags_any():
+    settings = CategorySidebarSettings.from_mapping(
+        {
+            "groups": [
+                {
+                    "items": [
+                        {
+                            "name": "Category",
+                            "filter_rules": [
+                                {
+                                    "type": "multiple_tags_any",
+                                    "tag_ids": [1000, 1001],
+                                }
+                            ],
+                        }
+                    ]
+                }
+            ]
+        }
+    )
+
+    rule = settings.groups[0].items[0].filter_rules[0]
+    assert rule.type == "multiple_tags_any"
+    assert rule.tag_ids == [1000, 1001]
+
+
+def test_category_sidebar_settings_ignores_obsolete_prefix_rules():
+    settings = CategorySidebarSettings.from_mapping(
+        {
+            "groups": [
+                {
+                    "items": [
+                        {
+                            "name": "Category",
+                            "filter_rules": [
+                                {
+                                    "type": "tag_prefix",
+                                    "prefix": "story_",
+                                }
+                            ],
+                        }
+                    ]
+                }
+            ]
+        }
+    )
+
+    assert settings.groups[0].items[0].filter_rules == []
 
 
 def test_remove_entry_field(library: Library, entry_full: Entry):

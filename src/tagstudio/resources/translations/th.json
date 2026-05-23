@@ -38,5 +38,8 @@
     "preview.copy_prompt": "คัดลอกพรอมป์ต์",
     "settings.title_overlay_font_size_adjust": "การปรับขนาดแบบอักษรของชื่อที่ซ้อนทับ",
     "settings.show_category_sidebar": "แสดงแถบด้านข้างหมวดหมู่",
-    "category_sidebar.background_color": "สีพื้นหลัง"
+    "category_sidebar.background_color": "สีพื้นหลัง",
+    "category_sidebar.match": "?????????",
+    "category_sidebar.match_any": "???????????????????",
+    "category_sidebar.match_all": "???????????????????"
 }

@@ -237,6 +237,66 @@ def test_apply_category_sidebar_tag_filter_is_single_select(qt_driver: QtDriver)
     assert recorded_states[-1].excluded_tag_filter_ids == frozenset({bar.id})
 
 
+def test_apply_category_sidebar_tag_filters_sets_and_clears_multi_tag_selection(
+    qt_driver: QtDriver,
+):
+    recorded_states: list[BrowsingState] = []
+
+    def fake_update_browsing_state(state: BrowsingState | None = None) -> None:
+        if state is not None:
+            qt_driver.browsing_history.push(state)
+            recorded_states.append(state)
+
+    qt_driver.update_browsing_state = fake_update_browsing_state
+
+    foo = unwrap(qt_driver.lib.get_tag_by_name("foo"))
+    bar = unwrap(qt_driver.lib.get_tag_by_name("bar"))
+
+    qt_driver.apply_category_sidebar_tag_filters([foo.id, bar.id])
+    assert qt_driver.active_tag_filter_ids == {foo.id, bar.id}
+    assert not qt_driver.excluded_tag_filter_ids
+    assert recorded_states[-1].active_tag_filter_ids == frozenset({foo.id, bar.id})
+
+    qt_driver.apply_category_sidebar_tag_filters([foo.id, bar.id])
+    assert not qt_driver.active_tag_filter_ids
+    assert not qt_driver.excluded_tag_filter_ids
+    assert not recorded_states[-1].active_tag_filter_ids
+
+
+def test_apply_category_sidebar_any_tag_filters_sets_or_state_without_direct_selection(
+    qt_driver: QtDriver,
+):
+    recorded_states: list[BrowsingState] = []
+
+    def fake_update_browsing_state(state: BrowsingState | None = None) -> None:
+        if state is not None:
+            qt_driver.browsing_history.push(state)
+            recorded_states.append(state)
+
+    qt_driver.update_browsing_state = fake_update_browsing_state
+
+    foo = unwrap(qt_driver.lib.get_tag_by_name("foo"))
+    bar = unwrap(qt_driver.lib.get_tag_by_name("bar"))
+
+    qt_driver.apply_category_sidebar_any_tag_filters([foo.id, bar.id])
+    assert not qt_driver.active_tag_filter_ids
+    assert qt_driver.category_any_tag_filter_ids == {foo.id, bar.id}
+    assert recorded_states[-1].active_tag_filter_ids == frozenset()
+    assert recorded_states[-1].category_any_tag_filter_ids == frozenset({foo.id, bar.id})
+
+    qt_driver.apply_category_sidebar_any_tag_filters([foo.id, bar.id])
+    assert not qt_driver.active_tag_filter_ids
+    assert not qt_driver.category_any_tag_filter_ids
+    assert recorded_states[-1].category_any_tag_filter_ids == frozenset()
+
+    qt_driver.apply_category_sidebar_any_tag_filters([foo.id, bar.id])
+    qt_driver.clear_tag_filters()
+    assert not qt_driver.active_tag_filter_ids
+    assert not qt_driver.excluded_tag_filter_ids
+    assert not qt_driver.category_any_tag_filter_ids
+    assert recorded_states[-1].category_any_tag_filter_ids == frozenset()
+
+
 def test_refresh_tag_filter_controls_stable_labels_and_highlights(qtbot, qt_driver: QtDriver):
     root = QWidget()
     layout = QVBoxLayout(root)
@@ -304,7 +364,17 @@ def test_refresh_tag_filter_controls_stable_labels_and_highlights(qtbot, qt_driv
     assert chip.bg_button.actions() == []
 
     qt_driver.active_tag_filter_ids = set()
+    qt_driver.category_any_tag_filter_ids = {foo.id}
+    qt_driver.refresh_tag_filter_controls()
+
+    chip = qt_driver.main_window.pinned_tags_layout.itemAt(0).widget()
+    assert isinstance(chip, TagWidget)
+    assert "border-color: rgba(77, 163, 255, 255);" in chip.bg_button.styleSheet()
+    assert chip.bg_button.graphicsEffect() is None
+
+    qt_driver.active_tag_filter_ids = set()
     qt_driver.excluded_tag_filter_ids = {foo.id}
+    qt_driver.category_any_tag_filter_ids = set()
     qt_driver.refresh_tag_filter_controls()
 
     chip = qt_driver.main_window.pinned_tags_layout.itemAt(0).widget()

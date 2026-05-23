@@ -18,7 +18,6 @@ from tagstudio.core.library.category_sidebar import (
     CategorySidebarSettings,
     FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL,
     FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY,
-    FILTER_RULE_TYPE_TAG_PREFIX,
 )
 from tagstudio.qt.mixed.category_sidebar import CategorySidebarItemWidget, CategorySidebarWidget
 from tagstudio.qt.mixed.category_sidebar_settings import CategorySidebarSettingsPanel
@@ -69,6 +68,7 @@ class DummyDriver:
         self.lib = DummyLibrary()
         self.included_tag_ids: set[int] = set()
         self.excluded_tag_ids: set[int] = set()
+        self.category_any_tag_ids: set[int] = set()
         self.refresh_category_sidebar_count = 0
         self.browsing_history = type(
             "DummyHistory",
@@ -84,11 +84,34 @@ class DummyDriver:
             self.included_tag_ids.add(tag_id)
 
     def apply_category_sidebar_tag_filter(self, tag_id: int) -> None:
-        if tag_id in self.included_tag_ids:
-            self.included_tag_ids.clear()
+        self.apply_category_sidebar_tag_filters([tag_id])
+
+    def apply_category_sidebar_tag_filters(
+        self, tag_ids: list[int] | tuple[int, ...], *, include: bool = True
+    ) -> None:
+        tag_ids_set = set(tag_ids)
+        if include:
+            self.category_any_tag_ids.clear()
+            if self.included_tag_ids == tag_ids_set:
+                self.included_tag_ids.clear()
+            else:
+                self.included_tag_ids = tag_ids_set
+                self.excluded_tag_ids.difference_update(tag_ids_set)
+        elif tag_ids_set.issubset(self.excluded_tag_ids):
+            self.excluded_tag_ids.difference_update(tag_ids_set)
         else:
-            self.included_tag_ids = {tag_id}
-            self.excluded_tag_ids.discard(tag_id)
+            self.included_tag_ids.difference_update(tag_ids_set)
+            self.excluded_tag_ids.update(tag_ids_set)
+
+    def apply_category_sidebar_any_tag_filters(
+        self, tag_ids: list[int] | tuple[int, ...]
+    ) -> None:
+        tag_ids_set = set(tag_ids)
+        if self.category_any_tag_ids == tag_ids_set:
+            self.category_any_tag_ids.clear()
+        else:
+            self.category_any_tag_ids = tag_ids_set
+            self.excluded_tag_ids.difference_update(tag_ids_set)
 
     def apply_excluded_tag_filter(self, tag_id: int) -> None:
         if tag_id in self.excluded_tag_ids:
@@ -102,6 +125,19 @@ class DummyDriver:
 
     def is_tag_filter_excluded(self, tag_id: int) -> bool:
         return tag_id in self.excluded_tag_ids
+
+    def is_category_sidebar_tag_filter_selected(
+        self, tag_ids: list[int] | tuple[int, ...], *, include: bool = True
+    ) -> bool:
+        tag_ids_set = set(tag_ids)
+        selected_ids = self.included_tag_ids if include else self.excluded_tag_ids
+        return bool(tag_ids_set) and tag_ids_set.issubset(selected_ids)
+
+    def is_category_sidebar_any_tag_filter_selected(
+        self, tag_ids: list[int] | tuple[int, ...]
+    ) -> bool:
+        tag_ids_set = set(tag_ids)
+        return bool(tag_ids_set) and self.category_any_tag_ids == tag_ids_set
 
     def get_tag_filter_highlight_color(self) -> QColor:
         return QColor("#4da3ff")
@@ -307,7 +343,7 @@ def test_category_sidebar_excluded_state_has_visible_border_with_background(qtbo
     assert "border-width: 2px;" in collapsed_item.styleSheet()
 
 
-def test_category_sidebar_item_click_applies_advanced_filter_query(qtbot: QtBot):
+def test_category_sidebar_multi_tag_clicks_use_tag_filter_state(qtbot: QtBot):
     driver = DummyDriver()
     sidebar = CategorySidebarWidget(driver)
     qtbot.addWidget(sidebar)
@@ -318,11 +354,11 @@ def test_category_sidebar_item_click_applies_advanced_filter_query(qtbot: QtBot)
                     name="Group",
                     items=[
                         CategoryItem(
-                            name="Story",
+                            name="People",
                             filter_rules=[
                                 CategoryFilterRule(
-                                    type=FILTER_RULE_TYPE_TAG_PREFIX,
-                                    prefix="story_",
+                                    type=FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL,
+                                    tag_ids=[1000, 1001],
                                     include=True,
                                 )
                             ],
@@ -337,7 +373,52 @@ def test_category_sidebar_item_click_applies_advanced_filter_query(qtbot: QtBot)
     assert item is not None
 
     qtbot.mouseClick(item, Qt.MouseButton.LeftButton)
-    assert driver.browsing_history.current.query == 'tag:"story_%"'
+    assert driver.included_tag_ids == {1000, 1001}
+    assert driver.excluded_tag_ids == set()
+
+    qtbot.mouseClick(item, Qt.MouseButton.LeftButton)
+    assert driver.included_tag_ids == set()
+    assert driver.excluded_tag_ids == set()
+
+
+def test_category_sidebar_any_multi_tag_clicks_use_category_any_state(qtbot: QtBot):
+    driver = DummyDriver()
+    sidebar = CategorySidebarWidget(driver)
+    qtbot.addWidget(sidebar)
+    sidebar.set_settings(
+        CategorySidebarSettings(
+            groups=[
+                CategoryGroup(
+                    name="Group",
+                    items=[
+                        CategoryItem(
+                            name="People",
+                            filter_rules=[
+                                CategoryFilterRule(
+                                    type=FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY,
+                                    tag_ids=[1000, 1001],
+                                    include=True,
+                                )
+                            ],
+                        )
+                    ],
+                )
+            ]
+        )
+    )
+
+    item = sidebar.findChild(CategorySidebarItemWidget)
+    assert item is not None
+
+    qtbot.mouseClick(item, Qt.MouseButton.LeftButton)
+    assert driver.category_any_tag_ids == {1000, 1001}
+    assert driver.included_tag_ids == set()
+    assert driver.excluded_tag_ids == set()
+
+    qtbot.mouseClick(item, Qt.MouseButton.LeftButton)
+    assert driver.category_any_tag_ids == set()
+    assert driver.included_tag_ids == set()
+    assert driver.excluded_tag_ids == set()
 
 
 def test_category_sidebar_settings_adds_group_and_item(qtbot: QtBot):
@@ -425,26 +506,14 @@ def test_category_sidebar_settings_auto_color_does_not_replace_existing_color(
     assert panel.item_background_color_button.text() == "#445566"
 
 
-def test_category_sidebar_settings_builds_prefix_rule(qtbot: QtBot):
+def test_category_sidebar_settings_does_not_offer_obsolete_prefix_mode(qtbot: QtBot):
     driver = DummyDriver()
     panel = CategorySidebarSettingsPanel(driver)
     qtbot.addWidget(panel)
 
-    panel.add_group()
-    panel.add_item()
-    panel.rule_type_combobox.setCurrentIndex(
-        panel.rule_type_combobox.findData(FILTER_RULE_TYPE_TAG_PREFIX)
-    )
-    panel.prefix_edit.setText("story_")
-    panel._on_prefix_changed("story_")
-    panel.rule_include_combobox.setCurrentIndex(panel.rule_include_combobox.findData(False))
-    panel.apply_settings()
-
-    rule = driver.lib.saved_settings.groups[0].items[0].filter_rules[0]
-    assert rule.type == FILTER_RULE_TYPE_TAG_PREFIX
-    assert rule.prefix == "story_"
-    assert rule.include is False
-    assert rule.to_query() == 'not tag:"story_%"'
+    assert panel.rule_type_combobox.findText("Tag prefix") == -1
+    assert not hasattr(panel, "prefix_edit")
+    assert hasattr(panel, "multiple_match_combobox")
 
 
 def test_category_sidebar_settings_builds_multiple_tag_rule(qtbot: QtBot):
@@ -457,17 +526,22 @@ def test_category_sidebar_settings_builds_multiple_tag_rule(qtbot: QtBot):
     panel.rule_type_combobox.setCurrentIndex(
         panel.rule_type_combobox.findData(FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY)
     )
-    panel.multiple_match_combobox.setCurrentIndex(
-        panel.multiple_match_combobox.findData(FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL)
-    )
     panel.multiple_tags_list.item(0).setCheckState(Qt.CheckState.Checked)
     panel.multiple_tags_list.item(1).setCheckState(Qt.CheckState.Checked)
     panel.apply_settings()
 
     rule = driver.lib.saved_settings.groups[0].items[0].filter_rules[0]
+    assert rule.type == FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY
+    assert rule.tag_ids == [1000, 1001]
+
+    panel.multiple_match_combobox.setCurrentIndex(
+        panel.multiple_match_combobox.findData(FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL)
+    )
+    panel.apply_settings()
+
+    rule = driver.lib.saved_settings.groups[0].items[0].filter_rules[0]
     assert rule.type == FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL
     assert rule.tag_ids == [1000, 1001]
-    assert rule.to_query() == "(tag_id:1000 tag_id:1001)"
 
 
 def test_category_sidebar_settings_icon_picker_search_and_fallback(qtbot: QtBot):

@@ -92,6 +92,7 @@ class BrowsingState:
     search_prompt: bool = True
     active_tag_filter_ids: frozenset[int] = field(default_factory=frozenset)
     excluded_tag_filter_ids: frozenset[int] = field(default_factory=frozenset)
+    category_any_tag_filter_ids: frozenset[int] = field(default_factory=frozenset)
 
     # Abstract Syntax Tree Of the current Search Query
     @property
@@ -168,11 +169,25 @@ class BrowsingState:
         self,
         active_tag_filter_ids: set[int] | frozenset[int],
         excluded_tag_filter_ids: set[int] | frozenset[int],
+        category_any_tag_filter_ids: set[int] | frozenset[int] | None = None,
     ) -> "BrowsingState":
         return replace(
             self,
             active_tag_filter_ids=frozenset(active_tag_filter_ids),
             excluded_tag_filter_ids=frozenset(excluded_tag_filter_ids),
+            category_any_tag_filter_ids=(
+                self.category_any_tag_filter_ids
+                if category_any_tag_filter_ids is None
+                else frozenset(category_any_tag_filter_ids)
+            ),
+        )
+
+    def with_category_any_tag_filters(
+        self, category_any_tag_filter_ids: set[int] | frozenset[int]
+    ) -> "BrowsingState":
+        return replace(
+            self,
+            category_any_tag_filter_ids=frozenset(category_any_tag_filter_ids),
         )
 
     def with_show_hidden_entries(self, show_hidden_entries: bool) -> "BrowsingState":

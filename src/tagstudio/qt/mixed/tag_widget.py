@@ -188,8 +188,10 @@ class TagWidget(QWidget):
         self.enable_context_menu = enable_context_menu
         self.enable_exclude_action = enable_exclude_action
         self._selected = False
+        self._category_active = False
         self._excluded = False
         self._selected_border_color = resolve_selected_tag_highlight_color()
+        self._category_active_border_color = resolve_selected_tag_highlight_color()
 
         # if on_click_callback:
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -300,6 +302,12 @@ class TagWidget(QWidget):
         if self.tag:
             self._apply_style()
 
+    def set_category_active(self, active: bool, border_color: QColor | None = None) -> None:
+        self._category_active = active
+        self._category_active_border_color = resolve_selected_tag_highlight_color(border_color)
+        if self.tag:
+            self._apply_style()
+
     def set_excluded(self, excluded: bool) -> None:
         self._excluded = excluded
         if self.tag:
@@ -335,6 +343,9 @@ class TagWidget(QWidget):
         border_width = 2
         if self._selected:
             effective_border_color = QColor(self._selected_border_color)
+            hover_border_color = get_selection_hover_color(effective_border_color)
+        elif self._category_active:
+            effective_border_color = QColor(self._category_active_border_color)
             hover_border_color = get_selection_hover_color(effective_border_color)
         text_decoration = "line-through" if self._excluded else "none"
         excluded_bg_color: QColor | None = None

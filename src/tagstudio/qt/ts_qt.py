@@ -221,6 +221,7 @@ class QtDriver(DriverMixin, QObject):
         self.pages_count = 0
         self.active_tag_filter_ids: set[int] = set()
         self.excluded_tag_filter_ids: set[int] = set()
+        self.category_any_tag_filter_ids: set[int] = set()
 
         self.scrollbar_pos = 0
         self.spacing = None
@@ -303,6 +304,21 @@ class QtDriver(DriverMixin, QObject):
     def is_tag_filter_excluded(self, tag_id: int) -> bool:
         return tag_id in self.excluded_tag_filter_ids
 
+    def is_category_sidebar_tag_filter_selected(
+        self, tag_ids: list[int] | tuple[int, ...], *, include: bool = True
+    ) -> bool:
+        ids = set(tag_ids)
+        if not ids:
+            return False
+        selected_ids = self.active_tag_filter_ids if include else self.excluded_tag_filter_ids
+        return ids.issubset(selected_ids)
+
+    def is_category_sidebar_any_tag_filter_selected(
+        self, tag_ids: list[int] | tuple[int, ...]
+    ) -> bool:
+        ids = set(tag_ids)
+        return bool(ids) and self.category_any_tag_filter_ids == ids
+
     def _extract_tag_filter_ids(self, query: str | None) -> tuple[set[int], set[int]]:
         if not query:
             return set(), set()
@@ -332,6 +348,8 @@ class QtDriver(DriverMixin, QObject):
         return included_tag_ids, excluded_tag_ids
 
     def _set_tag_filter_button_highlight(self, button: QPushButton, highlighted: bool) -> None:
+        if not isinstance(button, QPushButton):
+            return
         border_color = self.get_tag_filter_highlight_color()
         apply_selection_dot_indicator(button, border_color, highlighted)
         button.setStyleSheet("")
@@ -351,14 +369,54 @@ class QtDriver(DriverMixin, QObject):
 
     def apply_category_sidebar_tag_filter(self, tag_id: int):
         """Toggle one active category sidebar tag filter at a time."""
-        if tag_id in self.active_tag_filter_ids:
-            self.active_tag_filter_ids.clear()
+        self.apply_category_sidebar_tag_filters([tag_id])
+
+    def apply_category_sidebar_tag_filters(
+        self, tag_ids: list[int] | tuple[int, ...], *, include: bool = True
+    ) -> None:
+        """Toggle category sidebar tag filters through the shared tag filter state."""
+        ids = set(tag_ids)
+        if not ids:
+            return
+
+        if include:
+            self.category_any_tag_filter_ids.clear()
+            if self.active_tag_filter_ids == ids:
+                self.active_tag_filter_ids.clear()
+            else:
+                self.active_tag_filter_ids = ids
+                self.excluded_tag_filter_ids.difference_update(ids)
+        elif ids.issubset(self.excluded_tag_filter_ids):
+            self.excluded_tag_filter_ids.difference_update(ids)
         else:
-            self.active_tag_filter_ids = {tag_id}
-            self.excluded_tag_filter_ids.discard(tag_id)
+            self.active_tag_filter_ids.difference_update(ids)
+            self.excluded_tag_filter_ids.update(ids)
 
         next_state = self.browsing_history.current.with_tag_filters(
-            self.active_tag_filter_ids, self.excluded_tag_filter_ids
+            self.active_tag_filter_ids,
+            self.excluded_tag_filter_ids,
+            self.category_any_tag_filter_ids,
+        )
+        self.update_browsing_state(next_state)
+
+    def apply_category_sidebar_any_tag_filters(
+        self, tag_ids: list[int] | tuple[int, ...]
+    ) -> None:
+        """Toggle one active category sidebar ANY filter without direct-selecting tags."""
+        ids = set(tag_ids)
+        if not ids:
+            return
+
+        if self.category_any_tag_filter_ids == ids:
+            self.category_any_tag_filter_ids.clear()
+        else:
+            self.category_any_tag_filter_ids = ids
+            self.excluded_tag_filter_ids.difference_update(ids)
+
+        next_state = self.browsing_history.current.with_tag_filters(
+            self.active_tag_filter_ids,
+            self.excluded_tag_filter_ids,
+            self.category_any_tag_filter_ids,
         )
         self.update_browsing_state(next_state)
 
@@ -376,12 +434,19 @@ class QtDriver(DriverMixin, QObject):
         self.update_browsing_state(next_state)
 
     def clear_tag_filters(self) -> None:
-        if not self.active_tag_filter_ids and not self.excluded_tag_filter_ids:
+        if (
+            not self.active_tag_filter_ids
+            and not self.excluded_tag_filter_ids
+            and not self.category_any_tag_filter_ids
+        ):
             return
 
         self.active_tag_filter_ids.clear()
         self.excluded_tag_filter_ids.clear()
-        self.update_browsing_state(self.browsing_history.current.with_tag_filters(set(), set()))
+        self.category_any_tag_filter_ids.clear()
+        self.update_browsing_state(
+            self.browsing_history.current.with_tag_filters(set(), set(), set())
+        )
 
     def clear_thumb_cache(self) -> None:
         if self.cache_manager is None:
@@ -404,12 +469,18 @@ class QtDriver(DriverMixin, QObject):
         if not hasattr(self, "main_window"):
             return
 
-        has_selected_tags = bool(self.active_tag_filter_ids or self.excluded_tag_filter_ids)
+        has_selected_tags = bool(
+            self.active_tag_filter_ids
+            or self.excluded_tag_filter_ids
+            or self.category_any_tag_filter_ids
+        )
         has_selected_favorite_tags = any(
             bool(tag and tag.favorite)
             for tag in map(
                 self.lib.get_tag,
-                self.active_tag_filter_ids | self.excluded_tag_filter_ids,
+                self.active_tag_filter_ids
+                | self.excluded_tag_filter_ids
+                | self.category_any_tag_filter_ids,
             )
         )
         selection_color = self.get_tag_filter_highlight_color()
@@ -455,6 +526,7 @@ class QtDriver(DriverMixin, QObject):
             chip.on_right_click.connect(
                 lambda tag_id=tag.id: self.apply_excluded_tag_filter(tag_id)
             )
+            chip.set_category_active(tag.id in self.category_any_tag_filter_ids, selection_color)
             chip.set_selected(tag.id in self.active_tag_filter_ids, selection_color)
             chip.set_excluded(tag.id in self.excluded_tag_filter_ids)
             chip.set_tag(tag)
@@ -1007,6 +1079,7 @@ class QtDriver(DriverMixin, QObject):
         # Reset library state
         self.active_tag_filter_ids.clear()
         self.excluded_tag_filter_ids.clear()
+        self.category_any_tag_filter_ids.clear()
         self.main_window.preview_panel.set_selection(self.selected)
         self.main_window.search_field.setText("")
         scrollbar: QScrollArea = self.main_window.entry_scroll_area
@@ -1879,7 +1952,12 @@ class QtDriver(DriverMixin, QObject):
         current = self.browsing_history.current
         self.active_tag_filter_ids = set(current.active_tag_filter_ids)
         self.excluded_tag_filter_ids = set(current.excluded_tag_filter_ids)
-        if not self.active_tag_filter_ids and not self.excluded_tag_filter_ids:
+        self.category_any_tag_filter_ids = set(current.category_any_tag_filter_ids)
+        if (
+            not self.active_tag_filter_ids
+            and not self.excluded_tag_filter_ids
+            and not self.category_any_tag_filter_ids
+        ):
             self.active_tag_filter_ids, self.excluded_tag_filter_ids = self._extract_tag_filter_ids(
                 (current.query or "").strip()
             )

@@ -1143,7 +1143,9 @@ class Library:
                 )
 
             tag_filter_expr = self._entry_tag_filter_expression(
-                set(search.active_tag_filter_ids), set(search.excluded_tag_filter_ids)
+                set(search.active_tag_filter_ids),
+                set(search.excluded_tag_filter_ids),
+                set(search.category_any_tag_filter_ids),
             )
             if tag_filter_expr is not None:
                 statement = statement.where(tag_filter_expr)
@@ -1197,7 +1199,10 @@ class Library:
             return res
 
     def _entry_tag_filter_expression(
-        self, included_tag_ids: set[int], excluded_tag_ids: set[int]
+        self,
+        included_tag_ids: set[int],
+        excluded_tag_ids: set[int],
+        category_any_tag_ids: set[int],
     ):
         expressions = []
         if included_tag_ids:
@@ -1207,6 +1212,14 @@ class Library:
                     .where(TagEntry.tag_id.in_(included_tag_ids))
                     .group_by(TagEntry.entry_id)
                     .having(func.count(func.distinct(TagEntry.tag_id)) == len(included_tag_ids))
+                )
+            )
+        if category_any_tag_ids:
+            expressions.append(
+                Entry.id.in_(
+                    select(TagEntry.entry_id)
+                    .where(TagEntry.tag_id.in_(category_any_tag_ids))
+                    .distinct()
                 )
             )
         if excluded_tag_ids:

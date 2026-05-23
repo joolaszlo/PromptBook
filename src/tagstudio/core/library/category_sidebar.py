@@ -10,10 +10,10 @@ from uuid import uuid4
 
 CATEGORY_SIDEBAR_SETTINGS_ID = 1
 FILTER_RULE_TYPE_TAG = "tag"
-FILTER_RULE_TYPE_TAG_PREFIX = "tag_prefix"
 FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY = "multiple_tags_any"
 FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL = "multiple_tags_all"
-FILTER_RULE_TYPE_SAVED_SEARCH = "saved_search"
+_OBSOLETE_FILTER_RULE_TYPE_TAG_PREFIX = "tag_prefix"
+_OBSOLETE_FILTER_RULE_TYPE_SAVED_SEARCH = "saved_search"
 
 
 def _make_id() -> str:
@@ -94,21 +94,11 @@ def _normalized_name(name: str | None, fallback_base: str, used_names: set[str])
     return _next_fallback_name(fallback_base, used_names)
 
 
-def _query_literal(value: str) -> str:
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
-    return f'"{escaped}"'
-
-
-def _tag_term(tag_id: int | None, tag_name: str | None = None) -> str:
-    if tag_id is not None:
-        return f"tag_id:{tag_id}"
-    if tag_name:
-        return f"tag:{_query_literal(tag_name)}"
-    return ""
-
-
-def _apply_rule_include(term: str, include: bool) -> str:
-    return term if include else f"not {term}"
+@dataclass(frozen=True)
+class CategoryTagFilter:
+    tag_ids: tuple[int, ...]
+    include: bool = True
+    match_any: bool = False
 
 
 @dataclass
@@ -118,25 +108,32 @@ class CategoryFilterRule:
     tag_ids: list[int] = field(default_factory=list)
     tag_name: str | None = None
     tag_names: list[str] = field(default_factory=list)
-    prefix: str | None = None
     include: bool = True
-    saved_search: str | None = None
 
     @classmethod
-    def from_mapping(cls, data: dict[str, Any]) -> "CategoryFilterRule":
+    def from_mapping(cls, data: dict[str, Any]) -> "CategoryFilterRule | None":
+        rule_type = str(data.get("type") or FILTER_RULE_TYPE_TAG)
+        if rule_type in {
+            _OBSOLETE_FILTER_RULE_TYPE_TAG_PREFIX,
+            _OBSOLETE_FILTER_RULE_TYPE_SAVED_SEARCH,
+        }:
+            return None
+        elif rule_type not in {
+            FILTER_RULE_TYPE_TAG,
+            FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY,
+            FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL,
+        }:
+            return None
+
         tag_name = data.get("tag_name")
         tag_names = data.get("tag_names")
-        prefix = data.get("prefix")
-        saved_search = data.get("saved_search")
         return cls(
-            type=str(data.get("type") or "tag"),
+            type=rule_type,
             tag_id=_as_optional_int(data.get("tag_id")),
             tag_ids=_as_int_list(data.get("tag_ids")),
             tag_name=str(tag_name) if tag_name is not None else None,
             tag_names=[str(name) for name in tag_names] if isinstance(tag_names, list) else [],
-            prefix=str(prefix) if prefix is not None else None,
             include=_as_bool(data.get("include"), True),
-            saved_search=str(saved_search) if saved_search is not None else None,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -146,38 +143,8 @@ class CategoryFilterRule:
             "tag_ids": self.tag_ids,
             "tag_name": self.tag_name,
             "tag_names": self.tag_names,
-            "prefix": self.prefix,
             "include": self.include,
-            "saved_search": self.saved_search,
         }
-
-    def to_query(self) -> str:
-        if self.type == FILTER_RULE_TYPE_TAG:
-            return _apply_rule_include(_tag_term(self.tag_id, self.tag_name), self.include)
-
-        if self.type == FILTER_RULE_TYPE_TAG_PREFIX:
-            prefix = (self.prefix or "").strip()
-            if not prefix:
-                return ""
-            return _apply_rule_include(f"tag:{_query_literal(f'{prefix}%')}", self.include)
-
-        if self.type in {FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY, FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL}:
-            terms = [
-                _tag_term(tag_id, self.tag_names[index] if index < len(self.tag_names) else None)
-                for index, tag_id in enumerate(self.tag_ids)
-            ]
-            terms = [term for term in terms if term]
-            if not terms:
-                return ""
-            operator = " or " if self.type == FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY else " "
-            term = f"({operator.join(terms)})" if len(terms) > 1 else terms[0]
-            return _apply_rule_include(term, self.include)
-
-        if self.type == FILTER_RULE_TYPE_SAVED_SEARCH and self.saved_search:
-            term = f"({self.saved_search})"
-            return _apply_rule_include(term, self.include)
-
-        return ""
 
 
 @dataclass
@@ -202,9 +169,10 @@ class CategoryItem:
             background_color=normalize_hex_color(data.get("background_color")),
             order=_as_int(data.get("order"), fallback_order),
             filter_rules=[
-                CategoryFilterRule.from_mapping(rule)
+                parsed_rule
                 for rule in filter_rules
                 if isinstance(rule, dict)
+                if (parsed_rule := CategoryFilterRule.from_mapping(rule)) is not None
             ],
         )
 
@@ -218,17 +186,28 @@ class CategoryItem:
             "filter_rules": [rule.to_dict() for rule in self.filter_rules],
         }
 
-    def filter_query(self) -> str:
-        return " ".join(
-            rule_query for rule in self.filter_rules if (rule_query := rule.to_query())
-        )
-
     def primary_tag_id(self) -> int | None:
+        tag_filter = self.tag_filter()
+        if tag_filter is None:
+            return None
+        if tag_filter.include and len(tag_filter.tag_ids) == 1:
+            return tag_filter.tag_ids[0]
+        return None
+
+    def tag_filter(self) -> CategoryTagFilter | None:
         if len(self.filter_rules) != 1:
             return None
         rule = self.filter_rules[0]
-        if rule.type == FILTER_RULE_TYPE_TAG and rule.include and rule.tag_id is not None:
-            return rule.tag_id
+        if rule.type == FILTER_RULE_TYPE_TAG and rule.tag_id is not None:
+            return CategoryTagFilter((rule.tag_id,), rule.include)
+        if rule.type == FILTER_RULE_TYPE_MULTIPLE_TAGS_ANY and rule.tag_ids:
+            return CategoryTagFilter(
+                tuple(dict.fromkeys(rule.tag_ids)),
+                rule.include,
+                match_any=True,
+            )
+        if rule.type == FILTER_RULE_TYPE_MULTIPLE_TAGS_ALL and rule.tag_ids:
+            return CategoryTagFilter(tuple(dict.fromkeys(rule.tag_ids)), rule.include)
         return None
 
 
