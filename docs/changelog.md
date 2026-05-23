@@ -6,7 +6,7 @@ PromptBook is a modified fork of TagStudio. For the original project's history, 
 
 https://github.com/TagStudioDev/TagStudio
 
-## [1.0.0] - 2026-05-22
+## [1.0.0] - 2026-05-23
 
 ### Added
 

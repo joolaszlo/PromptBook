@@ -109,7 +109,7 @@ PromptBook is based on the TagStudio codebase and currently uses Python.
 Requirements may change during development.
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/PromptBook.git
+git clone https://github.com/joolaszloo/PromptBook.git
 cd PromptBook
 pip install -e ".[dev]"
 python -m tagstudio
