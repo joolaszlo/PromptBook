@@ -4,7 +4,7 @@ icon: material/palette
 
 # :material-palette: Colors
 
-TagStudio features a variety of built-in tag colors, alongside the ability for users to create their own custom tag color palettes.
+PromptBook features a variety of built-in tag colors, alongside the ability for users to create their own custom tag color palettes.
 
 ## Tag Color Manager
 
@@ -14,7 +14,9 @@ The Tag Color Manager is where you can create and manage your custom tag colors 
 
 ## Creating a Namespace
 
-TagStudio uses namespaces to group colors into palettes. Namespaces are a way for you to use the same color name across multiple palettes without having to worry about [name collision](https://en.wikipedia.org/wiki/Name_collision) with other palettes. This is especially useful when sharing your color palettes with others!\*
+PromptBook uses namespaces to group colors into palettes. Namespaces are a way for you to use the same color name across multiple palettes without having to worry about [name collision](https://en.wikipedia.org/wiki/Name_collision) with other palettes.
+
+This is especially useful when sharing your color palettes with others!\*
 
 _\* Color pack sharing coming in a future update_
 
@@ -30,11 +32,10 @@ The display name of the namespace, used for presentation.
 
 An internal ID for the namespace which is automatically derived from the namespace name.
 
-Namespaces beginning with "tagstudio" are reserved by TagStudio and will automatically have their text changed.
+Namespaces beginning with reserved application prefixes are reserved by PromptBook and will automatically have their text changed.
 
-<!-- prettier-ignore -->
 !!! note
-    It's currently not possible to manually edit the Namespace ID Slug. This will be possible once sharable color packs are added.
+    It's currently not possible to manually edit the Namespace ID Slug. This will be possible once shareable color packs are added.
 
 ## Creating a Color
 
@@ -50,9 +51,8 @@ The display name for the color, used for presentation. You may occasionally see 
 
 Similar to [Namespace ID Slugs](#id-slug), the ID Slug is used as an internal ID and is automatically derived from the tag color name.
 
-<!-- prettier-ignore -->
 !!! note
-    It's currently not possible to manually edit the Color ID Slug. This will be possible once sharable color packs are added.
+    It's currently not possible to manually edit the Color ID Slug. This will be possible once shareable color packs are added.
 
 ### Primary Color
 
@@ -70,6 +70,7 @@ The secondary color can also be used as the tag border color by checking the "Us
 
 ## Using Colors
 
-When editing a tag, click the tag color button to bring up the tag color selection panel. From here you can choose any built-in TagStudio color as well as any of your custom colors.
+When editing a tag, click the tag color button to bring up the tag color selection panel. From here you can choose any built-in PromptBook color as well as any of your custom colors.
 
 ![Tag Color Selection](assets/tag_color_selection.png)
+
