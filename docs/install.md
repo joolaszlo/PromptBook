@@ -4,72 +4,126 @@ icon: material/download
 
 # :material-download: Installation
 
-TagStudio provides executable [releases](https://github.com/TagStudioDev/TagStudio/releases) as well as full access to its [source code](https://github.com/TagStudioDev/TagStudio) under the [GPLv3](https://github.com/TagStudioDev/TagStudio/blob/main/LICENSE) license.
+PromptBook is currently in early development.
 
-## Executables
+Executable releases are planned to be distributed through the PromptBook GitHub repository. Until public release builds are available, the recommended way to run PromptBook is from source.
 
-To download executable builds of TagStudio, visit the [Releases](https://github.com/TagStudioDev/TagStudio/releases) page of the GitHub repository and download the latest release for your system under the "Assets" section at the bottom of the release.
+## Executable Releases
 
-TagStudio has builds for :fontawesome-brands-windows: **Windows**, :fontawesome-brands-apple: **macOS** _(Apple Silicon & Intel)_, and :material-penguin: **Linux**. We also offer portable releases for Windows and Linux which are self-contained and easier to move around.
+When executable builds are available, they will be published on the PromptBook GitHub Releases page:
 
-<!-- prettier-ignore -->
+[PromptBook Releases](https://github.com/joolaszlo/PromptBook/releases)
+
+Download the latest release for your operating system from the "Assets" section of the release page.
+
+Planned release targets may include:
+
+- :fontawesome-brands-windows: **Windows**
+- :fontawesome-brands-apple: **macOS**
+- :material-penguin: **Linux**
+
 !!! info "Third-Party Dependencies"
-    You may need to install [third-party dependencies](#third-party-dependencies) such as [FFmpeg](https://ffmpeg.org/download.html) to use the full feature set of TagStudio.
+    You may need to install [third-party dependencies](#third-party-dependencies), such as FFmpeg, to use the full preview and playback feature set.
 
-<!-- prettier-ignore -->
-!!! warning ":fontawesome-brands-apple: macOS "Privacy & Security" Popup"
-    On macOS, you may be met with a message saying "**"TagStudio" can't be opened because Apple cannot check it for malicious software.**" If you encounter this, then you'll need to go to the "Settings" app, navigate to "Privacy & Security", and scroll down to a section that says "**"TagStudio" was blocked from use because it is not from an identified developer.**" Click the "Open Anyway" button to allow TagStudio to run. You should only have to do this once after downloading the application.
+!!! warning ":fontawesome-brands-apple: macOS Privacy & Security Popup"
+    On macOS, unsigned or unnotarized application builds may be blocked the first time they are opened.
+
+    If this happens, open the macOS "Settings" app, go to "Privacy & Security", find the blocked application message, and choose "Open Anyway".
+
+    You should only have to do this once after downloading the application.
 
 ---
 
 ## Package Managers
 
-<!-- prettier-ignore -->
 !!! danger "Unofficial Releases"
-    **We do not currently publish TagStudio to _remote_ package repositories. Any TagStudio distributions outside of the [GitHub repository](https://github.com/TagStudioDev/TagStudio) are _unofficial_ and not maintained by us!**
+    PromptBook is not currently published to remote package repositories.
 
-    Installation support will not be given to users installing from unofficial sources. Use these versions at your own risk!
+    Any PromptBook distributions outside of the official GitHub repository are unofficial and are not maintained by this project.
 
-### :fontawesome-brands-python: Installing with PIP
+Use unofficial packages at your own risk.
 
-TagStudio is installable via [PIP](https://pip.pypa.io/). Note that since we don't currently distribute on PyPI, the repository needs to be cloned and installed locally. Make sure you have Python 3.12 and PIP installed if you choose to install using this method.
+---
 
-The repository can be cloned/downloaded via `git` in your terminal, or by downloading the zip file from the "Code" button on the [repository page](https://github.com/TagStudioDev/TagStudio).
+## Running from Source
+
+PromptBook can be installed and run from source with Python.
+
+Make sure you have Python 3.12 installed.
+
+### Clone the Repository
 
 ```sh
-git clone https://github.com/TagStudioDev/TagStudio.git
+git clone https://github.com/joolaszlo/PromptBook.git
+cd PromptBook
 ```
 
-Once cloned or downloaded, you can install TagStudio with the following PIP command:
+### Create a Virtual Environment
+
+```sh
+python -m venv .venv
+```
+
+Activate the virtual environment:
+
+=== "Windows PowerShell"
+
+    ```sh
+    .venv\Scripts\Activate.ps1
+    ```
+
+=== "Windows Command Prompt"
+
+    ```sh
+    .venv\Scripts\activate.bat
+    ```
+
+=== "Linux/macOS"
+
+    ```sh
+    source .venv/bin/activate
+    ```
+
+### Install PromptBook
 
 ```sh
 pip install .
 ```
 
-<!-- prettier-ignore -->
-!!! note "Developer Dependencies"
-    If you wish to create an editable install with the additional dependencies required for developing TagStudio, use this modified PIP command instead:
-    ```sh
-    pip install -e ".[dev]"
-    ```
-    _See more under "[Developing](developing.md)"_
+### Launch PromptBook
 
-TagStudio can now be launched via the `tagstudio` command in your terminal.
+The current inherited source entry point is:
+
+```sh
+python src/tagstudio/main.py
+```
+
+If installed as a package, the current inherited command may also be available:
+
+```sh
+tagstudio
+```
+
+!!! note
+    The `src/tagstudio/main.py` path and `tagstudio` command name are inherited from the original TagStudio codebase.
+
+    They may be renamed later as the PromptBook conversion continues.
+
+For development setup, see the [Developing](developing.md) page.
 
 ---
 
-### :material-penguin: Linux
+## Linux Dependencies
 
-Some external dependencies are required for TagStudio to execute. Below is a table of known packages that will be necessary.
+Some external dependencies may be required on Linux.
 
-<!-- prettier-ignore -->
 | Package | Reason |
-|--------------- | --------------- |
-| [dbus](https://repology.org/project/dbus) | required for Qt; opening desktop applications |
-| [ffmpeg](https://repology.org/project/ffmpeg) | audio/video playback |
+| --------------- | --------------- |
+| [dbus](https://repology.org/project/dbus) | required for Qt and opening desktop applications |
+| [ffmpeg](https://repology.org/project/ffmpeg) | audio/video thumbnails and playback |
 | libstdc++ | required for Qt |
-| [libva](https://repology.org/project/libva) | hardware rendering with [VAAPI](https://www.freedesktop.org/wiki/Software/vaapi) |
-| [libvdpau](https://repology.org/project/libvdpau) | hardware rendering with [VDPAU](https://www.freedesktop.org/wiki/Software/VDPAU) |
+| [libva](https://repology.org/project/libva) | hardware rendering with VAAPI |
+| [libvdpau](https://repology.org/project/libvdpau) | hardware rendering with VDPAU |
 | [libx11](https://repology.org/project/libx11) | required for Qt |
 | libxcb-cursor OR [xcb-util-cursor](https://repology.org/project/xcb-util-cursor) | required for Qt |
 | [libxkbcommon](https://repology.org/project/libxkbcommon) | required for Qt |
@@ -79,164 +133,34 @@ Some external dependencies are required for TagStudio to execute. Below is a tab
 | [qt-multimedia](https://repology.org/project/qt) | required |
 | [qt-wayland](https://repology.org/project/qt) | Wayland support |
 
-### :material-nix: Nix(OS)
-
-For [Nix(OS)](https://nixos.org/), the TagStudio repository includes a [flake](https://wiki.nixos.org/wiki/Flakes) that provides some outputs such as a development shell and package.
-
-Two packages are provided: `tagstudio` and `tagstudio-jxl`. The distinction was made because `tagstudio-jxl` has an extra compilation step for [JPEG-XL](https://jpeg.org/jpegxl) image support. To give either of them a test run, you can execute `nix run github:TagStudioDev/TagStudio#tagstudio`. If you are in a cloned repository and wish to run a package with the context of the repository, you can simply use `nix run` with no arguments.
-
-`nix build` can be used in place of `nix run` if you only want to build. **The packages will only build if tests pass.**
-
-<!-- prettier-ignore -->
-!!! info "Nix Support"
-    Support for Nix is handled on a best-effort basis by one of our maintainers. Issues related to Nix may be slower to resolve, and could require further details.
-
-Want to add TagStudio into your configuration?
-
-This can be done by first adding the flake input into your `flake.nix`:
-
-```nix title="flake.nix"
-{
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    tagstudio = {
-      url = "github:TagStudioDev/TagStudio";
-      inputs.nixpkgs.follows = "nixpkgs"; # Use the same package set as your flake.
-    };
-  };
-}
-```
-
-Then, make sure you add the `inputs` context to your configuration:
-
-<!-- prettier-ignore-start -->
-=== "NixOS with Home Manager"
-    ```nix title="flake.nix"
-    {
-      outputs =
-        inputs@{ home-manager, nixpkgs, ... }:
-          {
-            nixosConfigurations.HOSTNAME = nixpkgs.lib.nixosSystem {
-              system = "x86_64-linux";
-
-              specialArgs = { inherit inputs; };
-              modules = [
-                ./configuration.nix
-
-                home-manager.nixosModules.home-manager
-                {
-                  home-manager = {
-                    useGlobalPkgs = true;
-                    useUserPackages = true;
-
-                    extraSpecialArgs = { inherit inputs; };
-                    users.USER.imports = [
-                      ./home.nix
-                    ];
-                  };
-                }
-              ];
-            };
-          };
-    }
-    ```
-=== "NixOS"
-    ```nix title="flake.nix"
-    {
-      outputs =
-        inputs@{ nixpkgs, ... }:
-          {
-            nixosConfigurations.HOSTNAME = nixpkgs.lib.nixosSystem {
-              system = "x86_64-linux";
-
-              specialArgs = { inherit inputs; };
-              modules = [
-                ./configuration.nix
-              ];
-            };
-          };
-    }
-    ```
-=== "Home Manager (standalone)"
-    ```nix title="flake.nix"
-    {
-      outputs =
-        inputs@{ home-manager, nixpkgs, ... }:
-        let
-          pkgs = import nixpkgs {
-            system = "x86_64-linux";
-          };
-        in
-        {
-          homeConfigurations.USER = home-manager.lib.homeManagerConfiguration {
-            inherit pkgs;
-
-            extraSpecialArgs = { inherit inputs; };
-            modules = [
-              ./home.nix
-            ];
-          };
-        };
-    }
-    ```
-<!-- prettier-ignore-end -->
-
-Finally, `inputs` can be used in a module to add the package to your packages list:
-
-<!-- prettier-ignore-start -->
-=== "Home Manager module"
-    ```nix title="home.nix"
-    { inputs, pkgs, ... }:
-
-    {
-      home.packages = [
-        inputs.tagstudio.packages.${pkgs.stdenv.hostPlatform.system}.tagstudio
-      ];
-    }
-    ```
-=== "NixOS module"
-    ```nix title="configuration.nix"
-    { inputs, pkgs, ... }:
-
-    {
-      environment.systemPackages = [
-        inputs.tagstudio.packages.${pkgs.stdenv.hostPlatform.system}.tagstudio
-      ];
-    }
-    ```
-<!-- prettier-ignore-end -->
-
-Don't forget to rebuild!
+---
 
 ## Third-Party Dependencies
 
-<!-- prettier-ignore -->
 !!! tip
-    You can check to see if these dependencies are correctly located by launching TagStudio and going to "About TagStudio" in the menu bar.
+    You can check whether these dependencies are correctly detected by launching PromptBook and opening the About window from the menu bar.
 
 ### FFmpeg/FFprobe
 
-For audio/video thumbnails and playback you'll need [FFmpeg](https://ffmpeg.org/download.html) installed on your system. If you encounter any issues with this, please reference our [FFmpeg Help](./help/ffmpeg.md) guide.
+For audio and video thumbnails and playback, install [FFmpeg](https://ffmpeg.org/download.html).
+
+If you encounter issues with FFmpeg, see the [FFmpeg Help](./help/ffmpeg.md) guide.
 
 ### RAR Extractor
 
-To generate thumbnails for RAR-based files (like `.cbr`) you'll need an extractor capable of handling them.
+To generate thumbnails for RAR-based files, such as `.cbr` comic book archives, you need an extractor capable of handling RAR files.
 
--   :material-penguin: On Linux you'll need to install either `unrar` (likely in you distro's non-free repository) or `unrar-free` from your package manager.
+- :material-penguin: On Linux, install either `unrar` or `unrar-free` from your package manager.
+- :fontawesome-brands-apple: On macOS, `unrar` can be installed through Homebrew's [`rar`](https://formulae.brew.sh/cask/rar) formula.
+- :fontawesome-brands-windows: On Windows, install either [`WinRAR`](https://www.rarlab.com/download.htm) or [`7-Zip`](https://www.7-zip.org/) and add its folder to your `PATH`.
 
--   :fontawesome-brands-apple: On macOS `unrar` can be installed through Homebrew's [`rar`](https://formulae.brew.sh/cask/rar) formula.
-
-    <!-- prettier-ignore -->
-    !!! warning ":fontawesome-brands-apple: macOS "Privacy & Security" Popup"
-        On macOS, you may be met with a message similar to  "**"unrar" Not Opened. Apple could not verify "unrar" is free of malware that may harm your Mac or compromise your privacy**" If you encounter this, then you'll need to go to the "Settings" app, navigate to "Privacy & Security", and scroll down to a section that says "**"unrar" was blocked from use because it is not from an identified developer.**" Click the "Open Anyway" button to allow unrar to be used.
-
--   :fontawesome-brands-windows: On Windows you'll need to install either [`WinRAR`](https://www.rarlab.com/download.htm) or [`7-zip`](https://www.7-zip.org/) and add their folder to you `PATH`.
-
-    <!-- prettier-ignore -->
-    !!! tip "WinRAR License"
-        Both `unrar` and `WinRAR` require a license, but since the evaluation copy has no time limit you can simply dismiss the prompt.
+!!! tip "WinRAR License"
+    Both `unrar` and `WinRAR` require a license, but the evaluation copy has no time limit. You can dismiss the prompt.
 
 ### ripgrep
 
-A recommended tool to improve the performance of directory scanning is [`ripgrep`](https://github.com/BurntSushi/ripgrep), a Rust-based directory walker that natively integrates with our [`.ts_ignore`](ignore.md) (`.gitignore`-style) pattern matching system for excluding files and directories. Ripgrep is already pre-installed on some Linux distributions and also available from several package managers.
+[`ripgrep`](https://github.com/BurntSushi/ripgrep) is recommended to improve directory scanning performance.
+
+PromptBook can use ripgrep with the [`.ts_ignore`](ignore.md) pattern matching system to exclude files and directories during scans.
+
+Ripgrep is already pre-installed on some Linux distributions and is also available from several package managers.

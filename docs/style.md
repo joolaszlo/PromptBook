@@ -4,69 +4,92 @@ icon: material/sign-text
 
 # :material-sign-text: Style Guide
 
+This page describes general code style expectations for PromptBook development.
+
+PromptBook is still based on the original TagStudio codebase, so older files may not follow every guideline listed here. When editing existing code, prefer small, focused cleanup over broad unrelated refactors.
+
 ## Formatting
 
-Most of the style guidelines can be checked, fixed, and enforced via Ruff. Older code may not be adhering to all of these guidelines, in which case _"do as I say, not as I do"..._
+Most formatting and linting rules can be checked, fixed, or enforced with Ruff.
 
--   Do your best to write clear, concise, and modular code.
-    -   This should include making methods private by default (e.g. `__method()`)
-    -   Methods should only be protected (e.g. `_method()`) or public (e.g. `method()`) when needed and warranted
--   Keep a maximum column width of no more than **100** characters.
--   Code comments should be used to help describe sections of code that can't speak for themselves.
--   Use [Google style](https://google.github.io/styleguide/pyguide.html#s3.8-comments-and-docstrings) docstrings for any classes and functions you add.
-    -   If you're modifying an existing function that does _not_ have docstrings, you don't _have_ to add docstrings to it... but it would be pretty cool if you did ;)
--   Imports should be ordered alphabetically.
--   Lists of values should be ordered using their [natural sort order](https://en.wikipedia.org/wiki/Natural_sort_order).
-    -   Some files have their methods ordered alphabetically as well (i.e. [`thumb_renderer`](https://github.com/TagStudioDev/TagStudio/blob/main/src/tagstudio/qt/widgets/thumb_renderer.py)). If you're working in a file and notice this, please try and keep to the pattern.
--   When writing text for window titles or form titles, use "[Title Case](https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case)" capitalization. Your IDE may have a command to format this for you automatically, although some may incorrectly capitalize short prepositions. In a pinch you can use a website such as [capitalizemytitle.com](https://capitalizemytitle.com/) to check.
--   If it wasn't mentioned above, then stick to [**PEP-8**](https://peps.python.org/pep-0008/)!
+General guidelines:
+
+- Write clear, concise, and modular code.
+- Prefer private methods by default, for example `__method()`.
+- Use protected methods, for example `_method()`, only when subclass access is needed.
+- Use public methods, for example `method()`, only when they are part of the intended external API.
+- Keep the maximum line width at **100** characters.
+- Use comments to explain code that cannot clearly explain itself.
+- Use [Google style](https://google.github.io/styleguide/pyguide.html#s3.8-comments-and-docstrings) docstrings for new classes and functions.
+- When modifying an existing function without docstrings, add docstrings only if they improve clarity.
+- Keep imports ordered alphabetically.
+- Keep lists of values ordered using their [natural sort order](https://en.wikipedia.org/wiki/Natural_sort_order), where appropriate.
+- If a file already follows a clear method ordering pattern, preserve that pattern unless there is a good reason to change it.
+- If a rule is not covered here, follow [PEP 8](https://peps.python.org/pep-0008/).
 
 ## Qt
 
-As of writing this section, the QT part of the code base is quite unstructured and the View and Controller parts are completely intermixed[^1]. This makes maintenance, fixes and general understanding of the code base quite challenging, because the interesting parts you are looking for are entangled in a bunch of repetitive UI setup code. To address this we are aiming to more strictly separate the view and controller aspects of the QT frontend.
+The Qt frontend still contains inherited structure from the original codebase. Some files mix view setup, event handling, and controller logic.
 
-The general structure of the QT code base should look like this:
+When adding or restructuring Qt code, prefer separating view code from controller logic.
 
-```
-qt
-├── controllers
-│   ├── widgets
+A useful structure is:
+
+```text
+qt/
+├── controllers/
+│   ├── widgets/
 │   │   └── preview_panel_controller.py
 │   └── main_window_controller.py
-├── views
-│   ├── widgets
+├── views/
+│   ├── widgets/
 │   │   └── preview_panel_view.py
 │   └── main_window_view.py
 ├── ts_qt.py
 └── mixed.py
 ```
 
-In this structure there are the `views` and `controllers` sub-directories. They have the exact same structure and for every `<component>_view.py` there is a `<component>_controller.py` at the same location in the other subdirectory and vice versa.
+In this structure:
 
-Typically the classes should look like this:
+- `views` contain UI construction and UI-only behavior.
+- `controllers` contain application logic and event handling.
+- For every `_view.py` file, there should usually be a matching `_controller.py` file.
+- The controller class is usually named after the widget itself, not `SomethingController`, because it is the class used by other code.
+
+Example view:
 
 ```py
 # my_cool_widget_view.py
+
 class MyCoolWidgetView(QWidget):
     def __init__(self):
         super().__init__()
+
         self.__button = QPushButton()
         self.__color_dropdown = QComboBox()
-        # ...
+
         self.__connect_callbacks()
 
     def __connect_callbacks(self):
         self.__button.clicked.connect(self._button_click_callback)
         self.__color_dropdown.currentIndexChanged.connect(
-            lambda idx: self._color_dropdown_callback(self.__color_dropdown.itemData(idx))
+            lambda idx: self._color_dropdown_callback(
+                self.__color_dropdown.itemData(idx)
+            )
         )
 
     def _button_click_callback(self):
         raise NotImplementedError()
+
+    def _color_dropdown_callback(self, color: Color):
+        raise NotImplementedError()
 ```
+
+Example controller:
 
 ```py
 # my_cool_widget_controller.py
+
 class MyCoolWidget(MyCoolWidgetView):
     def __init__(self):
         super().__init__()
@@ -78,19 +101,28 @@ class MyCoolWidget(MyCoolWidgetView):
         print(f"The selected color is now: {color}")
 ```
 
-Observe the following key aspects of this example:
+Key points:
 
--   The Controller is just called `MyCoolWidget` instead of `MyCoolWidgetController` as it will be directly used by other code
--   The UI elements are in private variables
-    -   This enforces that the controller shouldn't directly access UI elements
-    -   Instead the view should provide a protected API (e.g. `_get_color()`) for things like setting/getting the value of a dropdown, etc.
-    -   Instead of `_get_color()` there could also be a `_color` method marked with `@property`
--   The callback methods are already defined as protected methods with NotImplementedErrors
-    -   Defines the interface the callbacks
-    -   Enforces that UI events be handled
+- UI elements should usually be private variables inside the view.
+- Controllers should not directly access private UI elements.
+- Views should expose a protected API when the controller needs to read or update UI state.
+- Callback methods should be protected methods defined by the view and implemented by the controller.
+- If code requires non-UI imports, it usually does not belong in a `*_view.py` file.
 
-<!-- prettier-ignore -->
-!!! tip
-    A good (non-exhaustive) rule of thumb is: If it requires a non-UI import, then it doesn't belong in the `*_view.py` file.
+## Scope of Cleanup
 
-[^1]: For an explanation of the Model-View-Controller (MVC) Model, checkout this article: [MVC Framework Introduction](https://www.geeksforgeeks.org/mvc-framework-introduction/).
+Avoid large formatting-only rewrites unless the file is already being actively refactored.
+
+When changing existing code:
+
+- keep the change focused
+- avoid unrelated renaming
+- avoid large movement of code unless needed
+- preserve existing behavior unless the change intentionally modifies it
+- document important behavior changes in comments, docs, or release notes where appropriate
+
+## References
+
+For an explanation of the Model-View-Controller pattern, see:
+
+[MVC Framework Introduction](https://www.geeksforgeeks.org/mvc-framework-introduction/)

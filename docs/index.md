@@ -1,111 +1,84 @@
 ---
 title: Home
 hide:
-    - toc
-    - navigation
+  - toc
+  - navigation
 ---
 
-#
+# PromptBook
 
-<link rel="stylesheet" href="stylesheets/home.css">
+## A Prompt-Focused Media Library for AI-Generated Content
 
-<figure markdown="span">
-  ![TagStudio](./assets/ts-9-3_logo_text.png){ width=80% }<h2>A User-Focused Photo & File Management System</h2>
-</figure>
+![PromptBook screenshot](./assets/screenshot.png){ width=80% }
 
-<br>
+PromptBook v1.0 running on macOS Sequoia.
 
-<figure markdown="span">
-  ![TagStudio screenshot](./assets/screenshot.png){ width=80% }
-  <figcaption>PromptBook v1.0 running on macOS Sequoia.</figcaption>
-</figure>
+PromptBook is a desktop application for organizing prompts, generated images, generated videos, reference files, and related creative assets in one searchable library.
 
-<div class="grid" markdown>
+It is built around a flexible tag-based system, custom metadata fields, and local library storage. PromptBook does not require proprietary project files, does not fill your folders with sidecar files, and does not force you to reorganize your existing file structure.
 
-![TagStudio screenshot](./assets/tag_bubbles.png)
-
-**TagStudio** is a photo & file organization application with an underlying tag-based system that focuses on giving freedom and flexibility to the user. No proprietary programs or formats, no sea of sidecar files, and no complete upheaval of your filesystem structure.
-
-</div>
-
-<figure markdown="span">
-  [:material-download: Download Latest Release](https://github.com/TagStudioDev/TagStudio/releases){ .md-button .md-button--primary }
-</figure>
+[:material-download: Download Latest Release](https://github.com/joolaszlo/PromptBook/releases){ .md-button .md-button--primary }
 
 ## :material-star: Core Features
 
-<div class="grid cards" markdown>
+- :material-file-multiple:{ .lg .middle } **[All Files](entries.md) Welcome**
 
--   :material-file-multiple:{ .lg .middle } **[All Files](entries.md) Welcome**
+***
 
-    ***
+PromptBook can be used with images, videos, prompt files, documents, and other related media. Common file types have built-in preview support.
 
-    TagStudio works with photos, videos, music, documents, and more! **All file types** are recognized by TagStudio, with most common ones having built-in preview support.
+[:material-arrow-right: See Full Preview Support](preview-support.md)
 
-    [:material-arrow-right: See Full Preview Support](preview-support.md)
+- :material-tag-text:{ .lg .middle } **Create [Tags](tags.md) Your Way**
 
--   :material-tag-text:{ .lg .middle } **Create [Tags](tags.md) Your Way**
+***
 
-    ***
+- :material-format-font: No character restrictions
+- :material-form-textbox: Add aliases and alternate names
+- :material-palette: Customize colors and styles
+- :material-tag-multiple: Tags can be tagged with other tags
+- :material-star-four-points: Organize prompts, outputs, styles, models, characters, projects, and references
 
-    -   :material-format-font: No character restrictions
-    -   :material-form-textbox: Add aliases/alternate names
-    -   :material-palette: Customize colors and styles
-    -   :material-tag-multiple: Tags can be tagged with other tags!
-    -   :material-star-four-points: And more!
+- :material-magnify:{ .lg .middle } **Powerful [Search](search.md)**
 
--   :material-magnify:{ .lg .middle } **Powerful [Search](search.md)**
+***
 
-    ***
+- Boolean operator support
+- Filename, path, and extension search with [glob](https://en.wikipedia.org/wiki/Glob_(programming)) syntax
+- General media types, such as image, video, audio, and document files
+- Special searches, such as "Untagged"
+- Smartcase case sensitivity
 
-    -   Full [Boolean operator](search.md) support
-    -   Filenames, paths, and extensions with [glob](<https://en.wikipedia.org/wiki/Glob_(programming)>) syntax
-    -   General media types (e.g. "Photo", "Video", "Document")
-    -   Special searches (e.g. "Untagged")
-    -   "[Smartcase](search.md#case-sensitivity)" case sensitivity
+- :material-text-box:{ .lg .middle } **Text and Date [Fields](fields.md)**
 
--   :material-text-box:{ .lg .middle } **Text and Date [Fields](fields.md)**
+***
 
-    ***
-
-    Along with tags, add custom metadata fields such as text and dates to your files!
-
-    This is useful for adding notes and descriptions, titling files, and keeping track of extra dates and times.
-
-</div>
+Along with tags, you can add custom metadata fields such as titles, descriptions, source URLs, notes, prompt text, generation notes, and dates.
 
 ## :material-toolbox: Built Different
 
-<div class="grid cards" markdown>
+- :material-scale-balance:{ .lg .middle } **Open Source**
 
--   :material-scale-balance:{ .lg .middle } **Open Source**
+***
 
-    ***
+PromptBook is licensed under GPL-3.0-only. The source code and releases are available on GitHub.
 
-    TagStudio is licensed under the GPL-3.0 license with the source code and executable releases available on [GitHub](https://github.com/TagStudioDev/TagStudio).
+[:material-arrow-right: View License](https://github.com/joolaszlo/PromptBook/blob/main/LICENSE)
 
-    [:material-arrow-right: View License](https://github.com/TagStudioDev/TagStudio/blob/main/LICENSE)
+- :material-database:{ .lg .middle } **Central Library Database**
 
-    [:material-arrow-right: Roadmap to MIT Core Library License](roadmap.md#core-library-api)
+***
 
--   :material-database:{ .lg .middle } **Central Save File**
+Instead of writing sidecar files next to your media, PromptBook uses a [library](libraries.md) system that stores your tags and metadata inside a central database for each library.
 
-    ***
-
-    Opposed to filling your drives with [sidecar files](https://en.wikipedia.org/wiki/Sidecar_file), TagStudio uses a project-like [library](libraries.md) system that stores your tags and metadata inside a single save file per-library.
-
-    [:material-arrow-right: Learn About the Format](libraries.md)
-
-</div>
+[:material-arrow-right: Learn About Libraries](libraries.md)
 
 ---
 
-## :material-layers-triple: More Than an Application
+## :material-layers-triple: Why PromptBook?
 
-TagStudio aims to create an **open** and **robust** format for file tagging that isn't burdened by the limitations of traditional tagging and file metadata systems. **TagStudio** is the first proof-of-concept implementation of this system.
+PromptBook is designed for workflows where prompts, generated outputs, reference images, videos, notes, and project files belong together.
 
-<div class="grid cards" markdown>
+It can be used to track what was generated, which prompt or idea it came from, how it should be categorized, and how related files connect to each other.
 
--   :material-map-check:{ .lg .middle } See the [**Roadmap**](roadmap.md) for future features and updates
-
-</div>
+- :material-map-check:{ .lg .middle } See the [**Roadmap**](roadmap.md) for future features and updates

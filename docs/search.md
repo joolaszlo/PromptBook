@@ -4,122 +4,188 @@ icon: material/magnify
 
 # :material-magnify: Searching
 
-TagStudio provides various methods to search your library, ranging from TagStudio data such as tags to inherent file data such as paths or media types.
+PromptBook provides a simple search field together with tag filters and selectable search scopes.
 
-## Boolean Operators
+The main search field is intended for quick text search. Tag selection is handled separately, so selected tags do not need to be written into the search field.
 
-TagStudio allows you to use common [Boolean search](https://en.wikipedia.org/wiki/Full-text_search#Boolean_queries) operators when searching your library, along with [grouping](#grouping-and-nesting), [nesting](#grouping-and-nesting), and [character escaping](#escaping-characters). Note that you may need to use grouping in order to get the desired results you're looking for.
+## Main Search Field
 
-### AND
+Use the search field at the top of the library view to search for text.
 
-The `AND` operator will only return results that match **both** sides of the operator. `AND` is used implicitly when no Boolean operators are given. To use the `AND` operator explicitly, simply type "and" (case insensitive) in-between items of your search.
+After typing a search term, press Enter or click the Search button to update the results.
 
-<!-- prettier-ignore -->
-!!! example
-    Searching for "Tag1 Tag2" will be treated the same as "Tag1 `AND` Tag2" and will only return results that contain both Tag1 and Tag2.
+Clearing the search field also clears the active text search.
 
-### OR
+## Search In
 
-The `OR` operator will return results that match **either** the left or right side of the operator. To use the `OR` operator simply type "or" (case insensitive) in-between items of your search.
+The "Search in" options control where the text from the main search field is searched.
 
-<!-- prettier-ignore -->
-!!! example
-    Searching for "Tag1 `OR` Tag2" will return results that contain either "Tag1", "Tag2", or both.
+Available options:
 
-### NOT
+- **Tags**
+- **Title**
+- **Prompt**
 
-The `NOT` operator will returns results where the condition on the right is **false.** To use the `NOT` operator simply type "not" (case insensitive) in-between items of your search. You can also begin your search with `NOT` to only view results that do not contain the next term that follows.
+By default:
 
-<!-- prettier-ignore -->
-!!! example
-    Searching for "Tag1 `NOT` Tag2" will only return results that contain "Tag1" while also not containing "Tag2".
+- **Tags** is disabled
+- **Title** is enabled
+- **Prompt** is enabled
 
-### Grouping and Nesting
+This means that a normal text search will search entry titles and prompt text by default, but not tag names unless the Tags option is enabled.
 
-Searches can be grouped and nested by using parentheses to surround parts of your search query.
+## Title Search
 
-<!-- prettier-ignore -->
-!!! example
-    Searching for "(Tag1 `OR` Tag2) `AND` Tag3" will return any results that contain Tag3, plus one or the other (or both) of Tag1 and Tag2.
+When **Title** is enabled, PromptBook searches the entry title field.
 
-### Escaping Characters
+Use this when you want to find entries by their displayed title or manually added title metadata.
 
-Sometimes search queries have ambiguous characters and need to be "escaped". This is most common with tag names which contain spaces, or overlap with existing search keywords such as "[path:](#filename-and-path) of exile". To escape most search terms, surround the section of your search in plain quotes. Alternatively, spaces in tag names can be replaced by underscores.
+## Prompt Search
 
-#### Valid Escaped Tag Searches
+When **Prompt** is enabled, PromptBook searches the prompt or description text field.
 
--   "Tag Name With Spaces"
--   Tag_Name_With_Spaces
+Use this when you want to find entries by prompt text, generation notes, descriptions, or similar long-form text attached to entries.
 
-#### Invalid Escaped Tag Searches
+!!! note
+    Internally, the current implementation searches the description text field for the Prompt scope. This may be renamed or refined later as PromptBook's prompt-specific fields develop.
 
--   Tag Name With Spaces
-    -   Reason: Ambiguity between a tag named "Tag Name With Spaces" and four individual tags called "Tag", "Name", "With", "Spaces".
+## Tag Text Search
 
-## Tags
+When **Tags** is enabled under "Search in", the main search field can match tag information.
 
-[Tag](#tags) search is the default mode of file entry search in TagStudio. No keyword prefix is required, however using `tag:` will also work. The tag search attempts to match tag [names](tags.md#name), [shorthands](tags.md#shorthand), [aliases](tags.md#aliases), as well as allows for tags to [substitute](tags.md#intuition-via-substitution) in for any of their [parent tags](tags.md#parent-tags).
+Tag text search can match:
 
-You may also see the `tag_id:` prefix keyword show up when using the right-click "Search for Tag" option on tags. This is meant for internal use, and eventually will not be displayed or accessible to the user.
+- tag names
+- tag shorthands
+- tag aliases
 
-## Fields
+This is different from selecting tags as filters. Tag text search finds entries whose attached tags match the text you typed.
 
-_[Field](fields.md) search is currently not in the program, however is coming in a future version._
+## Search Scope Logic
 
-## File Entry Search
+If more than one "Search in" option is enabled, PromptBook uses OR logic between those text scopes.
 
-### Filename and Path
+For example, if **Title** and **Prompt** are enabled, an entry can match if the search text appears in either:
 
-Filename and path search is available via the `path:` keyword and comes in a few different styles. By default, any string that follows the `path:` keyword will be searched as a substring inside a file's complete filepath. This means that given a file `folder/my_file.txt`, searching for `path: my_file` or `path: folder` will both return results for that file.
+- the title field
+- the prompt or description field
 
-#### Case Sensitivity
+If **Tags** is also enabled, an entry can also match if one of its attached tags matches the search text.
 
-TagStudio uses a "[smartcase](https://neovim.io/doc/user/options.html#'smartcase')"-like system for case sensitivity. This means that a search term typed in `lowercase` will be treated as **case-insensitive**, while a term typed in any `MixedCase` will be treated as **case-sensitive**. This makes it quicker to type searches when case sensitivity isn't required, while also providing a simple option to leverage case sensitivity when desired. Note that this means there's technically no way to currently search for a lowercase term while respecting case sensitivity.
+## Selected Tag Filters
 
-#### Glob Syntax
+Tags can also be selected directly from the tag UI, pinned tags, favorite tags, or tag panels.
 
-Optionally, you may use [glob](<https://en.wikipedia.org/wiki/Glob_(programming)>) syntax to search filepaths.
+Selected tags act as filters separate from the main text search field.
 
-#### Examples
+This means you can combine:
 
-Given a file "Artwork/Piece.jpg", the following searches will return results for it:
+- a text search
+- one or more selected tags
+- selected search scopes
 
--   `path: artwork/piece.jpg`
--   `path: Artwork/Piece.jpg`
--   `path: piece.jpg`
--   `path: Piece.jpg`
--   `path: artwork`
--   `path: rtwor`
--   `path: ece.jpg`
--   `path: iec`
--   `path: artwork/*`
--   `path: Artwork/*`
--   `path: *piece.jpg*`
--   `path: *Piece.jpg*`
--   `path: *artwork*`
--   `path: *Artwork*`
--   `path: *rtwor*`
--   `path: *ece.jpg*`
--   `path: *iec*`
--   `path: *.jpg`
+For example, you can search for:
 
-While the following searches will **NOT:**
+```text
+red dress
+```
 
--   `path: ARTWORK/Piece.jpg` _(Reason: Mismatched case)_
--   `path: *aRtWoRk/Piece*` _(Reason: Mismatched case)_
--   `path: PieCe.jpg` _(Reason: Mismatched case)_
--   `path: *PieCe.jpg*` _(Reason: Mismatched case)_
+while also selecting tags such as:
 
-## Special Searches
+```text
+character
+portrait
+```
 
-Some predefined searches use the `special:` keyword prefix and give quick results for certain special search queries.
+This will narrow the results to entries that match the text search and also have the selected tags.
 
-### Untagged
+## Multiple Selected Tags
 
-To see all your file entries which don't contain any tags, use the `special: untagged` search.
+When multiple tags are selected as active filters, PromptBook uses AND logic.
 
-### Empty
+This means an entry must contain all selected tags to appear in the results.
 
-**_NOTE:_** _Currently unavailable in v9.5.0_
+Example:
 
-To see all your file entries which don't contain any tags _and_ any fields, use the `special: empty` search.
+```text
+Selected tags:
+portrait
+female
+cyberpunk
+```
+
+The result list will only show entries that have all three selected tags.
+
+## Excluded Tags
+
+PromptBook also supports excluded tag filters.
+
+An excluded tag removes entries from the results if they contain that tag.
+
+Example:
+
+```text
+Included tag:
+portrait
+
+Excluded tag:
+unfinished
+```
+
+This will show portrait entries, but hide entries tagged as unfinished.
+
+## Resetting Tag Selection
+
+Use **Reset Selection** to clear the currently selected tag filters.
+
+This only resets the tag selection. It does not necessarily remove the text typed into the main search field.
+
+## Combining Text Search and Tags
+
+Text search and selected tag filters are combined.
+
+In practice:
+
+- selected tags narrow the library by tag
+- excluded tags remove matching entries
+- the search field narrows the remaining results by text
+- active "Search in" options decide where the text is searched
+
+Example:
+
+```text
+Search field:
+castle
+
+Search in:
+Title enabled
+Prompt enabled
+Tags disabled
+
+Selected tags:
+fantasy
+background
+```
+
+This searches for entries that:
+
+- have the `fantasy` tag
+- have the `background` tag
+- contain `castle` in the title or prompt text
+
+## Hidden Entries
+
+Entries with hidden tags are hidden by default.
+
+Use the **Show hidden entries** option if you want hidden entries to appear in search results.
+
+## Advanced Search Syntax
+
+Some inherited advanced query behavior may still exist internally, but the current PromptBook user interface is centered around:
+
+- the main search field
+- the Search in options
+- selected tag filters
+- excluded tag filters
+
+Older TagStudio-style query examples such as manual `tag:`, `tag_id:`, `path:`, or `special:` searches should not be treated as the primary PromptBook search workflow unless they are reintroduced and tested in the current UI.

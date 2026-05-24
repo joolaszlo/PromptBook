@@ -4,148 +4,340 @@ icon: material/tag-text
 
 # :material-tag-text: Tags
 
-Tags are discrete objects that represent some attribute. This could be a person, place, object, concept, and more. Unlike most tagging systems, TagStudio tags are not solely represented by a line of text or a hashtag. Tags in TagStudio consist of several properties and relationships that give extra customization, searching power, and ease of tagging that cannot be achieved by string-based tags alone. TagStudio tags are designed to be as simple or as complex as you'd like, giving options to users of all skill levels and use cases.
+Tags are reusable labels that describe something about an entry.
+
+In PromptBook, tags can be used for people, characters, places, styles, models, projects, prompt types, generated media types, workflow states, and any other information that helps organize your library.
+
+Unlike simple hashtag-based systems, PromptBook tags can have additional properties, aliases, colors, and relationships with other tags.
 
 ## Naming Tags
 
-TagStudio tags do not share the same naming limitations of many other tagging solutions. The key standouts of tag names in TagStudio are:
+PromptBook tags are flexible.
 
--   Tag names do **NOT** have to be unique
--   Tag names are **NOT** limited to specific characters
--   Tags can have **aliases**, a.k.a. alternate names to go by
+Tag names:
+
+- do **not** have to be unique
+- are **not** limited to specific characters
+- can have aliases
+- can have a shorthand name
+- can be connected to parent tags
 
 ### Name
 
-This is the base name of a tag. It does not have to be unique, and can use any characters you wish. If your tag can go by multiple names, for example if it's the name of a person or something that's commonly shortened or abbreviated, then it's recommended that you put the full tag name here.
+The main display name of the tag.
+
+This can be any text you want.
+
+Examples:
+
+```text
+portrait
+cyberpunk
+Midjourney
+character reference
+blue dress
+```
 
 ### Shorthand
 
-This is a special type of alias that's used for shortening the tag name under special circumstances, mostly when screen space is limited. Tag shorthands can be searched for just like tag names and tag aliases.
+A shorthand is a shorter version of the tag name.
+
+It is useful when the full tag name is long or when a shorter display name is easier to read.
+
+Example:
+
+```text
+Name:
+Stable Diffusion
+
+Shorthand:
+SD
+```
+
+Tag shorthands can also be used when searching for tags.
 
 ### Aliases
 
-Aliases are alternate names that the tag can go by. This may include individual first names for people, alternate spellings, shortened names, and more. If there's a common abbreviation or shortened name for your tag, it's recommended to use the [shorthand](#shorthand) field for this instead.
+Aliases are alternate names for the same tag.
 
-When searching for a tag, aliases (including the shorthand) can also be used to find the tag. This not only includes searching for tags themselves, but for tagged [file entries](entries.md) as well!
+They are useful for:
 
-### Disambiguation
+- alternate spellings
+- translated names
+- common abbreviations
+- old names
+- related search terms
 
-Just as in real life, sometimes there are different attributes that share the same name with one another. The process of adding specificity to something in order to not confuse it with something similar is known as [disambiguation](https://en.wikipedia.org/wiki/Word-sense_disambiguation). In TagStudio we give the option to automatically disambiguate tag names based on a specially marked [Parent Tag](#parent-tags). Parent tags are explained in further detail below, but for the purposes of tag names they can lend themselves to clarifying the name of a tag without the user needing to manually change the name or add complicated aliases.
+Example:
 
-Given a tag named "Freddy", we may confuse it with other "Freddy" tags in our library. There are lots of Freddys in the world, after all. If we're talking about Freddy from "Five Nights at Freddy's", then we may already (and likely should) have a separate "Five Nights at Freddy's" tag added as a parent tag. When the disambiguation box next to a parent tag is selected (see image below) then our tag name will automatically display its name with that parent tag's name (or shorthand if available) in parentheses.
+```text
+Name:
+science fiction
+
+Aliases:
+sci-fi
+scifi
+sf
+```
+
+When searching for tags, aliases can help find the correct tag even if you do not type the main tag name.
+
+## Disambiguation
+
+Different tags can have the same or similar names.
+
+Disambiguation helps make those tags easier to tell apart by displaying a parent tag name next to the tag.
+
+For example, you might have several tags named:
+
+```text
+Jinx
+```
+
+One could be a character name, another could be part of a project, and another could be used in a different context.
+
+A disambiguating parent tag can make the displayed name clearer:
+
+```text
+Jinx (Arcane)
+Jinx (Project Name)
+```
 
 ![Tag Disambiguation Example](assets/tag_disambiguation_example.png)
 
-So if the "Five Nights at Freddy's" tag is added as a parent tag on the "Freddy" tag, and the disambiguation box next to it is checked, then our tag name will automatically be displayed as "Freddy (Five Nights at Freddy's)". Better yet, if the "Five Nights at Freddy's" tag has a shorthand such as "FNAF", then our "Freddy" tag will be displayed as "Freddy (FNAF)". This process preserves our base tag name ("Freddy") and provides an option to get a clean and consistent method to display disambiguating parent categories, rather than having to type this information in manually for each applicable tag.
+The base tag name remains unchanged. PromptBook only uses the selected parent tag to make the displayed name clearer.
 
-## Tag Relationships
+## Parent Tags
 
-One of the core properties of tags in TagStudio is their ability to form relationships with other tags, just as attributes have relationships with each other in real life. A rectangle is a square, but a square isn't a rectangle. A certain plumber with a red hat and blue overalls might be part of a well-known media franchise, developed by an equally well-known company. But how do representing these relationships help with tagging images and files? With tag relationships, we can leverage the following principles:
+Tags can have parent tags.
 
-1. [Simplicity via Deduplication](#simplicity-via-deduplication)
-2. [Intuition via Substitution](#intuition-via-substitution)
-3. [Rediscovery via Linking](#rediscovery-via-linking)
+A parent tag describes a broader category or relationship.
 
-### Parent Tags
+Example:
 
-#### Simplicity via Deduplication
+```text
+Child tag:
+portrait
 
-In a system where tags have no relationships, you're required to add as many tags as you possibly can to describe every last element of an image or file. If you want to tag an image of Shrek, you need to add a tag for `Shrek` himself, a `Character` tag since he's a character, a `Movie` and perhaps `Dreamworks` tag since he's a character from a movie, or perhaps a `Book` tag if we're talking about the original character, and then of course tags for every other attribute of Shrek shown or implied. By allowing tags to have inheritance relationships, we can have a single `Shrek` tag inherit from `Character` (Shrek IS a character) as well as from a separate `Shrek (Movie Franchise)` tag that itself inherits from `Movie Franchise` and `Dreamworks`. Now by simply adding the `Shrek` tag to an image, we've effectively also added the `Character`, `Shrek (Move Franchise)`, `Movie Franchise`, and `Dreamworks` attributes all in one go. On the image entry itself we only see `Shrek`, but the rest of the attributes are implied.
+Parent tag:
+image type
+```
+
+Another example:
+
+```text
+Child tag:
+cyberpunk
+
+Parent tag:
+style
+```
+
+Parent tags can help organize related tags and make broader tag relationships easier to understand.
+
+## Why Parent Tags Are Useful
+
+### Simpler Tagging
+
+Instead of adding every broad category manually to every entry, you can create useful relationships between tags.
+
+Example:
+
+```text
+cyberpunk
+└── style
+```
+
+If `cyberpunk` has `style` as a parent tag, then the relationship is stored once on the tag instead of being manually repeated everywhere.
+
+### Better Organization
+
+Parent tags can help keep large tag collections understandable.
+
+For prompt and media workflows, this can be useful for groups such as:
+
+```text
+style
+character
+location
+project
+model
+generator
+workflow status
+reference type
+```
+
+### Easier Rediscovery
+
+Parent relationships can help you rediscover entries through broader categories.
+
+For example, if several specific style tags are connected to a broader `style` tag, it becomes easier to browse or reason about those tags later.
 
 ![Shrek Tag Details](assets/built_tag_shrek.png)
-
-#### Intuition via Substitution
-
-Now when searching for images that have `Dreamworks` and `Character`, any images or files originally just tagged with `Shrek` will appear as you would expect. A little bit of tag setup goes a long way not only saving so much time during tagging, but also to ensure an intuitive way to search your files!
-
-#### Rediscovery via Linking
-
-Lastly, when searching your files with broader categories such as `Character` or `Dreamworks` you may rediscover images and files that you had simply tagged with tags such as `Barbatus` or `Tulio`, since you didn't need to manually tag those files with `Character` or `Dreamworks`, but had forgotten that they are both in fact Dreamworks characters. While you focus on tagging your files with seemingly surface level attributes, your TagStudio library is building rich connections between tags and files that may not be fully apparent until being discovered through various search queries. While you were simply tagging images with `Shrek` and `Tulio`, you may have unlocked an easy way to search for "2D Dreamworks Characters" without having to explicitly tag for that!
-
-### Component Tags
-
-<!-- prettier-ignore -->
-!!! warning ""
-    **_Coming in version 9.6.x_**
-
-Component tags will be built from a composition-based, or "HAS" type relationship between tags. This takes care of instances where an attribute may "have" another attribute, but doesn't inherit from it. Shrek may be an `Ogre`, he may be a `Character`, but he is NOT a `Leather Vest` - even if he's commonly seen _with_ it. Component tags, along with the upcoming "Tag Override" feature, are built to handle these cases in a way that still simplifies the tagging process without adding too much undue complexity for the user.
 
 ## Tag Appearance
 
 ### Color
 
-Tags use a default uncolored appearance by default, however can take on a number of built-in and user-created colors and color palettes! Tag color palettes can be based on a single color value (see: TagStudio Standard, TagStudio Shades, TagStudio Pastels) or use an optional secondary color use for the text and optionally the tag border (e.g. TagStudio Neon).
+Tags can use built-in colors or custom colors.
+
+Colors make tags easier to recognize in lists, panels, and entry metadata.
 
 ![Tag Color Selection](assets/tag_color_selection.png)
 
-#### User-Created Colors
-
-Custom palettes and colors can be created via the [Tag Color Manager](colors.md). These colors will display alongside the built-in colors inside the tag selection window and are separated by their namespace names. Colors which use the secondary color for the tag border will be outlined in that color, otherwise they will only display the secondary color on the bottom of the swatch to indicate at a glance that the text colors are different.
+Custom palettes and colors can be created with the [Tag Color Manager](colors.md).
 
 ![Custom Tag Color Selection](assets/custom_tag_color_selection.png)
 
 ### Icon
 
-<!-- prettier-ignore -->
-!!! warning ""
-    **_Coming in version 9.6.x_**
+Tags currently have an internal icon field, but icon support should be treated as unfinished unless it is fully exposed in the current user interface.
+
+Do not rely on tag icons as a stable user-facing feature yet.
 
 ## Tag Properties
 
-Properties are special attributes of tags that change their behavior in some way.
+Tags can have properties that change how they behave or how they are shown.
 
-#### Is Category
+### Is Category
 
-The "Is Category" property of tags determines if a tag should be treated as a category itself when being organized inside the preview panel. If this tag or any tags inheriting from this tag (i.e. tags that have this tag as a "[Parent Tag](#parent-tags)"), then these tags will appear under a separated group that's named after this tag. Tags inheriting from multiple "category tags" will still show up under any applicable category.
+The **Is Category** property marks a tag as a category.
 
-This means that duplicates of tags can appear on entries if the tag inherits from multiple parent categories, however this is by design and reflects the nature of multiple inheritance. Any tags not inheriting from a category tag will simply show under a default "Tag" section.
+Category tags can be used to organize other tags into visible groups.
+
+Example:
+
+```text
+Category tag:
+Character
+
+Tags under that category:
+main character
+side character
+villain
+npc
+```
+
+If a tag inherits from a category tag through parent tags, it can appear under that category in the UI.
+
+A tag can inherit from more than one category. In that case, it may appear in more than one category group.
 
 ![Tag Category Example](assets/tag_categories_example.png)
 
-### Built-In Tags and Categories
+### Is Hidden
 
-The built-in tags "Favorite" and "Archived" inherit from the built-in "Meta Tags" category which is marked as a category by default. This behavior of default tags can be fully customized by disabling the category option and/or by adding/removing the tags' Parent Tags.
+The **Is Hidden** property marks a tag as hidden.
 
-### Migrating from v9.4 Libraries
+Entries with hidden tags are hidden by default in normal browsing and search results.
 
-Due to the nature of how tags and Tag Felids operated prior to v9.5, the organization style of Tag Categories vs Tag Fields is not 1:1. Instead of tags being organized into fields on a per-entry basis, tags themselves determine their organizational layout via the "Is Property" flag. Any tags _(not currently inheriting from either the "Favorite" or "Archived" tags)_ will be shown under the default "Tags" header upon migrating to the v9.5+ library format. Similar organization to Tag Fields can be achieved by using the built-in "Meta Tags" tag or any other marked with "Is Category" and then setting those tags as parents for other tags to inherit from.
+Use the **Show hidden entries** option if you want entries with hidden tags to appear.
 
-#### Is Hidden
+The built-in `Archived` tag uses hidden behavior.
 
-<!-- prettier-ignore -->
-!!! warning ""
-    **_Coming in version 9.6.x_**
+### Pinned
 
-When the "Is Hidden" property is checked, any file entries tagged with this tag will not show up in searches by default. This property comes by default with the built-in "Archived" tag.
+Pinned tags are shown in a more accessible place in the interface.
 
-## Tag Search Examples
+Use pinned tags for tags you apply or filter by often.
 
-The following are examples of how a set of given tags will respond to various search queries.
+Examples:
 
-| Tag                 | Name                | Shorthand | Aliases                | Parent Tags                                  |
-| ------------------- | ------------------- | --------- | ---------------------- | -------------------------------------------- |
-| _League of Legends_ | "League of Legends" | "LoL"     | ["League"]             | ["Game", "Fantasy"]                          |
-| _Arcane_            | "Arcane"            | ""        | []                     | ["League of Legends", "Cartoon"]             |
-| _Jinx (LoL)_        | "Jinx Piltover"     | "Jinx"    | ["Jinxy", "Jinxy Poo"] | ["League of Legends", "Arcane", "Character"] |
-| _Zander (Arcane)_   | "Zander Zanderson"  | "Zander"  | []                     | ["Arcane", "Character"]                      |
-| _Mr. Legend (LoL)_  | "Mr. Legend"        | ""        | []                     | ["League of Legends", "Character"]           |
+```text
+favorite style tags
+common workflow status tags
+frequently used project tags
+important prompt categories
+```
 
-**The query "Arcane" will display results tagged with:**
+### Favorite
 
-| Tag             | Cause of Inclusion               | Tag Tree Lineage           |
-| --------------- | -------------------------------- | -------------------------- |
-| Arcane          | Direct match of tag name         | "Arcane"                   |
-| Jinx (LoL)      | Search term is set as parent tag | "Jinx (LoL) > Arcane"      |
-| Zander (Arcane) | Search term is set as parent tag | "Zander (Arcane) > Arcane" |
+Favorite tags are another way to mark important tags.
 
-**The query "League of Legends" will display results tagged with:**
+Depending on the current UI, favorite tags may be shown separately or made easier to access.
 
-| Tag               | Cause of Inclusion                                     | Tag Tree Lineage                               |
-| ----------------- | ------------------------------------------------------ | ---------------------------------------------- |
-| League of Legends | Direct match of tag name                               | "League of Legends"                            |
-| Arcane            | Search term is set as parent tag                       | "Arcane > League of Legends"                   |
-| Jinx (LoL)        | Search term is set as parent tag                       | "Jinx (LoL) > League of Legends"               |
-| Mr. Legend (LoL)  | Search term is set as parent tag                       | "Mr. Legend (LoL) > League of Legends"         |
-| Zander (Arcane)   | Search term is a parent tag of a tag set as parent tag | "Zander (Arcane) > Arcane > League of Legends" |
+## Built-in Tags
 
-Note: The query "LoL" will display the same results as the above example since "LoL" is the shorthand for "League of Legends".
+PromptBook includes built-in tags used for common metadata behavior.
+
+Current built-in examples include:
+
+```text
+Favorite
+Archived
+Meta Tags
+```
+
+These can be used as part of normal organization, but they may also have special default behavior.
+
+For example, `Archived` is hidden by default.
+
+## Tags and Search
+
+Tags can be used in two main ways during search:
+
+1. text search in tag names, shorthands, or aliases
+2. selected tag filters
+
+For current search behavior, see [Searching](search.md).
+
+## PromptBook Tagging Examples
+
+For AI-generated media workflows, useful tag groups may include:
+
+### Content Type
+
+```text
+image
+video
+prompt
+reference
+character sheet
+background
+variation
+```
+
+### Style
+
+```text
+cyberpunk
+watercolor
+anime
+old photo
+90s sitcom
+vintage newspaper
+```
+
+### Subject
+
+```text
+portrait
+cat
+spaceship
+medieval town
+city street
+bedroom
+```
+
+### Workflow Status
+
+```text
+favorite
+archived
+unfinished
+needs edit
+final
+reference only
+```
+
+### Generator or Model
+
+```text
+Midjourney
+Stable Diffusion
+DALL-E
+Runway
+Kling
+Sora
+```
+
+Use whatever structure fits your own library. PromptBook does not require a fixed tag system.

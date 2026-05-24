@@ -4,76 +4,246 @@ icon: material/mouse
 
 # :material-mouse: Basic Usage
 
-## Creating/Opening a Library
+This page covers the basic PromptBook workflow: creating a library, adding metadata, searching, and maintaining entries.
 
-With TagStudio opened, start by creating a new library or opening an existing one using File -> Open/Create Library from the menu bar. TagStudio will automatically create a new library from the chosen directory if one does not already exist. Upon creating a new library, TagStudio will automatically scan your folders for files and add those to your library (no files are moved during this process!).
+## Creating or Opening a Library
+
+With PromptBook open, create a new library or open an existing one from the menu bar:
+
+```text
+File -> Open/Create Library
+```
+
+If the selected folder does not already contain a PromptBook library, PromptBook will create one.
+
+PromptBook will scan the selected folder and add supported files as entries in the library.
+
+!!! note
+    PromptBook does not move your files during this process.
+
+    It stores library metadata separately inside the library's `.PromptBook` folder.
 
 ## Refreshing the Library
 
-Libraries under 10,000 files automatically scan for new or modified files when opened. In order to refresh the library manually, select "Refresh Directories" under the File menu.
+PromptBook can scan the library folder for new or changed files.
 
-## Adding Tags to File Entries
+To manually refresh the library, use:
 
-Access the "Add Tag" search box by either clicking on the "Add Tag" button at the bottom of the right sidebar, accessing the "Add Tags to Selected" option from the File menu, or by pressing <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd>.
+```text
+File -> Refresh Directories
+```
 
-From here you can search for existing tags or create a new one if the one you're looking for doesn't exist. Click the "+" button next to any tags you want to the currently selected file entries. To quickly add the top result, press the <kbd>Enter</kbd>/<kbd>Return</kbd> key to add the topmost tag and reset the tag search. Press <kbd>Enter</kbd>/<kbd>Return</kbd> once more to close the dialog box. By using this method, you can quickly add various tags in quick succession just by using the keyboard!
+Refreshing the library checks the folder contents and updates PromptBook's entry list.
 
-To remove a tag from a file entry, hover over the tag in the preview panel and click on the "-" icon that appears.
+## Browsing Entries
 
-## Adding Metadata to File Entries
+Entries are shown in the main grid view.
 
-To add a metadata field to a file entry, start by clicking the "Add Field" button at the bottom of the preview panel. From the dropdown menu, select the type of metadata field you’d like to add to the entry
+Selecting an entry shows more information in the preview panel, including:
 
-## Editing Metadata Fields
+- file preview
+- tags
+- fields
+- metadata
+- file status
 
-### Text Line / Text Box
+For more information, see [Entries](entries.md).
 
-Hover over the field and click the pencil icon. From there, add or edit text in the dialog box popup.
+## Adding Tags to Entries
+
+To add tags to selected entries, open the Add Tag dialog.
+
+You can do this by:
+
+- clicking the **Add Tag** button in the preview panel
+- using the **Add Tags to Selected** option from the File menu
+- pressing `Ctrl` + `Shift` + `T`
+
+From the Add Tag dialog, you can search for existing tags or create a new tag if it does not already exist.
+
+Click the `+` button next to a tag to add it to the selected entries.
+
+You can also press `Enter` or `Return` to quickly add the top result.
+
+## Removing Tags from Entries
+
+To remove a tag from an entry:
+
+1. Select the entry.
+2. Find the tag in the preview panel.
+3. Hover over the tag.
+4. Click the remove icon.
+
+This removes the tag from that entry. It does not delete the tag from the library.
 
 ## Creating Tags
 
-Create a new tag by accessing the "New Tag" option from the Edit menu or by pressing <kbd>Ctrl</kbd>+<kbd>T</kbd>. In the tag creation panel, enter a tag name, optional shorthand name, optional tag aliases, optional parent tags, and an optional color.
+To create a new tag, use:
 
--   The tag **name** is the base name of the tag. **_This does NOT have to be unique!_**
--   The tag **shorthand** is a special type of alias that displays in situations where screen space is more valuable, notably with name disambiguation.
--   **Aliases** are alternate names for a tag. These let you search for terms other than the exact tag name in order to find the tag again.
--   **Parent Tags** are tags in which this tag can substitute for in searches. In other words, tags under this section are parents of this tag.
-    -   Parent tags with the disambiguation check next to them will be used to help disambiguate tag names that may not be unique.
-    -   For example: If you had a tag for "Freddy Fazbear", you might add "Five Nights at Freddy's" as one of the parent tags. If the disambiguation box is checked next to "Five Nights at Freddy's" parent tag, then the tag "Freddy Fazbear" will display as "Freddy Fazbear (Five Nights at Freddy's)". Furthermore, if the "Five Nights at Freddy's" tag has a shorthand like "FNAF", then the "Freddy Fazbear" tag will display as "Freddy Fazbear (FNAF)".
--   The **color** option lets you select an optional color palette to use for your tag.
--   The **"Is Category"** property lets you treat this tag as a category under which itself and any child tags inheriting from it will be sorted by inside the preview panel.
+```text
+Edit -> New Tag
+```
 
-### Tag Manager
+Or press:
 
-You can manage your library of tags by opening the "Tag Manager" panel from Edit -> "Manage Tags". From here you can create, search for, edit, and permanently delete any tags you've created in your library.
+```text
+Ctrl + T
+```
 
-## Editing Tags
+When creating or editing a tag, you can set:
 
-To edit a tag, click on it inside the preview panel or right-click the tag and select "Edit Tag" from the context menu.
+- name
+- shorthand
+- aliases
+- parent tags
+- color
+- category behavior
+- hidden behavior
+- pinned or favorite state, if available in the current UI
 
-## Relinking Moved Files
+For more information, see [Tags](tags.md).
 
-Inevitably some of the files inside your library will be renamed, moved, or deleted. If a file has been renamed or moved, TagStudio will display the thumbnail as a red broken chain link. To relink moved files or delete these entries, select the "Manage Unlinked Entries" option under the Tools menu. Click the "Refresh" button to scan your library for unlinked entries. Once complete, you can attempt to "Search & Relink" any unlinked file entries to their respective files, or "Delete Unlinked Entries" in the event the original files have been deleted and you no longer wish to keep their entries inside your library.
+## Managing Tags
 
-<!-- prettier-ignore -->
+Open the Tag Manager from:
+
+```text
+Edit -> Manage Tags
+```
+
+From the Tag Manager, you can create, search, edit, and delete tags in the current library.
+
 !!! warning
-    There is currently no method to relink entries to files that have been renamed - only moved or deleted. This is a high priority for future releases.
+    Deleting a tag removes it from the library and from entries that used it.
 
-<!-- prettier-ignore -->
-!!! warning
-    If multiple matches for a moved file are found (matches are currently defined as files with a matching filename as the original), TagStudio will currently ignore the match groups. Adding a GUI for manual selection, as well as smarter automated relinking, are high priorities for future versions.
+## Adding Fields to Entries
 
-### Saving the Library
+Fields are custom metadata values attached to entries.
 
-As of version 9.5, libraries are saved automatically as you go. To save a backup of your library, select File -> Save Library Backup from the menu bar.
+To add a field:
+
+1. Select an entry.
+2. Click **Add Field** in the preview panel.
+3. Choose the field type.
+4. Enter the field value.
+
+Common field uses include:
+
+- title
+- prompt text
+- source URL
+- description
+- notes
+- date
+
+For more information, see [Fields](fields.md).
+
+## Editing Fields
+
+To edit a field:
+
+1. Select an entry.
+2. Find the field in the preview panel.
+3. Hover over the field.
+4. Click the pencil icon.
+5. Edit the value in the dialog.
+
+## Searching
+
+Use the main search field to search your library.
+
+PromptBook search can work together with:
+
+- text search
+- Search in options
+- selected tag filters
+- excluded tag filters
+- hidden entry visibility
+
+For the current search behavior, see [Searching](search.md).
+
+## Handling Unlinked Entries
+
+An entry becomes unlinked when its file has been moved, renamed, or deleted outside PromptBook.
+
+Unlinked entries are shown with a broken chain-link style indicator instead of a normal thumbnail.
+
+To manage them, use:
+
+```text
+Tools -> Fix Unlinked Entries
+```
+
+Available actions may include:
+
+- refresh the unlinked entry count
+- search for missing files and relink entries
+- delete unlinked entries from the library database
+
+!!! note
+    Deleting an unlinked entry removes the PromptBook entry from the library database.
+
+    It does not delete a file from disk, because the file is already missing from its original location.
+
+## Duplicate File Workflow
+
+PromptBook includes duplicate-file tooling based on DupeGuru result files.
+
+To use this workflow:
+
+1. Scan your files with [DupeGuru](https://dupeguru.voltaicideas.net/).
+2. Save or export the DupeGuru results.
+3. Open the duplicate file tool in PromptBook.
+4. Load the DupeGuru result file.
+5. Use the available actions to mirror metadata across duplicate entries where appropriate.
+
+After removing duplicate files outside PromptBook, use the unlinked entry tool to clean up entries whose files no longer exist.
+
+For more information, see [Tools & Macros](macros.md).
+
+## Saving and Backups
+
+PromptBook saves normal library metadata changes during use.
+
+For backups, copy the library folder together with its `.PromptBook` folder.
+
+Example:
+
+```text
+My Library/
+├─ .PromptBook/
+├─ Images/
+├─ Videos/
+└─ Prompts/
+```
+
+The `.PromptBook` folder contains the local library database and must stay with the library files.
 
 ## Launch Arguments
 
-There are a handful of launch arguments you can pass to TagStudio via the command line or a desktop shortcut.
+PromptBook supports a small set of launch arguments when started from the command line.
 
-| Argument                 | Short | Description                                            |
-| ------------------------ | ----- | ------------------------------------------------------ |
-| `--cache-file <path>`    | `-c`  | Path to a TagStudio .ini or .plist cache file to use.  |
-| `--open <path>`          | `-o`  | Path to a TagStudio Library folder to open on start.   |
-| `--settings-file <path>` | `-s`  | Path to a TagStudio .toml global settings file to use. |
-| `--version`              | `-v`  | Displays TagStudio version information.                |
+Because some inherited internal names still exist, the current source entry point may still be:
+
+```sh
+python src/tagstudio/main.py
+```
+
+Supported arguments:
+
+| Argument | Short | Description |
+| -------- | ----- | ----------- |
+| `--open <path>` | `-o` | Opens a PromptBook library folder on startup. |
+| `--settings-file <path>` | `-s` | Uses a specific PromptBook `.toml` global settings file. |
+| `--cache-file <path>` | `-c` | Uses a specific PromptBook `.ini` or `.plist` cache file. |
+| `--debug` | | Reveals additional internal data useful for debugging. |
+| `--version` | `-v` | Displays PromptBook version information. |
+
+Example:
+
+```sh
+python src/tagstudio/main.py --open "/path/to/my/library"
+```
+
+!!! note
+    The `src/tagstudio/main.py` path is inherited from the original codebase and may be renamed later.

@@ -10,19 +10,18 @@
 # mkdocs serve
 
 ---
-site_name: TagStudio
-site_description: "A User-Focused Photo & File Management System"
-site_url: https://docs.tagstud.io/
-repo_url: https://github.com/TagStudioDev/TagStudio
+site_name: PromptBook
+site_description: "A knowledge base and prompt management tool for LLM users, built with Python and Material for MkDocs."
+site_url: 
+repo_url: https://github.com/joolaszloo/PromptBook
 edit_uri: blob/main/docs/
-repo_name: TagStudioDev/TagStudio
+repo_name: joolaszloo/PromptBook
 
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/TagStudioDev
-    - icon: fontawesome/brands/discord
-      link: https://discord.gg/hRNnVKhF2G
+      link: https://github.com/
+
   tags:
     Upcoming Feature: upcoming
 
