@@ -147,7 +147,7 @@ class AboutModal(QWidget):
 
         # Links ----------------------------------------------------------------
         repo_link = "https://github.com/joolaszlo/PromptBook"
-        docs_link = "https://docs.tagstud.io"
+        docs_link = "https://github.com/joolaszlo/PromptBook/tree/main/docs"
 
         self.links_label = QLabel(
             f'<p><a href="{repo_link}">GitHub</a> | '
