@@ -4,55 +4,144 @@ icon: material/movie-open-cog
 
 # :material-movie-open-cog: Installing FFmpeg
 
-FFmpeg is required for thumbnail previews and playback features on audio and video files. FFmpeg is a free Open Source project dedicated to the handling of multimedia (video, audio, etc) files. For more information, see their official website at [ffmpeg.org](https://www.ffmpeg.org/).
+FFmpeg is required for thumbnail previews and playback features on audio and video files.
+
+FFmpeg is a free open source project for handling multimedia files, including video and audio files.
+
+For more information, see the official FFmpeg website:
+
+[ffmpeg.org](https://www.ffmpeg.org/)
 
 ## Installation on Windows
 
 ### Prebuilt Binaries
 
-Pre-built binaries from trusted sources are available on the [FFmpeg website](https://www.ffmpeg.org/download.html). Under "More downloading options" click on the Windows section, then under "Windows EXE Files" select a source to download a build from. Follow any further download instructions from whichever build website you choose.
+Prebuilt binaries from trusted sources are available from the FFmpeg download page:
+
+[FFmpeg Downloads](https://www.ffmpeg.org/download.html)
+
+Under "More downloading options", click the Windows section, then under "Windows EXE Files", select a source to download a build from.
+
+Follow the download instructions from the build website you choose.
 
 ![Windows Download Location](../assets/ffmpeg_windows_download.png)
 
-<!-- prettier-ignore -->
 !!! warning
-    Do NOT download the source code by mistake!
+    Do **not** download the source code by mistake.
 
-To Install:
+To install FFmpeg manually on Windows:
 
-1. Download 7z or zip file and extract it (right click > Extract All)
-2. Move extracted contents to a unique folder (i.e; `c:\ffmpeg` or `c:\Program Files\ffmpeg`)
-3. Add FFmpeg to your system PATH
+1. Download the `.7z` or `.zip` file.
+2. Extract it.
+3. Move the extracted contents to a dedicated folder, for example:
 
-    1. In Windows, search for or go to "Edit the system environment variables" under the Control Panel
-    2. Under "User Variables", select "Path" then edit
-    3. Click new and add `<Your folder>\bin` (e.g; `c:\ffmpeg\bin` or `c:\Program Files\ffmpeg\bin`)
-    4. Click "Okay"
+```text
+C:\ffmpeg
+```
+
+or:
+
+```text
+C:\Program Files\ffmpeg
+```
+
+4. Add FFmpeg's `bin` folder to your system PATH.
+
+Example PATH entry:
+
+```text
+C:\ffmpeg\bin
+```
+
+or:
+
+```text
+C:\Program Files\ffmpeg\bin
+```
+
+To edit PATH on Windows:
+
+1. Search for "Edit the system environment variables".
+2. Open it from Control Panel.
+3. Click "Environment Variables".
+4. Under "User variables", select "Path".
+5. Click "Edit".
+6. Click "New".
+7. Add the FFmpeg `bin` path.
+8. Click "OK".
 
 ### Package Managers
 
-FFmpeg is also available from:
+FFmpeg is also available through Windows package managers:
 
-1. WinGet (`winget install ffmpeg`)
-2. Scoop (`scoop install main/ffmpeg`)
-3. Chocolatey (`choco install ffmpeg-full`)
+```sh
+winget install ffmpeg
+```
 
-## Installation on Mac
+```sh
+scoop install main/ffmpeg
+```
+
+```sh
+choco install ffmpeg-full
+```
+
+## Installation on macOS
 
 ### Homebrew
 
-FFmpeg is available under the macOS section of the [FFmpeg website](https://www.ffmpeg.org/download.html) or can be installed via [Homebrew](https://brew.sh/) using `brew install ffmpeg`.
+FFmpeg can be installed with [Homebrew](https://brew.sh/):
+
+```sh
+brew install ffmpeg
+```
+
+FFmpeg downloads for macOS are also listed on the official FFmpeg download page:
+
+[FFmpeg Downloads](https://www.ffmpeg.org/download.html)
 
 ## Installation on Linux
 
-### Package Managers
+FFmpeg may already be installed on some Linux distributions.
 
-FFmpeg may be installed by default on some Linux distributions, but if not, it is available via your distribution package manager of choice:
+If it is not installed, use your distribution's package manager.
 
-1. Debian/Ubuntu (`sudo apt install ffmpeg`)
-2. Fedora (`sudo dnf install ffmpeg-free`)
-3. Arch (`sudo pacman -S ffmpeg`)
+### Debian / Ubuntu
 
-# Help
+```sh
+sudo apt install ffmpeg
+```
 
-For additional help, please join the [Discord](https://discord.gg/hRNnVKhF2G) or create an Issue on the [GitHub repository](https://github.com/TagStudioDev/TagStudio)
+### Fedora
+
+```sh
+sudo dnf install ffmpeg-free
+```
+
+### Arch Linux
+
+```sh
+sudo pacman -S ffmpeg
+```
+
+## Checking the Installation
+
+After installing FFmpeg, open a terminal and run:
+
+```sh
+ffmpeg -version
+```
+
+You can also check FFprobe:
+
+```sh
+ffprobe -version
+```
+
+If both commands return version information, FFmpeg is available on your system PATH.
+
+## Help
+
+If FFmpeg is installed but PromptBook still cannot detect it, restart PromptBook first.
+
+If the problem remains, check that the FFmpeg `bin` folder is available on your system PATH.

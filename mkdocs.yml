@@ -1,26 +1,25 @@
 # yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
-
 # MkDocs: https://www.mkdocs.org/
 # Material for MkDocs: https://squidfunk.github.io/mkdocs-material/
-
 # To install:
 # pip install mkdocs-material
-
 # To run the preview server:
 # mkdocs serve
 
 ---
+
 site_name: PromptBook
-site_description: "A knowledge base and prompt management tool for LLM users, built with Python and Material for MkDocs."
-site_url: 
-repo_url: https://github.com/joolaszloo/PromptBook
-edit_uri: blob/main/docs/
-repo_name: joolaszloo/PromptBook
+site_description: "A prompt-focused media library for organizing prompts, generated media, reference files, tags, and metadata."
+site_url:
+
+repo_url: https://github.com/joolaszlo/PromptBook
+edit_uri: edit/main/docs/
+repo_name: joolaszlo/PromptBook
 
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/
+      link: https://github.com/joolaszlo/PromptBook
 
   tags:
     Upcoming Feature: upcoming
@@ -28,16 +27,11 @@ extra:
 nav:
   - Home:
       - index.md
+
   - Getting Started:
       - install.md
       - usage.md
-      - Developing:
-        - developing.md
-        - database-schema.md
-        - contributing.md
-        - style.md
-      - Help:
-          - help/ffmpeg.md
+
   - Using Libraries:
       - libraries.md
       - entries.md
@@ -45,26 +39,38 @@ nav:
       - search.md
       - ignore.md
       - macros.md
-      - Fields:
-        - fields.md
-      - Tags:
-          - tags.md
-          - colors.md
+
+  - Fields:
+      - fields.md
+
+  - Tags:
+      - tags.md
+      - colors.md
+
+  - Developing:
+      - developing.md
+      - database-schema.md
+      - contributing.md
+      - style.md
+
   - Updates:
       - changelog.md
-      - roadmap.md
-      - Schema History:
-        - library-changes.md
+      - library-changes.md
+
+  - Help:
+      - help/ffmpeg.md
 
 theme:
   name: material
   custom_dir: overrides
+
   palette:
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
       toggle:
         icon: material/lightbulb-auto-outline
         name: Switch to Light Mode
+
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -73,6 +79,7 @@ theme:
       toggle:
         icon: material/lightbulb
         name: Switch to Dark Mode
+
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
@@ -81,11 +88,15 @@ theme:
       toggle:
         icon: material/lightbulb-night-outline
         name: Switch to System Preference
+
   logo: assets/icon_mono.svg
   favicon: assets/icon.ico
+
   font:
     code: Jetbrains Mono
+
   language: en
+
   features:
     - content.action.edit
     - content.code.annotate
@@ -98,13 +109,13 @@ theme:
     # - navigation.tabs.sticky
     - navigation.tracking
     - search.suggest
+
   icon:
     repo: fontawesome/brands/github
     tag:
       upcoming: material/flask-outline
 
 markdown_extensions:
-
   # Python Markdown
   - abbr
   - admonition
@@ -143,13 +154,13 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
-  - pymdownx.snippets
 
 plugins:
   - search
   - tags
-  - social:  # social embed cards
-      enabled: !ENV [CI, false]  # enabled only when running in CI (eg GitHub Actions)
+  - social:
+      # Social embed cards enabled only when running in CI, for example GitHub Actions.
+      enabled: !ENV [CI, false]
   - redirects:
       redirect_maps:
         "develop.md": "developing.md"
@@ -161,7 +172,6 @@ plugins:
         "library/tag_color.md": "colors.md"
         "library/tag.md": "tags.md"
         "updates/changelog.md": "changelog.md"
-        "updates/roadmap.md": "roadmap.md"
         "updates/schema_changes.md": "library-changes.md"
         "utilities/ignore.md": "ignore.md"
         "utilities/macro.md": "macros.md"
