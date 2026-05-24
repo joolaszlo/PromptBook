@@ -11,7 +11,7 @@ hide:
 
 ![PromptBook screenshot](./assets/screenshot.png){ width=80% }
 
-PromptBook v1.0 running on macOS Sequoia.
+PromptBook v1.0.0.
 
 PromptBook is a desktop application for organizing prompts, generated images, generated videos, reference files, and related creative assets in one searchable library.
 

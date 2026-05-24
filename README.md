@@ -4,7 +4,7 @@ PromptBook is a desktop application for organizing prompts, generated images, vi
 
 It is a modified fork of [TagStudio](https://github.com/TagStudioDev/TagStudio), adapted for prompt-based workflows and AI-generated media organization.
 
-![PromptBook screenshot](docs/assets/promptbook-screenshot.png)
+![PromptBook screenshot](docs/assets/screenshot.png)
 
 ## What is PromptBook?
 
@@ -85,6 +85,38 @@ A typical workflow:
 5. Connect generated media with the prompts or projects they belong to.
 6. Use search and filters to find previous prompts and results.
 
+## How PromptBook Works
+
+### Main Window
+
+![PromptBook main window](docs/assets/readme/main_window.png)
+
+The main window is where you browse, filter, select, and manage library entries.
+
+| Number | Area | Description |
+|---|---|---|
+| 1 | **Add New Entry** | Opens the **Add New Entry** window. This is used to add a new item to the library. The Add New Entry window is explained in more detail in the next screenshot. |
+| 2 | **Search** | Search entries by text and choose where to search: tags, titles, and prompts. If tag filters are active, the text search only runs within the currently visible matching entries. |
+| 3 | **Tags, Favorite Tags, and Reset Selection** | Opens searchable tag lists for selecting filters. If a selected tag is not visible in the pinned tag row, these buttons can still indicate the active selection with a small dot. **Reset Selection** clears all selected include and exclude tag filters. |
+| 4 | **Pinned Tags** | Shows frequently used tags for quick filtering. Tags pinned here are also available in the **Add New Entry** window. Left-click a pinned tag to show only entries that contain that tag. Included tags are highlighted with the selected-tag border. Right-click a pinned tag to hide entries that contain that tag. Excluded tags are shown with a gray background, red text, and strikethrough. |
+| 5 | **Category Sidebar** | Provides quick access to category-based filters. Categories are explained in more detail in the next screenshot. The category sidebar can be disabled in the application settings. |
+| 6 | **Category Sidebar Settings** | Opens the settings window for the category sidebar. This is where category groups, categories, colors, icons, rule behavior, and linked tags can be configured. |
+| 7 | **Collapse Sidebar** | Collapses the category sidebar. When collapsed, only the category icons remain visible, giving more space to the entry grid. |
+| 8 | **Copy Prompt** | Copies the selected entry's prompt text to the clipboard with one click. This makes it easy to reuse prompts without opening the entry editor. |
+
+### Add New Entry
+
+| Screenshot | Description |
+|---|---|
+| <img src="docs/assets/readme/add_new_entry.png" alt="Add New Entry window" width="360"> | The **Add New Entry** window is used to create a new item in your library. An entry can contain media, a title, a prompt, and tags.<br><br><ol><li><strong>Add Media</strong><br>Select an image, video, audio file, or another supported file to attach to the entry. This is optional if you want to save a text-only prompt entry.</li><br><li><strong>Title</strong><br>Add a short title for the entry. The title makes the item easier to recognize. This is optional when media is attached, but required when no media file is attached.</li><br><li><strong>Prompt</strong><br>Add the prompt text or description connected to the entry. This can be the original generation prompt, notes about the idea, or other useful text.</li><br><li><strong>Pinned Tags</strong><br>Quickly add commonly used tags from the pinned tag list.</li><br><li><strong>Search Tags</strong><br>Search for existing tags and select the ones you want to attach to the entry.</li><br><li><strong>Selected Tags</strong><br>Shows the tags that will be saved with the entry.</li></ol><br>After filling in the needed fields, click **Add Entry** to save the new item to the library. |
+
+
+### Category Sidebar Settings
+
+| Screenshot | Description |
+|---|---|
+| <img src="docs/assets/readme/sidebar.png" alt="Category Sidebar Settings window" width="520"> | The **Category Sidebar Settings** window is used to configure the category groups shown in the sidebar.<br><br><ol><li><strong>Category Groups</strong><br>Create and manage category groups. Groups are used to organize categories into sections, so larger category lists are easier to understand.</li><br><li><strong>Categories</strong><br>Create and manage the categories inside the selected group. Each category can have its own name, color, rule type, rule state, icon, and linked tag.</li><br><li><strong>Background Color</strong><br>Set the color used for the category. When a linked tag is selected for the first time, PromptBook automatically uses that tag's color, but the color can be changed manually.</li><br><li><strong>Rule Type and Rule State</strong><br>Define how the category behaves in the sidebar. For example, a category can be linked to a single tag or multiple tags and configured to include/exclude matching entries.</li><br><li><strong>Icon</strong><br>Select an icon for the category. You can choose from the suggested icons or search for another icon. PromptBook uses icons from the [Lucide Icons](https://lucide.dev/icons/) icon set.</li><br><li><strong>Linked Tag</strong><br>Choose the tag that belongs to this category. The selected tag is used by the sidebar category rule.</li></ol><br>Click <strong>Save</strong> to store the category sidebar settings. |
+
 ## Installation
 
 PromptBook is currently in early development.
@@ -109,7 +141,7 @@ PromptBook is based on the TagStudio codebase and currently uses Python.
 Requirements may change during development.
 
 ```bash
-git clone https://github.com/joolaszloo/PromptBook.git
+git clone https://github.com/joolaszlo/PromptBook.git
 cd PromptBook
 pip install -e ".[dev]"
 python -m tagstudio
