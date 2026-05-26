@@ -1,6 +1,6 @@
 # PromptBook
 
-PromptBook is a desktop application for organizing prompts, generated images, videos, text outputs, and related creative assets.
+PromptBook is a prompt-focused media library for managing prompts alongside the images and videos they produce.
 
 It is a modified fork of [TagStudio](https://github.com/TagStudioDev/TagStudio), adapted for prompt-based workflows and AI-generated media organization.
 
